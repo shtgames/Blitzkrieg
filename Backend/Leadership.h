@@ -27,7 +27,7 @@ namespace bEnd
 		Leadership& operator=(const Leadership&) = default;
 		Leadership& operator=(Leadership&&) = default;
 
-		const float getLeadershipDistributionValue(const leadershipDistributionCategories category)const { return leadershipDistribution.at(category) * availableLeadership; };
+		const float getLeadershipDistributionValue(const leadershipDistributionCategories category)const { return leadershipDistribution[category] * availableLeadership; };
 
 		void update();
 
@@ -37,8 +37,8 @@ namespace bEnd
 	private:
 		void distributeLeadership();
 
-		float                                             baseLeadership = 0.0f, availableLeadership = 0.0f, wastedLeadership = 0.0f;
-		std::map<leadershipDistributionCategories, float> leadershipDistribution;
+		float                                                     baseLeadership = 0.0f, availableLeadership = 0.0f, wastedLeadership = 0.0f;
+		mutable std::map<leadershipDistributionCategories, float> leadershipDistribution;
 
 		Research research;
 		Espionage espionage;

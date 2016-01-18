@@ -1,5 +1,7 @@
 #include "Production.h"
 
+#include "Region.h"
+
 namespace bEnd
 {
 	Production::Production()
@@ -32,34 +34,34 @@ namespace bEnd
 				it1->second = 0.0f;
 	}
 
-	void Production::transferResourcesFromRegion(const std::map<Resource, float>& _source, const bool& _ownerAndControllerAreTheSame, const bool& _hasCore, const OccupationPolicy& _OccupationPolicy)
+	void Production::transferResourcesFromRegion(const Region& region, const OccupationPolicy& _OccupationPolicy)
 	{
 		float modifier = 1.0f;
-		if (_hasCore && _ownerAndControllerAreTheSame) modifier = 1.0f;
-		else if (_ownerAndControllerAreTheSame) modifier = 0.5f;
+		if (region.hasCore(region.getController()) && region.getController() == region.getOwner()) modifier = 1.0f;
+		else if (region.getController() == region.getOwner()) modifier = 0.5f;
 		else modifier = _OccupationPolicy.getResourceModifier();
 
-		resources[Energy].first += _source.at(Energy) * modifier;
-		resources[Energy].second[generated] += _source.at(Energy) * modifier;
+		resources[Energy].first += region.getResourceGeneration(Energy) * modifier;
+		resources[Energy].second[generated] += region.getResourceGeneration(Energy) * modifier;
 
-		resources[Metal].first += _source.at(Metal) * modifier;
-		resources[Metal].second[generated] += _source.at(Metal) * modifier;
+		resources[Metal].first += region.getResourceGeneration(Metal) * modifier;
+		resources[Metal].second[generated] += region.getResourceGeneration(Metal) * modifier;
 
-		resources[RareMaterials].first += _source.at(RareMaterials) * modifier;
-		resources[RareMaterials].second[generated] += _source.at(RareMaterials) * modifier;
+		resources[RareMaterials].first += region.getResourceGeneration(RareMaterials) * modifier;
+		resources[RareMaterials].second[generated] += region.getResourceGeneration(RareMaterials) * modifier;
 
-		resources[CrudeOil].first += _source.at(CrudeOil) * modifier;
-		resources[CrudeOil].second[generated] += _source.at(CrudeOil) * modifier;
+		resources[CrudeOil].first += region.getResourceGeneration(CrudeOil) * modifier;
+		resources[CrudeOil].second[generated] += region.getResourceGeneration(CrudeOil) * modifier;
 	}
 
-	void Production::transferManpowerFromRegion(const float& _manpower, const bool& _ownerAndControllerAreTheSame, const bool& _hasCore, const OccupationPolicy& _OccupationPolicy)
+	void Production::transferManpowerFromRegion(const Region& region, const OccupationPolicy& _OccupationPolicy)
 	{
-		if (_hasCore && _ownerAndControllerAreTheSame)
-			manpower += _manpower;
-		else if (_ownerAndControllerAreTheSame)
-			manpower += _manpower * 0.5f;
+		if (region.hasCore(region.getController()) && region.getController() == region.getOwner())
+			manpower += region.getManpowerGeneration();
+		else if (region.getController() == region.getOwner())
+			manpower += region.getManpowerGeneration() * 0.5f;
 		else
-			manpower += _manpower * _OccupationPolicy.getMPModifier();
+			manpower += region.getManpowerGeneration() * _OccupationPolicy.getMPModifier();
 	}
 
 	void Production::transferResourcesFromTrade(const std::map<Resource, float>& _source)
@@ -72,11 +74,11 @@ namespace bEnd
 			}
 	}
 
-	void Production::transferIC(const unsigned short& _IC, const bool& _ownerAndControllerAreTheSame, const bool& _hasCore, const OccupationPolicy& _OccupationPolicy)
+	void Production::transferICFromRegion(const Region& region, const OccupationPolicy& _OccupationPolicy)
 	{
-		if (_hasCore && _ownerAndControllerAreTheSame) baseIC += _IC * 1.0f;
-		else if (_ownerAndControllerAreTheSame) baseIC += _IC * 0.5f;
-		else baseIC += _IC * _OccupationPolicy.getICModifier();
+		if (region.hasCore(region.getController()) && region.getController() == region.getOwner()) baseIC += region.getIC() * 1.0f;
+		else if (region.getController() == region.getOwner()) baseIC += region.getIC() * 0.5f;
+		else baseIC += region.getIC() * _OccupationPolicy.getICModifier();
 	}
 
 	void Production::calculateIC()
@@ -197,7 +199,7 @@ namespace bEnd
 		}
 	}
 
-	void Production::increaseProductionItemPriority(const unsigned short& _index)
+	void Production::increaseProductionItemPriority(const unsigned short _index)
 	{
 		if (_index >= 1 && _index < productionLine.size())
 		{
@@ -207,7 +209,7 @@ namespace bEnd
 		}
 	}
 
-	void Production::decreaseProductionItemPriority(const unsigned short& _index)
+	void Production::decreaseProductionItemPriority(const unsigned short _index)
 	{
 		if (_index >= 0 && _index < productionLine.size() - 1)
 		{
@@ -217,7 +219,7 @@ namespace bEnd
 		}
 	}
 
-	void Production::setProductionItemAtMaxPriority(const unsigned short& _index)
+	void Production::setProductionItemAtMaxPriority(const unsigned short _index)
 	{
 		if (_index >= 1 && _index < productionLine.size())
 		{
@@ -227,7 +229,7 @@ namespace bEnd
 		}
 	}
 
-	void Production::setProductionItemAtMinPriority(const unsigned short& _index)
+	void Production::setProductionItemAtMinPriority(const unsigned short _index)
 	{
 		if (_index >= 0 && _index < productionLine.size() - 1)
 		{
@@ -237,7 +239,7 @@ namespace bEnd
 		}
 	}
 
-	void Production::removeProductionItem(const unsigned short& _index)
+	void Production::removeProductionItem(const unsigned short _index)
 	{
 		if (_index >= 0 && _index < productionLine.size())
 		{

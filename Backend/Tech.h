@@ -16,6 +16,7 @@ namespace bEnd
 		const unsigned char getDifficulty()const { return difficulty; }
 		const unsigned char getLevels()const { return yearsByLevel.size(); }
 		const unsigned short getYear(const unsigned char level)const { return level < yearsByLevel.size() ? yearsByLevel[level] : 0; }
+		const std::vector<std::pair<std::string, float>>& getExperienceRewards()const { return experienceRewards; }
 
 		const unsigned short getResearchDays(const unsigned char, const std::map<std::string, float>&)const;
 

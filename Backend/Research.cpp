@@ -63,6 +63,8 @@ namespace bEnd
 			if ((*it) && (*it)->research())
 			{
 				techLevels[(*it)->getTech()]++;
+				for (auto it1 = Tech::getTechnologies().at((*it)->getTech()).getExperienceRewards().begin(), end1 = Tech::getTechnologies().at((*it)->getTech()).getExperienceRewards().begin(); it1 != end1; ++it)
+					experience[it1->first] += it1->second;
 				it = researchQueue.erase(it);
 			}
 	}

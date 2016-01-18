@@ -22,7 +22,7 @@ namespace bEnd
 		const float& getNationalUnity()const { return NationalUnity; };
 		const float& getDissent()const { return dissent; };
 		const float& getDissentChange()const { return dissentChange; };
-		const OccupationPolicy& getOccupationPolicy(const Tag& tag)const { if (occupationPolicies.count(tag)) return occupationPolicies.at(tag); else return OccupationPolicy(); };
+		const OccupationPolicy& getOccupationPolicy(const Tag& tag)const { return occupationPolicies[tag]; };
 
 		void update();
 
@@ -30,7 +30,7 @@ namespace bEnd
 
 		float NationalUnity, dissent, dissentChange;
 
-		std::unordered_map<Tag, OccupationPolicy> occupationPolicies;
+		mutable std::unordered_map<Tag, OccupationPolicy> occupationPolicies;
 	};
 }
 
