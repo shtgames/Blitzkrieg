@@ -7,11 +7,14 @@
 #include <chrono>
 #include <queue>
 
+using namespace std;
+
 namespace bEnd
 {
 	class TimeSystem final
 	{
 	public:
+
 		static const Date& getCurrentDate();
 		static void        update();
 		static void        pause();
@@ -23,16 +26,47 @@ namespace bEnd
 		static void        addEvent(Event<eventFunctionType>&& event);
 		static void        reset(const Date& date);
 
-		static const std::chrono::high_resolution_clock gameTime;
+		static const chrono::high_resolution_clock gameTime;
 	private:
+
+		class EventBase
+		{
+		public:
+			virtual ~EventBase() {};
+
+			const bool operator< (const EventBase& _event)const { return trigger < _event.trigger; }
+
+			virtual void initiate()const = 0;
+
+			Date trigger;
+		};
+
+		template <typename functionType = void()>
+		class Event final : public EventBase
+		{
+		public:
+			Event(const Date& trigger, const std::function<functionType>& action) : trigger(trigger), action(action) {}
+			Event(const Event&) = default;
+			Event(Event&&) = default;
+			Event() = delete;
+			~Event()override = default;
+
+			Event& operator=(const Event&) = default;
+			Event& operator=(Event&&) = default;
+
+			void initiate()const override { action(); }
+		private:
+			const std::function<functionType> action;
+		};
+		
 		static void eventCheck();
 
-		static std::priority_queue<std::unique_ptr<EventBase>>             events;
-		static unsigned char                                               gameSpeed;
-		static std::chrono::time_point<std::chrono::high_resolution_clock> timeOfLastUpdate;
-		static float                                                       updateIntervals[6];
-		static Date                                                        currentDate;
-		static bool                                                        paused;
+		static priority_queue<unique_ptr<EventBase>>             events;
+		static unsigned char                                     gameSpeed;
+		static chrono::time_point<chrono::high_resolution_clock> timeOfLastUpdate;
+		static float                                             updateIntervals[6];
+		static Date                                              currentDate;
+		static bool                                              paused;
 	};
 }
 #endif

@@ -9,4 +9,8 @@ namespace bEnd
 	void Politics::update()
 	{
 	}
+	const bool Politics::loadFronFile(ifstream &)
+	{
+		return false;
+	}
 }

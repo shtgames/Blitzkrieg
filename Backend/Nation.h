@@ -1,14 +1,16 @@
 #ifndef NATION_BACKEND
 #define NATION_BACKEND
 
+#include "Region.h"
+#include "OccupationPolicy.h"
 #include "Tag.h"
 #include "Production.h"
 #include "Leadership.h"
-#include "Politics.h"
-#include "Intelligence.h"
 
 #include <unordered_map>
 #include <set>
+
+using namespace std;
 
 namespace bEnd
 {
@@ -17,21 +19,16 @@ namespace bEnd
 	public:
 
 		Nation(const Nation&) = default;
-		Nation(Nation&&) = default;
-		~Nation() = default;
+		//Nation(Nation&&) = default;
 		Nation() = default;
+		~Nation() = default;
 
 		Nation& operator=(const Nation&) = default;
-		Nation& operator=(Nation&&) = default;
-
-		Production   production;
-		Politics     politics;
-		Intelligence intelligence;
-		Leadership   technology;
+		//Nation& operator=(Nation&&) = default;
 
 		static void updateGlobal();
 		static void loadNations();
-		static std::map<Tag, Nation> nations;
+		static map<Tag, Nation> nations;
 
 	private:
 		enum Continent
@@ -43,10 +40,10 @@ namespace bEnd
 			SouthAmerica
 		};
 
-		Continent   continent = Europe;
-		std::string name = "";
-		Tag         tag = "NUL";
-		bool        major = false;
+		Continent continent = Europe;
+		string    name = "";
+		Tag       tag = "NUL";
+		bool      major = false;
 
 		static Tag player;
 

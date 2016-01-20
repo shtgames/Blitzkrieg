@@ -1,6 +1,6 @@
 #include "Region.h"
 
-#include "Nation.h"
+#include "Politics.h"
 
 #include <fstream>
 #include <iostream>
@@ -11,61 +11,90 @@
 
 const std::string CACHEDIR = "map/cache/provinces.bin";
 
+using namespace std;
+
 namespace bEnd
 {
-	Region::Construction::Construction(const Structure _building, const unsigned short _Region) : buildingType(_building), targetRegion(_Region)
+	const float Region::ANNEXED_NON_CORE_PENALTY = 0.7f, Region::IC_POINTS_PER_LEVEL = 1.5f;
+
+	Region::Construction::Construction(const BuildingType _building, const unsigned short _Region) : buildingType(_building), targetRegion(_Region)
 	{
 		regions[targetRegion].buildings[buildingType].second++;
 	}
 
-	void Region::Construction::onCompletion()
+	Region::Construction::~Construction()
 	{
 		regions[targetRegion].buildings[buildingType].second--;
+	}
+
+	void Region::Construction::onCompletion()
+	{
 		regions[targetRegion].buildings[buildingType].first.second++;
 		regions[targetRegion].buildings[buildingType].first.first++;
 	}
 
-
-	void Region::generateResourcesGlobal(std::map<Tag, Nation>& nations)
+	void Region::changeOwner(const Tag& tag)
 	{
-		for (auto it = regions.begin(), end = regions.end(); it != end; ++it)
-			it->second.generateResources(nations);
-	}
-
-	void Region::generateResources(std::map<Tag, Nation>& nations)
-	{
-		const bool temp = hasCore(controller);
-		Nation& buffer = nations.at(controller);
-		buffer.production.transferResourcesFromRegion(resourceGeneration, owner == controller, temp, buffer.politics.getOccupationPolicy(owner));
-		buffer.production.transferManpowerFromRegion(manpowerGeneration, owner == controller, temp, buffer.politics.getOccupationPolicy(owner));
-		buffer.production.transferIC(buildings[Industry].first.first, owner == controller, temp, buffer.politics.getOccupationPolicy(owner));
-		buffer.technology.transferLeadership(leadershipGeneration, owner == controller, temp, buffer.politics.getOccupationPolicy(owner));
-	}
-
-	void Region::changeOwner(const Tag& _newOwner)
-	{
-		owner = _newOwner;
+		owner = tag;
 		addCore(owner);
 	}
 
-	void Region::changeController(const Tag& _newController)
+	void Region::changeController(const Tag& tag)
 	{
-		controller = _newController;
+		controller = tag;
 	}
 
-	void Region::addCore(const Tag& _newCore)
+	void Region::addCore(const Tag& tag)
 	{
-		cores.emplace(_newCore);
+		cores.emplace(tag);
 	}
 
-	bool Region::hasCore(const Tag& _Tag)const
+	const float Region::getLeadershipGeneration() const
 	{
-		return bool(cores.count(_Tag));
+		float modifier = 1.0f;
+		if (controller != owner)
+			modifier *= bEnd::Politics::getPolitics(controller).getOccupationPolicy(owner).getLeadershipModifier();
+		else if (!hasCore(controller))
+			modifier *= ANNEXED_NON_CORE_PENALTY;
+
+		return leadershipGeneration * modifier;
 	}
 
-	void Region::build(const Structure _building)
+	const float Region::getManpowerGeneration() const
 	{
-		Nation::nations[controller].production.addProductionItem(&Construction(_building, provID));
+		float modifier = 1.0f;
+		if (controller != owner)
+			modifier *= bEnd::Politics::getPolitics(controller).getOccupationPolicy(owner).getMPModifier();
+		else if (!hasCore(controller))
+			modifier *= ANNEXED_NON_CORE_PENALTY;
+
+		return manpowerGeneration * modifier;
 	}
 
+	const float Region::getResourceGeneration(const Resource resourceType) const
+	{
+		float modifier = 1.0f;
+		if (controller != owner)
+			modifier *= bEnd::Politics::getPolitics(controller).getOccupationPolicy(owner).getResourceModifier();
+		else if (!hasCore(controller))
+			modifier *= ANNEXED_NON_CORE_PENALTY;
+
+		return resourceGeneration[resourceType] * modifier;
+	}
+
+	const float Region::getIC() const
+	{
+		float modifier = 1.0f;
+		if (controller != owner)
+			modifier *= bEnd::Politics::getPolitics(controller).getOccupationPolicy(owner).getICModifier();
+		else if (!hasCore(controller))
+			modifier *= ANNEXED_NON_CORE_PENALTY;
+
+		return buildings[Industry].first.first * IC_POINTS_PER_LEVEL * modifier;
+	}
+
+	bool Region::hasCore(const Tag& tag)const
+	{
+		return bool(cores.count(tag));
+	}
 }

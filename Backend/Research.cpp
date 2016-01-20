@@ -57,6 +57,18 @@ namespace bEnd
 			researchQueue.push_back(std::unique_ptr<ResearchItem>(&new ResearchItem(element)->setResearchDays(Tech::getTechnologies().at(element).getResearchDays(techLevels[element], experience))));
 	}
 
+	const float Research::setLeadership(float leadership)
+	{
+		for (auto it = researchQueue.begin(), end = researchQueue.end(); it != end; ++it)
+			if (*it)
+			{
+				(*it)->setLeadership(leadership);
+				(*it)->setResearchDays(Tech::getTechnologies().at((*it)->getTech()).getResearchDays(techLevels[(*it)->getTech()], experience));
+				leadership > 1.0f ? leadership -= 1.0f : leadership = 0.0f;
+			}
+		return leadership > 0 ? leadership : 0.0f;
+	}
+
 	void Research::update()
 	{
 		for (auto it = researchQueue.begin(), end = researchQueue.end(); it != end; ++it)
@@ -69,15 +81,8 @@ namespace bEnd
 			}
 	}
 
-	const float Research::setLeadership(float leadership)
+	const bool Research::loadFromFile(ifstream& file)
 	{
-		for (auto it = researchQueue.begin(), end = researchQueue.end(); it != end; ++it)
-			if (*it)
-			{
-				(*it)->setLeadership(leadership);
-				(*it)->setResearchDays(Tech::getTechnologies().at((*it)->getTech()).getResearchDays(techLevels[(*it)->getTech()], experience));
-				leadership > 1.0f ? leadership -= 1.0f : leadership = 0.0f;
-			}
-		return leadership > 0 ? leadership : 0.0f;
+		return false;
 	}
 }

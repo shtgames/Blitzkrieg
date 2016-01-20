@@ -1,14 +1,14 @@
 #include "Nation.h"
 
 #include "Diplomacy.h"
-#include "Region.h"
 
 #include <map>
 #include <fstream>
 #include <sstream>
 
-
 const std::string FLAGDIR = "interface visual/flags/", NATIONSTAGDEFDIR = "countries.csv", NATIONSDEFDIR = "countries.txt";
+
+using namespace std;
 
 namespace bEnd
 {
@@ -26,29 +26,28 @@ namespace bEnd
 		for (auto it = nations.begin(), end = nations.end(); it != end; ++it)
 		{
 			it->second.production.update();
-			it->second.technology.update();
-			it->second.politics.update();
+			it->second.leadership.update();
 		}
 	}
 
 	void Nation::loadNations()
 	{
 		nations.clear();
-		std::ifstream file(NATIONSTAGDEFDIR);
+		ifstream file(NATIONSTAGDEFDIR);
 		while (!file.eof())
 		{
 			char* line = new char[1 << 10];
 			file.getline(line, 1 << 10);
 			if (line[0] != '\0')
 			{
-				std::stringstream lineStream(line);
+				stringstream lineStream(line);
 				Nation buffer;
 				lineStream.getline(line, 1 << 10, ';');
 				buffer.name = line;
 				lineStream.getline(line, 1 << 10, '\0');
 				buffer.tag = line;
 
-				nations.insert(std::make_pair(buffer.tag, buffer));
+				nations.insert(make_pair(buffer.tag, buffer));
 			}
 			delete line;
 		}
@@ -70,7 +69,7 @@ namespace bEnd
 				}
 				else
 				{
-					std::string stringBuffer;
+					string stringBuffer;
 					stringBuffer.push_back(line[0]);
 					stringBuffer.push_back(line[1]);
 					stringBuffer.push_back(line[2]);
@@ -78,23 +77,23 @@ namespace bEnd
 						if (it->first == stringBuffer)
 						{
 							it->second.continent = continentBuffer;
-							std::stringstream strStream(line);
-							std::getline(strStream, stringBuffer, '"');
-							std::getline(strStream, stringBuffer, '"');
-							std::fstream countryFile(stringBuffer);
+							stringstream strStream(line);
+							getline(strStream, stringBuffer, '"');
+							getline(strStream, stringBuffer, '"');
+							fstream countryFile(stringBuffer);
 							while (!countryFile.eof())
 							{
 								countryFile.getline(line, 1 << 10);
-								if (std::string(line) == "major = yes")
+								if (string(line) == "major = yes")
 								{
 									it->second.major = true;
 									continue;
 								}
 								strStream.str(line);
-								std::getline(strStream, stringBuffer, '{');
+								getline(strStream, stringBuffer, '{');
 								if (stringBuffer == "color = ")
 								{
-									std::getline(strStream, stringBuffer, '}');
+									getline(strStream, stringBuffer, '}');
 									strStream.str(stringBuffer);
 									strStream >> stringBuffer;
 								}

@@ -1,13 +1,17 @@
 #ifndef PRODUCTION_BACKEND
 #define PRODUCTION_BACKEND
 
-#include "Resources.h"
+#include "Tag.h"
 #include "Date.h"
-#include "OccupationPolicy.h"
+#include "Resources.h"
 #include "ProductionItem.h"
 
 #include <map>
+#include <unordered_map>
 #include <vector>
+#include <fstream>
+
+using namespace std;
 
 namespace bEnd
 {
@@ -15,79 +19,31 @@ namespace bEnd
 	class Production final
 	{
 	public:
-		enum ICDistributionCategory
-		{
-			Upgrades,
-			Reinforcement,
-			SupplyProduction,
-			ProductionLine,
-			ConsumerGoods,
-			LendLease
-		};
-
-		enum ResourceChangeCategory
-		{
-			generated,
-			used,
-			traded,
-			convertedIntoCrudeOil,
-			convertedFromEnergy,
-			convertedIntoFuel,
-			convertedFromCrudeOil,
-			intoNetwork,
-			returnedToStockpile
-		};
-		
-		Production(const Production&) = default;
-		Production(Production&&) = default;
-		Production();
-
-		Production& operator=(const Production&) = default;
-		Production& operator=(Production&&) = default;
-		
-		const float getICDistributionValue(const ICDistributionCategory& _Cval)const { return ICDistribution[_Cval] * availableIC; }
-		const float getResourceChange(const Resource _Rval, const ResourceChangeCategory& _Cval)const { return resources[_Rval].second[_Cval]; };
-		const float getResourceAmount(const Resource _Rval)const { return resources[_Rval].first; };
-		const bool contains(const std::map<Resource, float>&)const;
-		void transferResourcesFromTrade(const std::map<Resource, float>&);
-		void resetIncome();
-		void update();
-
-	private:
-
-		typedef std::map<ResourceChangeCategory, float>(ResourceChangeSummary);
-
-		void transferResourcesFromRegion(const Region&, const OccupationPolicy&);
-		void transferManpowerFromRegion(const Region&, const OccupationPolicy&);
-		void transferICFromRegion(const Region&, const OccupationPolicy&);
-
-		void calculateIC();
-		void resourceConversions();
-
-		void distributeIC();
-		void ICToUpgrades();
-		void ICToReinforcement();
-		void ICToSupplies();
-		void ICToProductionLine();
-		void ICToConsumerGoods();
-		void ICToLendLease();
-		void calculateMoney();
 
 		void increaseProductionItemPriority(const unsigned short);
 		void decreaseProductionItemPriority(const unsigned short);
 		void setProductionItemAtMaxPriority(const unsigned short);
 		void setProductionItemAtMinPriority(const unsigned short);
 		void removeProductionItem(const unsigned short);
-		void addProductionItem(ProductionItem*);
+		void addProductionItem(std::unique_ptr<ProductionItem>&& element);
+		
+		const float setIC(const float IC);
+		void update();
+		
+		static const bool loadFromFile(ifstream& file);
 
-		float baseIC = 0.0f, availableIC = 0.0f, wastedIC = 0.0f, manpower = 0.0f;
-		mutable std::map<Resource, std::pair<float, ResourceChangeSummary>> resources;
-		mutable std::map<ICDistributionCategory, float> ICDistribution, ICNeeds;
+		static Production& getProduction(const Tag& tag) { return production[tag]; }
+		
+	private:
+		
+		Production(const Production&) = default;
+		Production(Production&&) = default;
+		Production() = default;
+		~Production() = default;
+				
+		vector<std::unique_ptr<ProductionItem>> productionLine;
 
-		std::vector<ProductionItem*> productionLine;
-
-		friend class Region;
-		friend class Diplomacy;
+		static unordered_map<Tag, Production> production;
 	};
 }
 
