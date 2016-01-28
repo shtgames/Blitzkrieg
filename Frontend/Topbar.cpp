@@ -26,7 +26,7 @@ namespace fEnd
 	{
 	}
 
-	const bool Topbar::input(const sf::Event &)
+	const bool Topbar::input(const sf::Event&)
 	{
 		return false;
 	}

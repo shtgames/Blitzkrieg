@@ -4,10 +4,11 @@
 
 namespace bEnd
 {
+	std::unordered_map<std::string, unique_ptr<Tech>> Tech::technologies;
+
 	const unsigned char Tech::BASE_RESEARCH_DAYS = 125;
 	const float Tech::TECH_DIFFICULTY_WEIGHT = 0.1f, Tech::AHEAD_OF_TIME_PENALTY_WEIGHT = 1.0f, Tech::XP_TIME_REDUCTION_WEIGHT = 0.05f, Tech::XP_TIME_INCREASE_WEIGHT = 0.1f, Tech::XP_BREAKPOINT = 5.0f;
-	std::map<std::string, const Tech> Tech::technologies;
-
+	
 	const bool Tech::loadFromFile(std::ifstream& file)
 	{
 		return false;

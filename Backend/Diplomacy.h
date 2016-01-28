@@ -56,7 +56,6 @@ namespace bEnd
 		 static std::map<std::pair<Tag, Tag>, std::vector<TradeAgreement>>       tradeAgreements;
 		 static std::unordered_map<std::pair<Tag, Tag>, short>                   relations;
 
-	 friend class economy;
 	};
 }
 

@@ -4,8 +4,6 @@
 #include "Region.h"
 #include "OccupationPolicy.h"
 #include "Tag.h"
-#include "Production.h"
-#include "Leadership.h"
 
 #include <unordered_map>
 #include <set>
@@ -19,18 +17,19 @@ namespace bEnd
 	public:
 
 		Nation(const Nation&) = default;
-		//Nation(Nation&&) = default;
+		Nation(Nation&&) = default;
 		Nation() = default;
 		~Nation() = default;
 
 		Nation& operator=(const Nation&) = default;
-		//Nation& operator=(Nation&&) = default;
+		Nation& operator=(Nation&&) = default;
 
 		static void updateGlobal();
 		static void loadNations();
 		static map<Tag, Nation> nations;
 
 	private:
+
 		enum Continent
 		{
 			Europe,

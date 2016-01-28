@@ -2,7 +2,6 @@
 #define REGION_BACKEND
 
 
-#include "ProductionItem.h"
 #include "Resources.h"
 #include "Tag.h"
 
@@ -11,6 +10,7 @@
 #include <vector>
 #include <mutex>
 #include <set>
+#include <fstream>
 
 using namespace std;
 
@@ -19,35 +19,10 @@ namespace bEnd
 	class Region final
 	{
 	public:
-		enum BuildingType
-		{
-			Airbase,
-			NavalBase,
-			CoastalFort,
-			LandFort,
-			AA,
-			Radar,
-			NuclearReactor,
-			RocketTestSite,
-			Industry,
-			Infrastructure
-		};
-
-		typedef char(BuildingLevel);
-		typedef unsigned char(QueuedBuildingAmount);
+		typedef float(BuildingLevel);
 		typedef pair<BuildingLevel, BuildingLevel>(BuildingLevels);
-
-		class Construction : public ProductionItem
-		{
-		public:
-			Construction(const BuildingType, const unsigned short);
-			~Construction();
-
-			void onCompletion();
-		private:
-			const unsigned short targetRegion;
-			const BuildingType buildingType;
-		};
+		
+		~Region() = default;
 
 		const Tag& getOwner()const { return owner; }
 		const Tag& getController()const { return controller; }
@@ -58,21 +33,31 @@ namespace bEnd
 
 		bool hasCore(const Tag&)const;
 		void addCore(const Tag&);
+		void build(const std::string& building);
+
+		static const bool regionExists(const unsigned short ID) { return regions.count(ID); }
+		static const bool loadFromFile(ifstream& file);
+
+		static Region& getRegion(const unsigned short regionID) { return regions.at(regionID); }
 
 	private:
+
+		Region(const Region&) = default;
+		Region(Region&&) = default;
+		Region() = default;
+
 		void changeOwner(const Tag&);
 		void changeController(const Tag&);
+		
+		bool                                sea = false, initialized = false, capital = false;
+		mutable map<string, BuildingLevels> buildings;
+		mutable map<Resource, float>        resourceGeneration;
+		float                               leadershipGeneration = 0.0f, manpowerGeneration = 0.0f;
+		Tag                                 owner, controller;
+		set<Tag>                            cores;
+		unsigned short                      provID = 0;
 
 		static unordered_map<unsigned short, Region> regions;
-
-		bool                                                                  sea = false, initialized = false, capital = false;
-		mutable map<BuildingType, pair<BuildingLevels, QueuedBuildingAmount>> buildings;
-		mutable map<Resource, float>                                          resourceGeneration;
-		float                                                                 leadershipGeneration = 0.0f, manpowerGeneration = 0.0f;
-		Tag                                                                   owner, controller;
-		set<Tag>                                                              cores;
-		unsigned short                                                        provID = 0;
-
 		static const float ANNEXED_NON_CORE_PENALTY, IC_POINTS_PER_LEVEL;
 	};
 }

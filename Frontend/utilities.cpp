@@ -465,26 +465,28 @@ template <class Element> const bool utl::arrayContainsElement(const std::vector<
 
 const std::vector<sf::Vector2f> utl::concaveHull(const std::vector<sf::Vector2f>& points)
 {
-	std::vector<sf::Vector2f> tri = points;
+	std::vector<sf::Vector2f> returnValue = points;
 
-	sf::Vector2f minPoint;
-	for (auto a : tri){
-		if (a.x < minPoint.x){
-			minPoint = a;
-		}
-		if (a.x == minPoint.x){
-			if (minPoint.y > minPoint.y){
-				minPoint = a;
-			}
-		}
+	sf::Vector2f min;
+	for (auto a : returnValue)
+	{
+		if (a.x < min.x) min = a;
+		if (a.x == min.x && min.y > min.y) min = a;
 	}
 
-	sort(tri.begin(), tri.end(), [minPoint](sf::Vector2f a, sf::Vector2f b){
-		return atan2(minPoint.x - a.x, minPoint.y - a.y) < atan2(minPoint.x - b.x, minPoint.y - b.y); });
-		auto newEnd = unique(tri.begin(), tri.end(), [](sf::Vector2f a, sf::Vector2f b){
-			return (a.x == b.x ? (a.y == b.y) : (a.x == b.y)); });
+	sort(returnValue.begin(), returnValue.end(),
+		[min](sf::Vector2f a, sf::Vector2f b)
+		{
+		return atan2(min.x - a.x, min.y - a.y) < atan2(min.x - b.x, min.y - b.y);
+		});
 
-			tri.erase(newEnd, tri.end());
+	auto newEnd = unique(returnValue.begin(), returnValue.end(),
+		[](sf::Vector2f a, sf::Vector2f b)
+		{
+		return (a.x == b.x ? (a.y == b.y) : (a.x == b.y)); 
+		});
 
-			return tri;
+	returnValue.erase(newEnd, returnValue.end());
+
+	return returnValue;
 }

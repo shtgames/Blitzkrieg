@@ -2,7 +2,7 @@
 #define GAME_GUI
 
 #include "Nation.h"
-#include "..\..\Backend\Source Files\Resources.h"
+#include "..\Backend\Resources.h"
 #include "Date.h"
 
 #include <SFML/Graphics.hpp>
@@ -14,12 +14,14 @@ namespace fEnd
 	class Topbar final : public gui::Interactive
 	{
 	public:
+
 		Topbar(const Nation&);
 		~Topbar()override = default;
 
 		Topbar() = delete;
 		Topbar(const Topbar&) = delete;
 		Topbar(Topbar&&) = delete;
+
 		Topbar& operator=(const Topbar&) = delete;
 		Topbar& operator=(const Topbar&&) = delete;
 
@@ -30,6 +32,7 @@ namespace fEnd
 		const bool input(const sf::Event&)override;
 
 	private:
+
 		void updateValues(const Nation&);
 		void draw(sf::RenderTarget&, sf::RenderStates)const override;
 

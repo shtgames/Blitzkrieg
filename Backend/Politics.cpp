@@ -2,6 +2,8 @@
 
 namespace bEnd
 {
+	unordered_map<Tag, unique_ptr<Politics>> Politics::politics;
+
 	Politics::Politics()
 	{
 	}

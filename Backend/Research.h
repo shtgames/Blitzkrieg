@@ -18,6 +18,8 @@ namespace bEnd
 	{
 	public:
 
+		~Research() = default;
+
 		void increaseResearchItemPriority(const unsigned short);
 		void decreaseResearchItemPriority(const unsigned short);
 		void setResearchItemAtMaxPriority(const unsigned short);
@@ -25,18 +27,22 @@ namespace bEnd
 		void removeResearchItem(const unsigned short);
 		void addResearchItem(const string&);
 
-		const float setLeadership(const float Leadership);
+		void addExperienceRewards(const vector<pair<std::string, float>>&);
+		const float setLeadership(const float leadership);
 		void update();
 
-		static const bool loadFromFile(ifstream&);
+		const map<string, float>& getExperience()const { return experience; }
 
-		static Research& getResearch(const Tag& tag) { return research[tag]; };
+		static const bool loadFromFile(ifstream& file);
+		static const bool exists(const Tag& tag) { if (research.count(tag) && research.at(tag)) return true; return false; }
+		static Research& getResearch(const Tag& tag) { return *research.at(tag); };
 
 	private:
+
 		class ResearchItem final
 		{
 		public:
-			ResearchItem(const string& tech) : tech(tech) {}
+			ResearchItem(const string& tech, const unsigned short days) : tech(tech), researchDays(days) {}
 			ResearchItem(const ResearchItem&) = default;
 			ResearchItem(ResearchItem&&) = default;
 			ResearchItem() = default;
@@ -49,31 +55,30 @@ namespace bEnd
 			const double getCompletionPercentage()const { return completionPercentage; }
 			const Date getComlpetionDate()const;
 
-			ResearchItem& setLeadership(const float dedicatedLS) { if (dedicatedLS >= 0.0f) dedicatedLeadership = dedicatedLS; return *this; }
+			ResearchItem& setLeadership(const float dedicatedLS) { if (dedicatedLS >= 0.0f) dedicatedLeadership = dedicatedLS <= 1.0f ? dedicatedLS : 1.0f; return *this; }
 			ResearchItem& setResearchDays(const unsigned short days) { researchDays = days; return *this; }
 
 			const bool research();
 		private:
 			const string tech;
 
-			unsigned short researchDays = 0.0f;
+			unsigned short researchDays = 0;
 			double completionPercentage = 0.0f;
 			float dedicatedLeadership = 0.0f;
 		};
 
-		Research(const Research&) = default;
+		Research(const Research&);
 		Research(Research&&) = default;
 		Research() = default;
-		~Research() = default;
-
-		Research& operator=(const Research&) = default;
-		Research& operator=(Research&&) = default;
 
 		map<string, float>               experience;
 		map<string, unsigned char>       techLevels;
 		vector<unique_ptr<ResearchItem>> researchQueue;
+		float                            totalDedicatedLeadership = 0.0f;
 
-		static unordered_map<Tag, Research> research;
+		static unordered_map<Tag, unique_ptr<Research>> research;
+
+		static const float EXPERIENCE_CAP;
 	};
 }
 

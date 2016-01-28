@@ -2,7 +2,9 @@
 
 namespace bEnd
 {
-	bEnd::Month& operator++(bEnd::Month& lVal)
+	const Date Date::NEVER = Date(0, 1, January, unsigned short(-1));
+
+	Month& operator++(Month& lVal)
 	{
 		switch (lVal)
 		{
@@ -46,23 +48,18 @@ namespace bEnd
 		return lVal;
 	}
 
-	Date::Date(const unsigned char& _hour, const unsigned char& _day, const Month& _month, const unsigned short& _year)
+	Date::Date(const unsigned char _hour, const unsigned char _day, const Month _month, const unsigned short _year)
+		: year(_year != 0 ? _year : 1), month(_month != 0 && _month <= 12 ? _month : January), hour(_hour <= 24 ? _hour : 0)
 	{
-		_year != 0 ? year = _year : year = 1;
-
-		_month >= 1 && _month <= 12 ? month = _month : month = January;
-
 		if (day != 0 && ((day <= 28 && month == 2 && !isLeapYear()) ||
 			(day <= 29 && month == 2 && isLeapYear()) ||
 			(day <= 30 && (month == 4 || month == 6 || month == 9 || month == 11)) ||
 			(day <= 31 && (month == 1 || month == 3 || month == 5 || month == 7 || month == 8 || month == 10 || month == 12))))
 			day = _day;
 		else day = 1;
-
-		(_hour <= 24 && _hour >= 0) ? hour = _hour : hour = 0;
 	}
 
-	Date::Date(const unsigned long long& _hours)
+	Date::Date(const unsigned long long _hours)
 	{
 		unsigned long long days = _hours / 24;
 
@@ -78,21 +75,15 @@ namespace bEnd
 		hour = _hours % 24;
 	}
 
-	Date::Date()
-	{
-		year = 1;
-		month = January;
-		day = 1;
-		hour = 0;
-	}
+	Date::Date() : year(1), month(January), day(1), hour(0) {}
 
-	Date Date::operator+(const unsigned short& days)const
+	Date Date::operator+(const unsigned short days)const
 	{
 		Date returnValue;
 		return returnValue;
 	}
 
-	Date Date::operator-(const unsigned short& days)const
+	Date Date::operator-(const unsigned short days)const
 	{
 		Date returnValue;
 		return returnValue;

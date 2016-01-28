@@ -1,6 +1,8 @@
 #include "Nation.h"
 
 #include "Diplomacy.h"
+#include "ResourceDistributor.h"
+#include "LeadershipDistributor.h"
 
 #include <map>
 #include <fstream>
@@ -15,18 +17,18 @@ namespace bEnd
 	void Nation::resetIncomeGlobal()
 	{
 		for (auto it = nations.begin(), end = nations.end(); it != end; ++it)
-			it->second.production.resetIncome();
+			ResourceDistributor::getResourceDistributor(it->first).resetIncome();
 	}
 
 	void Nation::updateGlobal()
 	{
 		resetIncomeGlobal();
-		Region::generateResourcesGlobal(nations);
+		//Region::generateResourcesGlobal(nations);
 		Diplomacy::trade();
 		for (auto it = nations.begin(), end = nations.end(); it != end; ++it)
 		{
-			it->second.production.update();
-			it->second.leadership.update();
+			ResourceDistributor::getResourceDistributor(it->first).update();
+			LeadershipDistributor::getLeadershipDistributor(it->first).update();
 		}
 	}
 

@@ -20,14 +20,15 @@ namespace bEnd
 		November,
 		December
 	};
+
 	Month& operator++(Month&);
 
 	class Date final
 	{
 	public:
 
-		Date(const unsigned char& hour, const unsigned char& day, const Month& month, const unsigned short& year);
-		Date(const unsigned long long&);
+		Date(const unsigned char hour, const unsigned char day, const Month month, const unsigned short year);
+		Date(const unsigned long long);
 		Date(const Date&) = default;
 		Date(Date&&) = default;
 		Date();
@@ -36,13 +37,14 @@ namespace bEnd
 		Date& operator=(const Date&) = default;
 		Date& operator=(Date&&) = default;
 
-		Date operator+(const unsigned short&)const;
-		Date operator-(const unsigned short&)const;
+		Date operator+(const unsigned short)const;
+		Date operator-(const unsigned short)const;
 		Date operator+(const Date&)const;
 		Date operator-(const Date&)const;
 
 		Date& operator++();
 		const bool operator<(const Date&)const;
+		const bool operator>(const Date& lVal)const { return !this->operator<(lVal); }
 		const bool operator==(const Date&)const;
 		const bool operator!=(const Date& lVal)const { return !this->operator==(lVal); }
 
@@ -51,12 +53,15 @@ namespace bEnd
 		const Month getMonth()const { return month; }
 		const unsigned char getHour()const { return hour; }
 
+		static const Date NEVER;
+
 	private:
+
 		const bool isLeapYear()const;
 
-		unsigned char day, hour;
-		Month month;
-		unsigned short year;
+		unsigned char day = 1, hour = 0;
+		Month month = January;
+		unsigned short year = 1;
 
 		friend class TimeSystem;
 	};

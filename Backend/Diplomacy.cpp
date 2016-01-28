@@ -1,6 +1,6 @@
 #include "Diplomacy.h"
 
-#include "Nation.h"
+#include "ResourceDistributor.h"
 
 namespace bEnd
 {
@@ -16,10 +16,10 @@ namespace bEnd
 			for (auto it1 = it->second.begin(), end1 = it->second.end(); it1 != end1; ++it1)
 			{
 				const Tag& source = it->first.first, target = it->first.second;
-				if (Nation::nations[source].production.contains(it1->getTradeValues()) && Nation::nations[target].production.contains(it1->flipTradeValues()))
+				if (ResourceDistributor::getResourceDistributor(source).contains(it1->getTradeValues()) && ResourceDistributor::getResourceDistributor(target).contains(it1->flipTradeValues()))
 				{
-					Nation::nations[source].production.transferResourcesFromTrade(it1->getTradeValues());
-					Nation::nations[target].production.transferResourcesFromTrade(it1->flipTradeValues());
+					ResourceDistributor::getResourceDistributor(source).transferResourcesFromTrade(it1->getTradeValues());
+					ResourceDistributor::getResourceDistributor(target).transferResourcesFromTrade(it1->flipTradeValues());
 				}
 			}
 	}

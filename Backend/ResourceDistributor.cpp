@@ -6,19 +6,14 @@
 
 namespace bEnd
 {
+	unordered_map<Tag, unique_ptr<ResourceDistributor>> ResourceDistributor::resourceDistributors;
 	const float ResourceDistributor::BASE_IC = 1.0f;
 
 
 	ResourceDistributor::ResourceDistributor()
 		: baseIC(BASE_IC), availableIC(BASE_IC), wastedIC(0)
 	{
-		resources[Energy];
-		resources[Metal];
-		resources[CrudeOil];
-		resources[RareMaterials];
-		resources[Supplies];
-		resources[Fuel];
-		resources[Money];
+		ICDistribution[ProductionLine].first = 1.0f;
 	}
 
 	const bool ResourceDistributor::contains(const std::map<Resource, float>& _rVal)const
@@ -28,31 +23,14 @@ namespace bEnd
 		return true;
 	}
 
-	void ResourceDistributor::resetIncome()
+	void ResourceDistributor::transferResourcesFromTrade(const std::map<Resource, float>& _source)
 	{
-		baseIC = BASE_IC;
-		availableIC = BASE_IC; // * bonuses;
-		wastedIC = 0;
-
-		for (auto it = resources.begin(), end = resources.end(); it != end; ++it)
-			for (auto it1 = it->second.second.begin(), end1 = it->second.second.end(); it1 != end1; ++it1)
-				it1->second = 0.0f;
-	}
-
-	void ResourceDistributor::update()
-	{
-		calculateIC();
-		resourceConversions();
-		distributeIC();
-		calculateMoney();
-
-		Production::getProduction(tag).update();
-		// Upgrades::...
-	}
-
-	const bool ResourceDistributor::loadFromFile(ifstream& file)
-	{
-		return false;
+		for (auto it = _source.begin(), end = _source.end(); it != end; ++it)
+			if (resources[it->first].first + it->second > 0.0f)
+			{
+				resources[it->first].first += it->second;
+				resources[it->first].second[traded] += it->second;
+			}
 	}
 
 	void ResourceDistributor::transferResourcesFromRegion(const Region& region)
@@ -80,24 +58,90 @@ namespace bEnd
 		baseIC += region.getIC();
 	}
 
-	void ResourceDistributor::transferResourcesFromTrade(const std::map<Resource, float>& _source)
+	void ResourceDistributor::resetIncome()
 	{
-		for (auto it = _source.begin(), end = _source.end(); it != end; ++it)
-			if (resources[it->first].first + it->second > 0.0f)
-			{
-				resources[it->first].first += it->second;
-				resources[it->first].second[traded] += it->second;
-			}
+		baseIC = BASE_IC;
+		availableIC = BASE_IC; // * bonuses;
+		wastedIC = 0;
+
+		for (auto it = resources.begin(), end = resources.end(); it != end; ++it)
+			for (auto it1 = it->second.second.begin(), end1 = it->second.second.end(); it1 != end1; ++it1)
+				it1->second = 0.0f;
 	}
 
+	void ResourceDistributor::update()
+	{
+		calculateIC();
+		resourceConversions();
+		distributeIC();
+		calculateMoney();
+
+		Production::getProduction(tag).update();
+		// Upgrades::...
+	}
+
+	void ResourceDistributor::setICDistributionValue(const ICDistributionCategory category, const double factor)
+	{
+		ICDistribution[category].second = false;
+		const double difference = (factor >= 0.0f ? factor : 0.0f) - ICDistribution[category].first;
+
+		if(difference > 0.0f) do
+		{
+			double min = 1.0f;
+			unsigned char unlockedCategoryCount = 0;
+
+			for (auto it = ICDistribution.begin(), end = ICDistribution.end(); it != end; ++it)
+			{
+				if (it->first == category) continue;
+				if (!it->second.second && !(difference > 0.0f && it->second.first == 0.0f))
+				{
+					unlockedCategoryCount++;
+					if (it->second.first < min) min = it->second.first;
+				}
+			}
+			if (unlockedCategoryCount == 0) break;
+
+			const double changeAmount = difference / unlockedCategoryCount > min ? min : difference / unlockedCategoryCount;
+			for (auto it = ICDistribution.begin(), end = ICDistribution.end(); it != end; ++it)
+				if(it->first != category) it->second.first -= changeAmount;
+
+			ICDistribution[category].first += changeAmount * unlockedCategoryCount;
+
+		} while (ICDistribution[category].first != factor);
+		else
+		{
+			unsigned char unlockedCategoryCount = 0;
+			for (auto it = ICDistribution.begin(), end = ICDistribution.end(); it != end; ++it)
+			{
+				if (it->first == category) continue;
+				if (!it->second.second) unlockedCategoryCount++;
+			}
+
+			const double changeAmount = difference / unlockedCategoryCount;
+			for (auto it = ICDistribution.begin(), end = ICDistribution.end(); it != end; ++it)
+				if (it->first != category) it->second.first -= changeAmount;
+
+			ICDistribution[category].first += changeAmount * unlockedCategoryCount;
+		}
+	}
+
+	void ResourceDistributor::setICDistributionValueLock(const ICDistributionCategory category, const bool lock)
+	{
+		ICDistribution[category].second = lock;
+	}
+
+	const bool ResourceDistributor::loadFromFile(ifstream& file)
+	{
+		return false;
+	}
 
 	void ResourceDistributor::calculateIC()
 	{
 		float usedIC = 0.0f;
 
 		for (auto it = ICDistribution.begin(), end = ICDistribution.end(); it != end; ++it)
-			if (it->second > ICNeeds[it->first]) { wastedIC += it->second - ICNeeds[it->first]; usedIC += ICNeeds[it->first]; }
-			else usedIC += it->second;
+			if (it->second.first > ICNeeds[it->first]) { wastedIC += it->second.first - ICNeeds[it->first]; usedIC += ICNeeds[it->first]; }
+			else usedIC += it->second.first;
 
 		if (baseIC > 0.0f)
 		{
@@ -156,7 +200,7 @@ namespace bEnd
 
 	void ResourceDistributor::distributeIC()
 	{
-		wastedIC += Production::getProduction(tag).setIC(availableIC * ICDistribution[ProductionLine]);
+		wastedIC += Production::getProduction(tag).setIC(availableIC * ICDistribution[ProductionLine].first);
 		// wastedIC += Upgrades::...
 	}
 
