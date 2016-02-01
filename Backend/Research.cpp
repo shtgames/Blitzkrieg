@@ -6,7 +6,7 @@
 namespace bEnd
 {
 	unordered_map<Tag, unique_ptr<Research>> Research::research;
-	const float Research::EXPERIENCE_CAP = 25.0f;
+	const float Research::EXPERIENCE_CAP = 25.0f, Research::EXPERIENCE_DECAY_PERCENTAGE = 0.025f;
 
 	Research::Research(const Research& copy)
 		: experience(copy.experience), techLevels(copy.techLevels)
@@ -22,6 +22,12 @@ namespace bEnd
 		else return Date::NEVER;
 	}
 
+	Research::ResearchItem& Research::ResearchItem::updateResearchDays(const Tag& tag)
+	{
+		researchDays = tech.getResearchDays(Research::get(tag).getTechLevel(tech.getName()), Research::get(tag).getExperience());
+		return *this;
+	}
+
 	const bool Research::ResearchItem::research()
 	{
 		if (dedicatedLeadership > 0.0f) completionPercentage += (100.0f / (researchDays * (1.0f / dedicatedLeadership)));
@@ -30,7 +36,7 @@ namespace bEnd
 
 	void Research::increaseResearchItemPriority(const unsigned short index)
 	{
-		if (index >= 1 && index < researchQueue.size())
+		if (index != 0 && index < researchQueue.size())
 		{
 			researchQueue.at(index - 1).swap(researchQueue.at(index));
 			setLeadership(totalDedicatedLeadership);
@@ -39,7 +45,7 @@ namespace bEnd
 
 	void Research::decreaseResearchItemPriority(const unsigned short index)
 	{
-		if (index >= 0 && index < researchQueue.size() - 1)
+		if (index < researchQueue.size() - 1)
 		{
 			researchQueue.at(index + 1).swap(researchQueue.at(index));
 			setLeadership(totalDedicatedLeadership);
@@ -48,7 +54,7 @@ namespace bEnd
 
 	void Research::setResearchItemAtMaxPriority(const unsigned short index)
 	{
-		if (index >= 1 && index < researchQueue.size())
+		if (index != 0 && index < researchQueue.size())
 		{
 			researchQueue.at(0).swap(researchQueue.at(index));
 			setLeadership(totalDedicatedLeadership);
@@ -57,18 +63,19 @@ namespace bEnd
 
 	void Research::setResearchItemAtMinPriority(const unsigned short index)
 	{
-		if (index >= 0 && index < researchQueue.size() - 1)
+		if (index < researchQueue.size() - 1)
 		{
-			researchQueue.at(researchQueue.size() - 1).swap(researchQueue.at(index));
+			researchQueue.back().swap(researchQueue.at(index));
 			setLeadership(totalDedicatedLeadership);
 		}
 	}
 
 	void Research::removeResearchItem(const unsigned short index)
 	{
-		if (index >= 0 && index < researchQueue.size())
+		if (index < researchQueue.size())
 		{
-			if (*(researchQueue.begin() + index)) techLevels[(*(researchQueue.begin() + index))->getTech()] += (*(researchQueue.begin() + index))->getCompletionPercentage() / 100.0f;
+			if (*(researchQueue.begin() + index)) 
+				techLevels[(*(researchQueue.begin() + index))->getTech().getName()] += (*(researchQueue.begin() + index))->getCompletionPercentage() / 100.0f;
 			researchQueue.erase(researchQueue.begin() + index);
 			setLeadership(totalDedicatedLeadership);
 		}
@@ -76,9 +83,11 @@ namespace bEnd
 
 	void Research::addResearchItem(const std::string& element)
 	{
-		if (Tech::exists(element))
+		if (Tech::exists(element) && techLevels[element] < Tech::get(element).getLevels())
 		{
-			researchQueue.emplace_back(new ResearchItem(element, Tech::getTechnology(element).getResearchDays(techLevels[element], experience)));
+			researchQueue.emplace_back(new ResearchItem(Tech::get(element),
+				Tech::get(element).getResearchDays(techLevels.at(element), experience),
+				(techLevels[element] - int(techLevels[element])) * 100.0f));
 			setLeadership(totalDedicatedLeadership);
 		}
 	}
@@ -86,7 +95,10 @@ namespace bEnd
 	void Research::addExperienceRewards(const vector<pair<std::string, float>>& rewards)
 	{
 		for (auto it = rewards.begin(), end = rewards.end(); it != end; ++it)
+		{
 			experience[it->first] + it->second > EXPERIENCE_CAP ? experience[it->first] = EXPERIENCE_CAP : experience[it->first] += it->second;
+			experienceHasBeenAdded[it->first] = true;
+		}
 	}
 
 	const float Research::setLeadership(float leadership)
@@ -95,12 +107,10 @@ namespace bEnd
 
 		totalDedicatedLeadership = leadership;
 		for (auto it = researchQueue.begin(), end = researchQueue.end(); it != end; ++it)
-			if (*it && Tech::exists((*it)->getTech()))
+			if (*it)
 			{
 				(*it)->setLeadership(leadership);
-				(*it)->setResearchDays(Tech::getTechnology((*it)->getTech()).getResearchDays(techLevels[(*it)->getTech()], experience));
-				if (leadership > 1.0f) leadership -= 1.0f;
-				else leadership = 0.0f;
+				leadership > 1.0f ? leadership -= 1.0f : leadership = 0.0f;
 			}
 			else it = researchQueue.erase(it);
 		return leadership;
@@ -109,15 +119,21 @@ namespace bEnd
 	void Research::update()
 	{
 		for (auto it = researchQueue.begin(), end = researchQueue.end(); it != end; ++it)
-			if (*it && (*it)->research())
+			if (*it)
 			{
-				if (Tech::exists((*it)->getTech()))
+				(*it)->updateResearchDays(tag);
+				if ((*it)->research())
 				{
-					techLevels[(*it)->getTech()]++;
-					addExperienceRewards(Tech::getTechnology((*it)->getTech()).getExperienceRewards());
+					techLevels[(*it)->getTech().getName()] + 1 > (*it)->getTech().getLevels() ? techLevels[(*it)->getTech().getName()] = (*it)->getTech().getLevels() : techLevels[(*it)->getTech().getName()]++;
+					addExperienceRewards((*it)->getTech().getExperienceRewards());
+					it = researchQueue.erase(it);
 				}
-				it = researchQueue.erase(it);
 			}
+			else it = researchQueue.erase(it);
+
+		for (auto it = experience.begin(), end = experience.end(); it != end; ++it)
+			if (experienceHasBeenAdded[it->first]) experienceHasBeenAdded[it->first] = false;
+			else it->second -= it->second * EXPERIENCE_DECAY_PERCENTAGE;
 	}
 
 	const bool Research::loadFromFile(ifstream& file)

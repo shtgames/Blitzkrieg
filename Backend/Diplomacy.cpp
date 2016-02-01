@@ -4,27 +4,27 @@
 
 namespace bEnd
 {
-	std::unordered_map<Tag, std::map<Tag, Diplomacy::warGoal>> Diplomacy::war;
+	/*std::unordered_map<Tag, std::map<Tag, Diplomacy::warGoal>> Diplomacy::war;
 	std::unordered_map<Tag, std::pair<std::set<Tag>, std::set<Tag>>> Diplomacy::guarantee, Diplomacy::embargo, Diplomacy::transitRights;
 	std::unordered_map<Tag, std::set<Tag>> Diplomacy::alliance, Diplomacy::nonAggressionPact;
 	std::map<std::pair<Tag, Tag>, std::vector<TradeAgreement>> Diplomacy::tradeAgreements;
-	std::unordered_map<std::pair<Tag, Tag>, short> Diplomacy::relations;
+	std::unordered_map<std::pair<Tag, Tag>, short> Diplomacy::relations;*/
 
 	void Diplomacy::trade()
 	{
-		for (auto it = tradeAgreements.begin(), end = tradeAgreements.end(); it != end; ++it)
+		/*for (auto it = tradeAgreements.begin(), end = tradeAgreements.end(); it != end; ++it)
 			for (auto it1 = it->second.begin(), end1 = it->second.end(); it1 != end1; ++it1)
 			{
 				const Tag& source = it->first.first, target = it->first.second;
-				if (ResourceDistributor::getResourceDistributor(source).contains(it1->getTradeValues()) && ResourceDistributor::getResourceDistributor(target).contains(it1->flipTradeValues()))
+				if (ResourceDistributor::get(source).contains(it1->getTradeValues()) && ResourceDistributor::get(target).contains(it1->flipTradeValues()))
 				{
-					ResourceDistributor::getResourceDistributor(source).transferResourcesFromTrade(it1->getTradeValues());
-					ResourceDistributor::getResourceDistributor(target).transferResourcesFromTrade(it1->flipTradeValues());
+					ResourceDistributor::get(source).transferResourcesFromTrade(it1->getTradeValues());
+					ResourceDistributor::get(target).transferResourcesFromTrade(it1->flipTradeValues());
 				}
-			}
+			}*/
 	}
 
-	void Diplomacy::createAliiance(const Tag& _source, const Tag& _target)
+	/*void Diplomacy::createAliiance(const Tag& _source, const Tag& _target)
 	{
 		alliance[_source].emplace(_target);
 		alliance[_target].emplace(_source);
@@ -158,5 +158,5 @@ namespace bEnd
 	{
 		if (_value >= -200 && _value <= 200)
 			relations[std::make_pair(_source, _target)] = _value;
-	}
+	}*/
 }

@@ -8,27 +8,19 @@
 #include <fstream>
 #include <sstream>
 
-const std::string FLAGDIR = "interface visual/flags/", NATIONSTAGDEFDIR = "countries.csv", NATIONSDEFDIR = "countries.txt";
+const std::string NATIONSTAGDEFDIR = "countries.csv", NATIONSDEFDIR = "countries.txt";
 
 using namespace std;
 
 namespace bEnd
 {
-	void Nation::resetIncomeGlobal()
-	{
-		for (auto it = nations.begin(), end = nations.end(); it != end; ++it)
-			ResourceDistributor::getResourceDistributor(it->first).resetIncome();
-	}
-
 	void Nation::updateGlobal()
 	{
-		resetIncomeGlobal();
-		//Region::generateResourcesGlobal(nations);
-		Diplomacy::trade();
+		//Diplomacy::trade(); ///!!!\\\\/
 		for (auto it = nations.begin(), end = nations.end(); it != end; ++it)
 		{
-			ResourceDistributor::getResourceDistributor(it->first).update();
-			LeadershipDistributor::getLeadershipDistributor(it->first).update();
+			ResourceDistributor::get(it->first).update();
+			LeadershipDistributor::get(it->first).update();
 		}
 	}
 

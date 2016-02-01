@@ -7,6 +7,9 @@
 #include <chrono>
 #include <queue>
 #include <functional>
+#include <mutex>
+#include <atomic>
+#include <vector>
 
 using namespace std;
 
@@ -64,11 +67,12 @@ namespace bEnd
 		static void eventCheck();
 
 		static priority_queue<unique_ptr<EventBase>>             events;
-		static unsigned char                                     gameSpeed;
+		static std::atomic<unsigned char>                        gameSpeed;
 		static chrono::time_point<chrono::high_resolution_clock> timeOfLastUpdate;
-		static float                                             updateIntervals[6];
+		static const std::vector<float>                          updateIntervals;
 		static Date                                              currentDate;
-		static bool                                              paused;
+		static std::atomic<bool>                                 paused;
+		static mutex                                             dateMutex, eventQueueMutex;
 	};
 }
 #endif

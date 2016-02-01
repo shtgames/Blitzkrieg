@@ -5,6 +5,8 @@
 #include "Unit.h"
 #include "Research.h"
 #include "Region.h"
+#include "ResourceDistributor.h"
+#include "TimeSystem.h"
 
 namespace bEnd
 {
@@ -12,7 +14,7 @@ namespace bEnd
 
 	void Production::increaseProductionItemPriority(const unsigned short index)
 	{
-		if (index < productionLine.size() - 1 && index != 0)
+		if (index < productionLine.size() && index != 0)
 		{
 			productionLine.at(index).swap(productionLine.at(index - 1));
 			setIC(totalDedicatedIC);
@@ -21,7 +23,7 @@ namespace bEnd
 
 	void Production::decreaseProductionItemPriority(const unsigned short index)
 	{
-		if (index < productionLine.size() - 1 && index != productionLine.size() - 2)
+		if (index < productionLine.size() - 1)
 		{
 			productionLine.at(index).swap(productionLine.at(index + 1));
 			setIC(totalDedicatedIC);
@@ -30,7 +32,7 @@ namespace bEnd
 
 	void Production::setProductionItemAtMaxPriority(const unsigned short index) 
 	{
-		if (index < productionLine.size() - 1)
+		if (index < productionLine.size() && index != 0)
 		{
 			productionLine.at(index).swap(productionLine.front());
 			setIC(totalDedicatedIC);
@@ -48,7 +50,7 @@ namespace bEnd
 
 	void Production::removeProductionItem(const unsigned short index)
 	{
-		if (index < productionLine.size() - 1) 
+		if (index < productionLine.size()) 
 		{
 			productionLine.erase(productionLine.begin() + index);
 			setIC(totalDedicatedIC); 
@@ -63,9 +65,12 @@ namespace bEnd
 
 	void Production::addProductionItem(const string& element, const unsigned short targetRegion)
 	{
-		if (Unit::unitExists(element))
+		if (Unit::exists(element) && ResourceDistributor::get(tag).getManpowerAmount() <= Unit::get(element).getRequiredManpower())
 		{
-			productionLine.emplace_back(new ProductionItem(element, Unit::getUnit(element).getProductionDays(Research::getResearch(tag).getExperience()), Region::regionExists(targetRegion) ? targetRegion : -1));
+			productionLine.emplace_back(new ProductionItem(Unit::get(element),
+				Unit::get(element).getProductionDays(Research::get(tag).getExperience()), 
+				targetRegion));
+			ResourceDistributor::get(tag).changeManpowerAmount((-1) * Unit::get(element).getRequiredManpower());
 			setIC(totalDedicatedIC);
 		}
 	}
@@ -76,14 +81,11 @@ namespace bEnd
 
 		totalDedicatedIC = IC;
 		for (auto it = productionLine.begin(), end = productionLine.end(); it != end; ++it)
-			if (*it && Unit::exists((*it)->getUnit()))
+			if (*it)
 			{
-				const Unit& unit = Unit::getUnit((*it)->getUnit());
-				const float requiredIC = unit.getRequiredIC(Research::getResearch(tag).getExperience());
+				const float requiredIC = (*it)->getUnit().getRequiredIC(Research::get(tag).getExperience());
 				(*it)->setIC(IC / requiredIC);
-				(*it)->setProductionDays(unit.getProductionDays(Research::getResearch(tag).getExperience()));
-				if (IC > requiredIC) IC -= requiredIC;
-				else IC = 0.0f;
+				IC > requiredIC ? IC -= requiredIC : IC = 0.0f;
 			}
 			else it = productionLine.erase(it);
 		return IC;
@@ -92,16 +94,18 @@ namespace bEnd
 	void Production::update()
 	{
 		for (auto it = productionLine.begin(), end = productionLine.end(); it != end; ++it)
-			if (*it && (*it)->produce())
+			if (*it)
 			{
-				if (Unit::exists((*it)->getUnit()))
+				(*it)->updateProductionDays(tag);
+				if ((*it)->produce())
 				{
-					if (deploy(**it, (*it)->getTargetRegion()));
-					else if (Unit::getUnit((*it)->getUnit()).isDelayDeployable()) awaitingDeployment.push_back(std::move(*it));
-					Research::getResearch(tag).addExperienceRewards(Unit::getUnit((*it)->getUnit()).getExperienceRewards());
+					if (deploy(**it, (*it)->getTarget()));
+					else if ((*it)->getUnit().isDelayDeployable()) awaitingDeployment.push_back(std::move(*it));
+					Research::get(tag).addExperienceRewards((*it)->getUnit().getExperienceRewards());
+					it = productionLine.erase(it);
 				}
-				it = productionLine.erase(it);
 			}
+			else it = productionLine.erase(it);
 	}
 	
 	const bool Production::loadFromFile(ifstream& file)
@@ -111,12 +115,12 @@ namespace bEnd
 
 	const bool Production::deploy(const ProductionItem& item, const unsigned short targetRegion)
 	{
-		if (targetRegion != unsigned short(-1) && Region::regionExists(targetRegion) && Region::getRegion(targetRegion).getController() == tag)
+		if (targetRegion != unsigned short(-1) && Region::exists(targetRegion) && Region::get(targetRegion).getController() == tag)
 		{
-			switch (Unit::getUnit(item.getUnit()).getType())
+			switch (item.getUnit().getType())
 			{
 			case Unit::Building:
-				Region::getRegion(item.getTargetRegion()).build(item.getUnit());
+				Region::get(item.getTarget()).build(item.getUnit());
 			case Unit::Land:
 				///
 			case Unit::Air:
@@ -130,13 +134,25 @@ namespace bEnd
 		return false;
 	}
 
+	Production::ProductionItem::ProductionItem(const Unit& tech, const unsigned short days, const unsigned short region)
+		: unit(tech), productionDays(days), targetRegion(Region::exists(region) ? region : -1) {}
+
 	const Date Production::ProductionItem::getComlpetionDate() const
 	{
-		return Date();
+		if (dedicatedICPercentage > 0.0f)
+			return (TimeSystem::getCurrentDate() + Date((((100.0f - completionPercentage) / 100.0f) * (1.0f / dedicatedICPercentage) * productionDays) * 24));
+		else return Date::NEVER;
+	}
+
+	Production::ProductionItem& Production::ProductionItem::updateProductionDays(const Tag& tag)
+	{
+		productionDays = unit.getProductionDays(Research::get(tag).getExperience());
+		return *this;
 	}
 
 	const bool Production::ProductionItem::produce()
 	{
-		return false;
+		if (dedicatedICPercentage > 0.0f) completionPercentage += (100.0f / (productionDays * (1.0f / dedicatedICPercentage)));
+		return completionPercentage >= 100.0f;
 	}
 };

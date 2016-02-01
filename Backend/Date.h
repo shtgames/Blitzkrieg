@@ -20,9 +20,7 @@ namespace bEnd
 		November,
 		December
 	};
-
-	Month& operator++(Month&);
-
+	
 	class Date final
 	{
 	public:
@@ -50,7 +48,7 @@ namespace bEnd
 
 		const unsigned short getYear()const { return year; }
 		const unsigned char getDay()const { return day; }
-		const Month getMonth()const { return month; }
+		const unsigned char getMonth()const { return month; }
 		const unsigned char getHour()const { return hour; }
 
 		static const Date NEVER;
@@ -60,7 +58,7 @@ namespace bEnd
 		const bool isLeapYear()const;
 
 		unsigned char day = 1, hour = 0;
-		Month month = January;
+		unsigned char month = January;
 		unsigned short year = 1;
 
 		friend class TimeSystem;

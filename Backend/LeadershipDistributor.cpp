@@ -12,7 +12,6 @@ namespace bEnd
 	const float LeadershipDistributor::BASE_LEADERSHIP = 2.0f;
 
 	LeadershipDistributor::LeadershipDistributor()
-		: baseLeadership(2.0f), availableLeadership(2.0f), wastedLeadership(0.0f)
 	{
 		leadershipDistribution[ToResearch].first = 1.0f;
 	}
@@ -20,24 +19,12 @@ namespace bEnd
 	void LeadershipDistributor::update()
 	{
 		distributeLeadership();
-		bEnd::Research::getResearch(tag).update();
+
+		bEnd::Research::get(tag).update();
 		//bEnd::Espionage::
 	}
 
-	void LeadershipDistributor::resetLeadership()
-	{
-		baseLeadership = BASE_LEADERSHIP;
-		availableLeadership = BASE_LEADERSHIP; // * bonuses;
-		wastedLeadership = 0;
-	}
-
-	void LeadershipDistributor::transferLeadership(const Region& region)
-	{
-		baseLeadership += region.getLeadershipGeneration() ;
-		availableLeadership += region.getLeadershipGeneration(); // * bonuses;
-	}
-
-	void LeadershipDistributor::setICDistributionValue(const LeadershipDistributionCategory category, const double factor)
+	void LeadershipDistributor::setLeadershipDistributionValue(const LeadershipDistributionCategory category, const double factor)
 	{
 		leadershipDistribution[category].second = false;
 		const double difference = (factor >= 0.0f ? factor : 0.0f) - leadershipDistribution[category].first;
@@ -82,7 +69,7 @@ namespace bEnd
 		}
 	}
 
-	void LeadershipDistributor::setICDistributionValueLock(const LeadershipDistributionCategory category, const bool lock)
+	void LeadershipDistributor::setLeadershipDistributionValueLock(const LeadershipDistributionCategory category, const bool lock)
 	{
 		leadershipDistribution[category].second = lock;
 	}
@@ -94,7 +81,7 @@ namespace bEnd
 
 	void LeadershipDistributor::distributeLeadership()
 	{
-		wastedLeadership += bEnd::Research::getResearch(tag).setLeadership(availableLeadership * leadershipDistribution[ToResearch].first);
+		wastedLeadership += bEnd::Research::get(tag).setLeadership(leadership.first * leadership.second * leadershipDistribution[ToResearch].first);
 		// wastedLeadership += bEnd::Espionage::
 	}
 };

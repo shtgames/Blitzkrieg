@@ -4,50 +4,6 @@ namespace bEnd
 {
 	const Date Date::NEVER = Date(0, 1, January, unsigned short(-1));
 
-	Month& operator++(Month& lVal)
-	{
-		switch (lVal)
-		{
-		case January:
-			lVal = February;
-			break;
-		case February:
-			lVal = March;
-			break;
-		case March:
-			lVal = April;
-			break;
-		case April:
-			lVal = May;
-			break;
-		case May:
-			lVal = June;
-			break;
-		case June:
-			lVal = July;
-			break;
-		case July:
-			lVal = August;
-			break;
-		case August:
-			lVal = September;
-			break;
-		case September:
-			lVal = October;
-			break;
-		case October:
-			lVal = November;
-			break;
-		case November:
-			lVal = December;
-			break;
-		case December:
-			lVal = January;
-			break;
-		}
-		return lVal;
-	}
-
 	Date::Date(const unsigned char _hour, const unsigned char _day, const Month _month, const unsigned short _year)
 		: year(_year != 0 ? _year : 1), month(_month != 0 && _month <= 12 ? _month : January), hour(_hour <= 24 ? _hour : 0)
 	{

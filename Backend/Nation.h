@@ -21,9 +21,6 @@ namespace bEnd
 		Nation() = default;
 		~Nation() = default;
 
-		Nation& operator=(const Nation&) = default;
-		Nation& operator=(Nation&&) = default;
-
 		static void updateGlobal();
 		static void loadNations();
 		static map<Tag, Nation> nations;
@@ -45,8 +42,6 @@ namespace bEnd
 		bool      major = false;
 
 		static Tag player;
-
-		static void resetIncomeGlobal();
 	};
 }
 #endif

@@ -27,7 +27,7 @@ namespace bEnd
 
 		static const bool loadFronFile(ifstream&);
 		static const bool exists(const Tag& tag) { if (politics.count(tag) && politics.at(tag)) return true; return false; }
-		static Politics& getPolitics(const Tag& tag) { return *politics.at(tag); };
+		static Politics& get(const Tag& tag) { return *politics.at(tag); };
 
 	private:
 

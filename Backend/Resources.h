@@ -11,7 +11,8 @@ namespace bEnd
 		RareMaterials,
 		Supplies,
 		Fuel,
-		Money
+		Money,
+		Last
 	};
 }
 

@@ -26,18 +26,19 @@ namespace bEnd
 
 		~LeadershipDistributor() = default;
 
-		const float getLeadershipDistributionValue(const LeadershipDistributionCategory category)const { return leadershipDistribution[category].first * availableLeadership; }
+		const float getLeadershipDistributionAmount(const LeadershipDistributionCategory category)const { return leadershipDistribution[category].first * leadership.first * leadership.second; }
+
+		void setLeadershipDistributionValue(const LeadershipDistributionCategory category, const double factor);
+		void setLeadershipDistributionValueLock(const LeadershipDistributionCategory category, const bool lock = false);
+
+		const float getLeadershipAmount()const { return leadership.first * leadership.second; }
+		void changeLeadershipAmount(const float amount) { leadership.first + amount >= 0.0f ? leadership.first + amount : leadership.first = 0.0f; }
 
 		void update();
 
-		void resetLeadership();
-		void transferLeadership(const Region& region);
-		void setICDistributionValue(const LeadershipDistributionCategory category, const double factor);
-		void setICDistributionValueLock(const LeadershipDistributionCategory category, const bool lock = false);
-
 		static const bool loadFromFile(ifstream&);
 		static const bool exists(const Tag& tag) { if (leadershipDistributor.count(tag) && leadershipDistributor.at(tag)) return true; return false; }
-		static LeadershipDistributor& getLeadershipDistributor(const Tag& tag) { return *leadershipDistributor.at(tag); }
+		static LeadershipDistributor& get(const Tag& tag) { return *leadershipDistributor.at(tag); }
 
 	private:
 
@@ -47,9 +48,11 @@ namespace bEnd
 
 		void distributeLeadership();
 
-		float                                                                baseLeadership = 2.0f, availableLeadership = 2.0f, wastedLeadership = 0.0f;
+		float                                                                wastedLeadership = 0.0f;
+		pair<float, float>                                                   leadership = make_pair(BASE_LEADERSHIP, 1.0f);
 		mutable map<LeadershipDistributionCategory, std::pair<double, bool>> leadershipDistribution;
-		const Tag                                                            tag;
+
+		const Tag tag;
 
 		static unordered_map<Tag, unique_ptr<LeadershipDistributor>> leadershipDistributor;
 		static const float BASE_LEADERSHIP;

@@ -6,6 +6,10 @@ namespace bEnd
 	{
 		return 0.0f;
 	}
+	const float Unit::getRequiredManpower() const
+	{
+		return 0.0f;
+	}
 	const unsigned short Unit::getProductionDays(const std::map<std::string, float>& practicalAndTheoreticalKnowledge) const
 	{
 		return 0;

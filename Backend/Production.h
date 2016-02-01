@@ -33,33 +33,30 @@ namespace bEnd
 		
 		static const bool loadFromFile(ifstream& file);
 		static const bool exists(const Tag& tag) { if (production.count(tag) && production.at(tag)) return true; return false; }
-		static Production& getProduction(const Tag& tag) { return *production.at(tag); }
+		static Production& get(const Tag& tag) { return *production.at(tag); }
 		
 	private:
 
 		class ProductionItem
 		{
 		public:
-			ProductionItem(const string& tech, const unsigned short days, const unsigned short region) : unit(tech), productionDays(days), targetRegion(region) {}
+			ProductionItem(const Unit& tech, const unsigned short days, const unsigned short region);
 			ProductionItem(const ProductionItem&) = default;
 			ProductionItem(ProductionItem&&) = default;
 			ProductionItem() = delete;
 			~ProductionItem() = default;
-
-			ProductionItem& operator=(const ProductionItem&) = default;
-			ProductionItem& operator=(ProductionItem&&) = default;
-
-			const string& getUnit()const { return unit; }
+			
+			const Unit& getUnit()const { return unit; }
 			const double getCompletionPercentage()const { return completionPercentage; }
 			const Date getComlpetionDate()const;
-			const unsigned short getTargetRegion()const { return targetRegion; }
+			const unsigned short getTarget()const { return targetRegion; }
 
 			ProductionItem& setIC(const float IC) { if (IC >= 0.0f) dedicatedICPercentage = IC <= 1.0f ? IC : 1.0f; return *this; }
-			ProductionItem& setProductionDays(const unsigned short days) { productionDays = days; return *this; }
+			ProductionItem& updateProductionDays(const Tag& tag);
 
 			const bool produce();
 		private:
-			const string unit;
+			const Unit& unit;
 
 			unsigned short productionDays = 0, targetRegion = -1;
 			double completionPercentage = 0.0f;
@@ -69,16 +66,14 @@ namespace bEnd
 		Production(const Tag& tag) : tag(tag) {}
 		Production(const Production&) = default;
 		Production(Production&&) = default;
-		Production() = default;
+		Production() = delete;
 
 		const bool deploy(const ProductionItem& item, const unsigned short targetRegion);
 		
-		Production& setTag(const Tag& newTag) { tag = newTag; }
-
 		vector<unique_ptr<ProductionItem>> productionLine;
 		vector<unique_ptr<ProductionItem>> awaitingDeployment;
 		float totalDedicatedIC = 0.0f;
-		Tag tag;
+		const Tag tag;
 
 		static unordered_map<Tag, unique_ptr<Production>> production;
 	};

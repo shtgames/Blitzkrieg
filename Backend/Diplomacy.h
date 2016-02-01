@@ -21,7 +21,7 @@ namespace bEnd
 		};
 
 		 static void trade();
-		 static void createAliiance(const Tag&, const Tag&);
+		/* static void createAliiance(const Tag&, const Tag&);
 		 static void dissolveAlliance(const Tag&, const Tag&);
 		 static void declareWar(const Tag&, const Tag&);
 		 static void declareLimitedWar(const Tag&, const Tag&);
@@ -55,7 +55,7 @@ namespace bEnd
 		 static std::unordered_map<Tag, std::set<Tag>>                           alliance, nonAggressionPact;
 		 static std::map<std::pair<Tag, Tag>, std::vector<TradeAgreement>>       tradeAgreements;
 		 static std::unordered_map<std::pair<Tag, Tag>, short>                   relations;
-
+		 */
 	};
 }
 
