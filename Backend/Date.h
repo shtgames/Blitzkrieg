@@ -2,6 +2,7 @@
 #define DATE_BACKEND
 
 #include <string>
+#include <atomic>
 
 namespace bEnd
 {
@@ -27,12 +28,12 @@ namespace bEnd
 
 		Date(const unsigned char hour, const unsigned char day, const Month month, const unsigned short year);
 		Date(const unsigned long long);
-		Date(const Date&) = default;
+		Date(const Date& copy);
 		Date(Date&&) = default;
 		Date();
 		~Date() = default;
 
-		Date& operator=(const Date&) = default;
+		Date& operator=(const Date&);
 		Date& operator=(Date&&) = default;
 
 		Date operator+(const unsigned short)const;
@@ -57,9 +58,9 @@ namespace bEnd
 
 		const bool isLeapYear()const;
 
-		unsigned char day = 1, hour = 0;
-		unsigned char month = January;
-		unsigned short year = 1;
+		std::atomic<unsigned char> day = 1, hour = 0;
+		std::atomic<unsigned char> month = January;
+		std::atomic<unsigned short> year = 1;
 
 		friend class TimeSystem;
 	};

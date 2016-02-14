@@ -10,7 +10,8 @@ namespace bEnd
 	const float ResourceDistributor::BASE_IC = 1.0f, ResourceDistributor::ENERGY_PER_IC_POINT = 2.0f, ResourceDistributor::METAL_PER_IC_POINT = 1.0f, ResourceDistributor::RARE_MATERIALS_PER_IC_POINT = 0.5f;
 
 
-	ResourceDistributor::ResourceDistributor()
+	ResourceDistributor::ResourceDistributor(const Tag& tag)
+		: tag(tag)
 	{
 		manpower.second.second = 1.0f;
 
@@ -23,6 +24,7 @@ namespace bEnd
 
 	const bool ResourceDistributor::contains(const std::map<Resource, float>& _rVal)const
 	{
+		std::lock_guard<std::mutex> guard(resourcesLock);
 		for (auto it = _rVal.begin(), end = _rVal.end(); it != end; ++it)
 			if (resources.at(it->first).first < it->second) return false;
 		return true;
@@ -35,13 +37,15 @@ namespace bEnd
 		distributeIC();
 		calculateMoneyChangeAmount();
 
-		manpower.first += manpower.second.first * manpower.second.first;
+		manpower.first = manpower.first + manpower.second.first * manpower.second.first;
 
 		for (unsigned char it = 0; it < Resource::Last; it++)
 			for (unsigned char it1 = 0; it1 < ResourceChangeCategory::Last; it1++)
 			{
+				resourcesLock.lock();
 				auto& buffer = resources[Resource(it)];
 				buffer.first += buffer.second[ResourceChangeCategory(it1)].first * buffer.second[ResourceChangeCategory(it1)].second;
+				resourcesLock.unlock();
 			}
 
 		Production::get(tag).update();
@@ -51,6 +55,7 @@ namespace bEnd
 
 	void ResourceDistributor::setICDistributionValue(const ICDistributionCategory category, const double factor)
 	{
+		ICDistributionLock.lock();
 		ICDistribution[category].second = false;
 		const double difference = (factor >= 0.0f ? factor : 0.0f) - ICDistribution[category].first;
 
@@ -92,11 +97,14 @@ namespace bEnd
 
 			ICDistribution[category].first += changeAmount * unlockedCategoryCount;
 		}
+		ICDistributionLock.unlock();
 	}
 
 	void ResourceDistributor::setICDistributionValueLock(const ICDistributionCategory category, const bool lock)
 	{
+		ICDistributionLock.lock();
 		ICDistribution[category].second = lock;
+		ICDistributionLock.unlock();
 	}
 
 	const bool ResourceDistributor::loadFromFile(ifstream& file)
@@ -110,6 +118,7 @@ namespace bEnd
 		{
 			float resourceBottleneck = 1.0f;
 
+			resourcesLock.lock();
 			if (resources[Energy].first < IC.first * ENERGY_PER_IC_POINT * resources[Energy].second[Used].second)
 				resourceBottleneck = (resources[Energy].second[Generated].first * resources[Energy].second[Generated].second + resources[Energy].second[Traded].first * resources[Energy].second[Traded].second) / (IC.first * 2.0f * resources[Energy].second[Used].second);
 
@@ -120,6 +129,7 @@ namespace bEnd
 			if (resources[RareMaterials].first < IC.first * RARE_MATERIALS_PER_IC_POINT * resources[RareMaterials].second[Used].second)
 				if ((resources[RareMaterials].second[Generated].first * resources[RareMaterials].second[Generated].second + resources[RareMaterials].second[Traded].first * resources[RareMaterials].second[Traded].second) / (IC.first * 0.5f * resources[RareMaterials].second[Used].second) < resourceBottleneck)
 					resourceBottleneck = (resources[RareMaterials].second[Generated].first * resources[RareMaterials].second[Generated].second + resources[RareMaterials].second[Traded].first * resources[RareMaterials].second[Traded].second) / (IC.first * 0.5f * resources[RareMaterials].second[Used].second);
+			resourcesLock.unlock();
 
 			ICResourceBottleneck = resourceBottleneck;
 		}
@@ -130,6 +140,7 @@ namespace bEnd
 		if (IC.first * IC.second * ICResourceBottleneck > 0.0f)
 		{
 			{
+				resourcesLock.lock();
 				float resourceBottleneck =
 					resources[Energy].first < 0.5f * IC.first * IC.second * ICResourceBottleneck * resources[Energy].second[ConvertedFrom].second ?
 					resources[Energy].first / (0.5f * IC.first * IC.second * ICResourceBottleneck * resources[Energy].second[ConvertedFrom].second)
@@ -152,25 +163,32 @@ namespace bEnd
 
 				resources[Fuel].second[ConvertedTo].first = resourceBottleneck * 0.5f * IC.first * IC.second * ICResourceBottleneck;
 				resources[Fuel].first += resources[Fuel].second[ConvertedTo].first * resources[Fuel].second[ConvertedTo].second;
+				resourcesLock.unlock();
 			}
 		}
 	}
-
-
+	
 	void ResourceDistributor::distributeIC()
 	{
 		wastedIC = 0.0f;
 
-		wastedIC += Production::get(tag).setIC(IC.first * IC.second * ICDistribution[ToProductionLine].first);
+		ICDistributionLock.lock();
+		wastedIC = wastedIC + Production::get(tag).setIC(IC.first * IC.second * ICDistribution[ToProductionLine].first);
 		// wastedIC += Upgrades::...
+		// wastedIC += ...
+		ICDistributionLock.unlock();
 
+		resourcesLock.lock();
 		resources[Energy].second[Used].first = (IC.first * IC.second * ICResourceBottleneck - wastedIC) * ((-1) * ENERGY_PER_IC_POINT);
 		resources[Metal].second[Used].first = (IC.first * IC.second * ICResourceBottleneck - wastedIC) * ((-1) * METAL_PER_IC_POINT);
 		resources[RareMaterials].second[Used].first = (IC.first * IC.second * ICResourceBottleneck - wastedIC) * ((-1) * RARE_MATERIALS_PER_IC_POINT);
+		resourcesLock.unlock();
 	}
 
 	void ResourceDistributor::calculateMoneyChangeAmount()
 	{
-		resources[Money].second[Generated].first = (IC.first * IC.second * ICResourceBottleneck - wastedIC) / 20.0f;		
+		resourcesLock.lock();
+		resources[Money].second[Generated].first = (IC.first * IC.second * ICResourceBottleneck - wastedIC) / 20.0f;
+		resourcesLock.unlock();
 	}	
 }

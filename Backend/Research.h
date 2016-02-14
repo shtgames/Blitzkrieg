@@ -8,7 +8,10 @@
 #include <vector>
 #include <memory>
 #include <map>
+#include <unordered_map>
 #include <fstream>
+#include <atomic>
+#include <mutex>
 
 using namespace std;
 
@@ -28,19 +31,19 @@ namespace bEnd
 		void removeResearchItem(const unsigned short index);
 		void addResearchItem(const string& key);
 
-		void addExperienceRewards(const vector<pair<std::string, float>>& rewards);
+		void addExperienceRewards(const std::string& target, const float amount);
 		const float setLeadership(const float leadership);
 		void update();
 
-		const float getTechLevel(const std::string tech) { return techLevels.at(tech); }
-		const map<string, float>& getExperience()const { return experience; }
+		const float getTechLevel(const std::string& tech)const { std::lock_guard<std::mutex> guard(techLevelsLock); return techLevels.count(tech) ? float(techLevels.at(tech)) : 0.0f; }
+		const float getExperience(const std::string& name)const { std::lock_guard<std::mutex> guard(experienceLock); return experience.count(name) ? float(experience.at(name)) : 0.0f; }
 
 		static const bool loadFromFile(ifstream& file);
 		static const bool exists(const Tag& tag) { if (research.count(tag) && research.at(tag)) return true; return false; }
 		static Research& get(const Tag& tag) { return *research.at(tag); };
 
 	private:
-
+		
 		class ResearchItem final
 		{
 		public:
@@ -48,7 +51,6 @@ namespace bEnd
 				if (percentage >= 0.0f && percentage < 100.0f) completionPercentage = percentage; 
 				else completionPercentage = 0.0f;
 			}
-			ResearchItem(const ResearchItem&) = default;
 			ResearchItem(ResearchItem&&) = default;
 			ResearchItem() = delete;
 			~ResearchItem() = default;
@@ -64,22 +66,22 @@ namespace bEnd
 		private:
 			const Tech& tech;
 
-			unsigned short researchDays = 0;
-			float completionPercentage = 0.0f;
-			float dedicatedLeadership = 0.0f;
+			atomic<unsigned short> researchDays = 0;
+			atomic<float>          completionPercentage = 0.0f;
+			atomic<float>          dedicatedLeadership = 0.0f;
 		};
 
 		Research(const Tag& tag) : tag(tag) {}
-		Research(const Research&);
 		Research(Research&&) = default;
 		Research() = delete;
 
-		map<string, float>               experience;
-		map<string, bool>                experienceHasBeenAdded;
-		map<string, float>               techLevels;
-		vector<unique_ptr<ResearchItem>> researchQueue;
-		float                            totalDedicatedLeadership = 0.0f;
-		const Tag                        tag;
+		mutable map<string, atomic<float>> techLevels;
+		mutable map<string, atomic<float>> experience;
+		map<string, atomic<bool>>          experienceHasBeenAdded;
+		vector<unique_ptr<ResearchItem>>   researchQueue;
+		atomic<float>                      totalDedicatedLeadership = 0.0f;
+		const Tag                          tag;
+		mutable mutex                      researchQueueLock, techLevelsLock, experienceLock;
 
 		static unordered_map<Tag, unique_ptr<Research>> research;
 

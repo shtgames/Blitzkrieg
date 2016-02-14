@@ -31,7 +31,21 @@ namespace bEnd
 		hour = _hours % 24;
 	}
 
-	Date::Date() : year(1), month(January), day(1), hour(0) {}
+	Date::Date(const Date& copy)
+		: hour(copy.getHour()), day(copy.getDay()), month(copy.getMonth()), year(copy.getYear()) {}
+
+	Date::Date()
+		: year(1), month(January), day(1), hour(0) {}
+
+	Date& Date::operator=(const Date& copy)
+	{
+		hour = copy.getHour();
+		day = copy.getDay();
+		month = copy.getMonth();
+		year = copy.getYear();
+
+		return *this;
+	}
 
 	Date Date::operator+(const unsigned short days)const
 	{

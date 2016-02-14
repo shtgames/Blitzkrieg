@@ -9,9 +9,12 @@
 #include <fstream>
 #include <string>
 #include <memory>
+#include <atomic>
+#include <mutex>
 
 namespace bEnd
 {
+	class Tag;
 	class Tech final
 	{
 	public:
@@ -24,11 +27,11 @@ namespace bEnd
 		const std::vector<std::pair<std::string, float>>& getExperienceRewards()const { return experienceRewards; }
 		const std::string& getName()const { return name; }
 
-		const unsigned short getResearchDays(const unsigned char level, const std::map<std::string, float>& practicalAndTheoreticalKnowledge)const;
+		const unsigned short getResearchDays(const Tag& tag)const;
 
 		static const bool loadFromFile(std::ifstream&);
 		static const bool exists(const std::string& tech) { if (technologies.count(tech) && technologies[tech]) return true; return false; }
-		static const Tech& get(const std::string& tech) { return *technologies[tech]; }
+		static const Tech& get(const std::string& tech) { return *technologies.at(tech); }
 
 	private:
 

@@ -11,7 +11,8 @@ namespace bEnd
 
 	const float LeadershipDistributor::BASE_LEADERSHIP = 2.0f;
 
-	LeadershipDistributor::LeadershipDistributor()
+	LeadershipDistributor::LeadershipDistributor(const Tag& tag)
+		: tag(tag)
 	{
 		leadershipDistribution[ToResearch].first = 1.0f;
 	}
@@ -22,10 +23,12 @@ namespace bEnd
 
 		bEnd::Research::get(tag).update();
 		//bEnd::Espionage::
+		//bEnd::...
 	}
 
 	void LeadershipDistributor::setLeadershipDistributionValue(const LeadershipDistributionCategory category, const double factor)
 	{
+		leadershipDistributionLock.lock();
 		leadershipDistribution[category].second = false;
 		const double difference = (factor >= 0.0f ? factor : 0.0f) - leadershipDistribution[category].first;
 
@@ -67,11 +70,14 @@ namespace bEnd
 
 			leadershipDistribution[category].first += changeAmount * unlockedCategoryCount;
 		}
+		leadershipDistributionLock.unlock();
 	}
 
 	void LeadershipDistributor::setLeadershipDistributionValueLock(const LeadershipDistributionCategory category, const bool lock)
 	{
+		leadershipDistributionLock.lock();
 		leadershipDistribution[category].second = lock;
+		leadershipDistributionLock.unlock();
 	}
 
 	const bool LeadershipDistributor::loadFromFile(ifstream& file)
@@ -81,7 +87,9 @@ namespace bEnd
 
 	void LeadershipDistributor::distributeLeadership()
 	{
-		wastedLeadership += bEnd::Research::get(tag).setLeadership(leadership.first * leadership.second * leadershipDistribution[ToResearch].first);
+		leadershipDistributionLock.lock();
+		wastedLeadership = wastedLeadership + bEnd::Research::get(tag).setLeadership(leadership.first * leadership.second * leadershipDistribution[ToResearch].first);
 		// wastedLeadership += bEnd::Espionage::
+		leadershipDistributionLock.unlock();
 	}
 };

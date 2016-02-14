@@ -7,6 +7,8 @@
 #include <unordered_map>
 #include <map>
 #include <memory>
+#include <atomic>
+#include <mutex>
 
 using namespace std;
 
@@ -26,7 +28,7 @@ namespace bEnd
 
 		~LeadershipDistributor() = default;
 
-		const float getLeadershipDistributionAmount(const LeadershipDistributionCategory category)const { return leadershipDistribution[category].first * leadership.first * leadership.second; }
+		const float getLeadershipDistributionAmount(const LeadershipDistributionCategory category)const { lock_guard<mutex> guard(leadershipDistributionLock); return leadershipDistribution[category].first * leadership.first * leadership.second; }
 
 		void setLeadershipDistributionValue(const LeadershipDistributionCategory category, const double factor);
 		void setLeadershipDistributionValueLock(const LeadershipDistributionCategory category, const bool lock = false);
@@ -44,15 +46,18 @@ namespace bEnd
 
 		LeadershipDistributor(const LeadershipDistributor&) = default;
 		LeadershipDistributor(LeadershipDistributor&&) = default;
-		LeadershipDistributor();
+		LeadershipDistributor() = delete;
+		LeadershipDistributor(const Tag& tag);
 
 		void distributeLeadership();
 
-		float                                                                wastedLeadership = 0.0f;
-		pair<float, float>                                                   leadership = make_pair(BASE_LEADERSHIP, 1.0f);
+		atomic<float>                                                        wastedLeadership = 0.0f;
+		pair<atomic<float>, atomic<float>>                                   leadership = make_pair(BASE_LEADERSHIP, 1.0f);
 		mutable map<LeadershipDistributionCategory, std::pair<double, bool>> leadershipDistribution;
 
 		const Tag tag;
+
+		mutable mutex leadershipDistributionLock;
 
 		static unordered_map<Tag, unique_ptr<LeadershipDistributor>> leadershipDistributor;
 		static const float BASE_LEADERSHIP;

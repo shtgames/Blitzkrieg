@@ -9,6 +9,8 @@
 #include <unordered_map>
 #include <vector>
 #include <fstream>
+#include <atomic>
+#include <mutex>
 
 using namespace std;
 
@@ -58,9 +60,9 @@ namespace bEnd
 		private:
 			const Unit& unit;
 
-			unsigned short productionDays = 0, targetRegion = -1;
-			double completionPercentage = 0.0f;
-			float dedicatedICPercentage = 0.0f;
+			atomic<unsigned short> productionDays = 0, targetRegion = -1;
+			atomic<float> completionPercentage = 0.0f;
+			atomic<float> dedicatedICPercentage = 0.0f;
 		};
 
 		Production(const Tag& tag) : tag(tag) {}
@@ -71,9 +73,10 @@ namespace bEnd
 		const bool deploy(const ProductionItem& item, const unsigned short targetRegion);
 		
 		vector<unique_ptr<ProductionItem>> productionLine;
-		vector<unique_ptr<ProductionItem>> awaitingDeployment;
-		float totalDedicatedIC = 0.0f;
+		vector<unique_ptr<ProductionItem>> deploymentQueue;
+		atomic<float> totalDedicatedIC = 0.0f;
 		const Tag tag;
+		mutex productionLineLock, deploymentQueueLock;
 
 		static unordered_map<Tag, unique_ptr<Production>> production;
 	};

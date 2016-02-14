@@ -14,62 +14,77 @@ namespace bEnd
 
 	void Production::increaseProductionItemPriority(const unsigned short index)
 	{
+		productionLineLock.lock();
 		if (index < productionLine.size() && index != 0)
 		{
 			productionLine.at(index).swap(productionLine.at(index - 1));
 			setIC(totalDedicatedIC);
 		}
+		productionLineLock.unlock();
 	}
 
 	void Production::decreaseProductionItemPriority(const unsigned short index)
 	{
+		productionLineLock.lock();
 		if (index < productionLine.size() - 1)
 		{
 			productionLine.at(index).swap(productionLine.at(index + 1));
 			setIC(totalDedicatedIC);
 		}
+		productionLineLock.unlock();
 	}
 
 	void Production::setProductionItemAtMaxPriority(const unsigned short index) 
 	{
+		productionLineLock.lock();
 		if (index < productionLine.size() && index != 0)
 		{
 			productionLine.at(index).swap(productionLine.front());
 			setIC(totalDedicatedIC);
 		}
+		productionLineLock.unlock();
 	}
 
 	void Production::setProductionItemAtMinPriority(const unsigned short index)
 	{
+		productionLineLock.lock();
 		if (index < productionLine.size() - 1)
 		{
 			productionLine.at(index).swap(productionLine.back());  
 			setIC(totalDedicatedIC);
 		}
+		productionLineLock.unlock();
 	}
 
 	void Production::removeProductionItem(const unsigned short index)
 	{
+		productionLineLock.lock();
 		if (index < productionLine.size()) 
 		{
 			productionLine.erase(productionLine.begin() + index);
 			setIC(totalDedicatedIC); 
 		}
+		productionLineLock.unlock();
 	}
 
 	void Production::deployUnit(const unsigned short index, const unsigned short targetRegion)
 	{
-		if (index < awaitingDeployment.size() - 1 && awaitingDeployment.at(index) && deploy(*awaitingDeployment.at(index), targetRegion))
-			awaitingDeployment.erase(awaitingDeployment.begin() + index);
+		deploymentQueueLock.lock();
+		if (index < deploymentQueue.size() - 1 && deploymentQueue.at(index) && deploy(*deploymentQueue.at(index), targetRegion))
+			deploymentQueue.erase(deploymentQueue.begin() + index);
+		deploymentQueueLock.unlock();
 	}
 
 	void Production::addProductionItem(const string& element, const unsigned short targetRegion)
 	{
 		if (Unit::exists(element) && ResourceDistributor::get(tag).getManpowerAmount() <= Unit::get(element).getRequiredManpower())
 		{
+			productionLineLock.lock();
 			productionLine.emplace_back(new ProductionItem(Unit::get(element),
-				Unit::get(element).getProductionDays(Research::get(tag).getExperience()), 
+				Unit::get(element).getProductionDays(tag), 
 				targetRegion));
+			productionLineLock.unlock();
+
 			ResourceDistributor::get(tag).changeManpowerAmount((-1) * Unit::get(element).getRequiredManpower());
 			setIC(totalDedicatedIC);
 		}
@@ -80,19 +95,22 @@ namespace bEnd
 		if (IC < 0.0f) IC = 0.0f;
 
 		totalDedicatedIC = IC;
+		productionLineLock.lock();
 		for (auto it = productionLine.begin(), end = productionLine.end(); it != end; ++it)
 			if (*it)
 			{
-				const float requiredIC = (*it)->getUnit().getRequiredIC(Research::get(tag).getExperience());
+				const float requiredIC = (*it)->getUnit().getRequiredIC(tag);
 				(*it)->setIC(IC / requiredIC);
 				IC > requiredIC ? IC -= requiredIC : IC = 0.0f;
 			}
 			else it = productionLine.erase(it);
+		productionLineLock.unlock();
 		return IC;
 	}
 
 	void Production::update()
 	{
+		productionLineLock.lock();
 		for (auto it = productionLine.begin(), end = productionLine.end(); it != end; ++it)
 			if (*it)
 			{
@@ -100,12 +118,15 @@ namespace bEnd
 				if ((*it)->produce())
 				{
 					if (deploy(**it, (*it)->getTarget()));
-					else if ((*it)->getUnit().isDelayDeployable()) awaitingDeployment.push_back(std::move(*it));
-					Research::get(tag).addExperienceRewards((*it)->getUnit().getExperienceRewards());
+					else if ((*it)->getUnit().isDelayDeployable()) deploymentQueue.push_back(std::move(*it));
+
+					for (auto it1 = (*it)->getUnit().getExperienceRewards().begin(), end1 = (*it)->getUnit().getExperienceRewards().end(); it != end; ++it)
+						Research::get(tag).addExperienceRewards(it1->first, it1->second);
 					it = productionLine.erase(it);
 				}
 			}
 			else it = productionLine.erase(it);
+		productionLineLock.unlock();
 	}
 	
 	const bool Production::loadFromFile(ifstream& file)
@@ -115,12 +136,12 @@ namespace bEnd
 
 	const bool Production::deploy(const ProductionItem& item, const unsigned short targetRegion)
 	{
-		if (targetRegion != unsigned short(-1) && Region::exists(targetRegion) && Region::get(targetRegion).getController() == tag)
+		if (Region::exists(targetRegion) && Region::get(targetRegion).getController() == tag)
 		{
 			switch (item.getUnit().getType())
 			{
 			case Unit::Building:
-				Region::get(item.getTarget()).build(item.getUnit());
+				Region::get(targetRegion).build(item.getUnit());
 			case Unit::Land:
 				///
 			case Unit::Air:
@@ -146,13 +167,13 @@ namespace bEnd
 
 	Production::ProductionItem& Production::ProductionItem::updateProductionDays(const Tag& tag)
 	{
-		productionDays = unit.getProductionDays(Research::get(tag).getExperience());
+		productionDays = unit.getProductionDays(tag);
 		return *this;
 	}
 
 	const bool Production::ProductionItem::produce()
 	{
-		if (dedicatedICPercentage > 0.0f) completionPercentage += (100.0f / (productionDays * (1.0f / dedicatedICPercentage)));
+		if (dedicatedICPercentage > 0.0f) completionPercentage = completionPercentage + (100.0f / (productionDays * (1.0f / dedicatedICPercentage)));
 		return completionPercentage >= 100.0f;
 	}
 };

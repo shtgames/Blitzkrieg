@@ -1,7 +1,17 @@
 #ifndef GAME_TAG
 #define GAME_TAG
 
-#include <unordered_map>
+#include <mutex>
+
+namespace bEnd
+{
+	class Tag;
+}
+
+namespace std
+{
+	template<> struct hash<bEnd::Tag>;
+}
 
 namespace bEnd
 {
@@ -9,12 +19,12 @@ namespace bEnd
 	{
 	public:
 		Tag(const std::string&);
-		Tag(const Tag&) = default;
+		Tag(const Tag& tag) : a(tag.a), b(tag.b), c(tag.c) {};
 		Tag(Tag&&) = default;
 		~Tag() = default;
-		Tag() : a(0), b(0), c(0) {}
+		Tag() : a('N'), b('U'), c('L') {}
 
-		Tag& operator=(const Tag&) = default;
+		Tag& operator=(const Tag& tag) { a = tag.a; b = tag.b; c = tag.c; return *this; };
 		Tag& operator=(Tag&&) = default;
 
 		Tag& operator=(const std::string&);
@@ -27,12 +37,11 @@ namespace bEnd
 
 		operator const std::string()const;
 
-		const char& getA()const { return a; }
-		const char& getB()const { return b; }
-		const char& getC()const { return c; }
-
 	private:
-		char a = 0, b = 0, c = 0;
+		char a, b, c;
+		mutable std::mutex lock;
+
+		friend struct std::hash<Tag>;
 	};
 }
 
@@ -42,7 +51,7 @@ namespace std
 	{
 		size_t operator()(const bEnd::Tag& val) const
 		{
-			return size_t(0) | (hash<char>()(val.getA()) | (hash<char>()(val.getB()) << sizeof(char)) | (hash<char>()(val.getC()) << 2 * sizeof(char)));
+			return size_t(0) | (hash<char>()(val.a) | (hash<char>()(val.b) << sizeof(char)) | (hash<char>()(val.c) << 2 * sizeof(char)));
 		}
 	};
 
@@ -61,15 +70,7 @@ namespace std
 			return hash<bEnd::Tag>()(val.first) | (hash<bEnd::Tag>()(val.second) << 3 * sizeof(char));
 		}
 	};
-
-	template <> struct less<bEnd::Tag>
-	{
-		bool operator()(const bEnd::Tag& lVal, const bEnd::Tag& rVal) const
-		{
-			return lVal < rVal;
-		}
-	};
-
+	
 	template <> struct less<std::pair<bool, bool>>
 	{
 		bool operator()(const std::pair<bool, bool>& lVal, const std::pair<bool, bool>& rVal) const
