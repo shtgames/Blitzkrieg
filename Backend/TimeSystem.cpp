@@ -1,7 +1,5 @@
 #include "TimeSystem.h"
 
-#include "Nation.h"
-
 namespace bEnd
 {
 	priority_queue<unique_ptr<Event>>                 TimeSystem::events;
@@ -21,7 +19,7 @@ namespace bEnd
 	{
 		if (gameSpeed != 0 && (gameTime.now() - timeOfLastUpdate).count() > updateIntervals.at(gameSpeed))
 		{
-			if (currentDate.getDay() != (++currentDate).getDay()) Nation::updateGlobal();
+			if (currentDate.getDay() != (++currentDate).getDay()) 0;
 			eventCheck();
 			timeOfLastUpdate = gameTime.now();
 		}
