@@ -12,7 +12,7 @@ namespace bEnd
 	const Date Research::ResearchItem::getComlpetionDate()const
 	{
 		if (dedicatedLeadership > 0.0f)
-			return (TimeSystem::getCurrentDate() + Date((((100.0f - completionPercentage) / 100.0f) * (1.0f / dedicatedLeadership) * researchDays) * 24));
+			return (TimeSystem::getCurrentDate() + (((100.0f - completionPercentage) / 100.0f) * (1.0f / dedicatedLeadership) * researchDays) * 24);
 		else return Date::NEVER;
 	}
 

@@ -397,11 +397,11 @@ const std::vector<sf::Vector2f> utl::convexHull(const std::vector<sf::Vector2f>&
 {
 	std::vector<sf::Vector2f> returnValue;
 	returnValue.push_back(leftmostPoint(_shape));
-	for (std::vector<sf::Vector2f>::const_iterator it = _shape.begin(); it != _shape.end(); ++it)
+
+	for (auto it = _shape.begin(); it != _shape.end(); ++it)
 	{
 		bool allPointWereToTheLeft = true;
-		for (std::vector<sf::Vector2f>::const_iterator it1 = _shape.begin(); it1 != _shape.end(); ++it1)
-		{
+		for (auto it1 = _shape.begin(); it1 != _shape.end(); ++it1)
 			if (pointPositionRelativeToLine(returnValue.back(), *it, *it1) == RIGHT)
 			{
 				allPointWereToTheLeft = false;
@@ -412,7 +412,7 @@ const std::vector<sf::Vector2f> utl::convexHull(const std::vector<sf::Vector2f>&
 				it = it1;
 				it1 = _shape.begin();
 			}
-		}
+
 		if (allPointWereToTheLeft)
 		{
 			if (*it == *returnValue.begin()) break;

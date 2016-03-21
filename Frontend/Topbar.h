@@ -7,7 +7,7 @@
 
 #include <SFML/Graphics.hpp>
 #include <unordered_map>
-#include <GUI.h>
+#include <GUI/GUI.h>
 
 namespace fEnd
 {

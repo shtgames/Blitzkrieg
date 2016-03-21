@@ -161,7 +161,7 @@ namespace bEnd
 	const Date Production::ProductionItem::getComlpetionDate() const
 	{
 		if (dedicatedICPercentage > 0.0f)
-			return (TimeSystem::getCurrentDate() + Date((((100.0f - completionPercentage) / 100.0f) * (1.0f / dedicatedICPercentage) * productionDays) * 24));
+			return (TimeSystem::getCurrentDate() + (((100.0f - completionPercentage) / 100.0f) * (1.0f / dedicatedICPercentage) * productionDays) * 24);
 		else return Date::NEVER;
 	}
 

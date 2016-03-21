@@ -33,19 +33,21 @@ namespace bEnd
 		Date();
 		~Date() = default;
 
+		explicit operator unsigned long long()const;
+
 		Date& operator=(const Date&);
 		Date& operator=(Date&&) = default;
 
-		Date operator+(const unsigned short)const;
-		Date operator-(const unsigned short)const;
-		Date operator+(const Date&)const;
-		Date operator-(const Date&)const;
+		Date operator+(const unsigned long long hours)const;
+		Date operator-(const unsigned long long hours)const;
+		Date operator+(const Date& amount)const;
+		Date operator-(const Date& amount)const;
 
 		Date& operator++();
-		const bool operator<(const Date&)const;
-		const bool operator>(const Date& lVal)const { return !this->operator<(lVal); }
-		const bool operator==(const Date&)const;
-		const bool operator!=(const Date& lVal)const { return !this->operator==(lVal); }
+		const bool operator<(const Date& date)const;
+		const bool operator>(const Date& date)const;
+		const bool operator==(const Date& date)const;
+		const bool operator!=(const Date& date)const;
 
 		const unsigned short getYear()const { return year; }
 		const unsigned char getDay()const { return day; }
@@ -61,6 +63,8 @@ namespace bEnd
 		std::atomic<unsigned char> day = 1, hour = 0;
 		std::atomic<unsigned char> month = January;
 		std::atomic<unsigned short> year = 1;
+
+		static const unsigned short monthToDays[13];
 
 		friend class TimeSystem;
 	};

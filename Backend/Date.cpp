@@ -3,32 +3,32 @@
 namespace bEnd
 {
 	const Date Date::NEVER = Date(0, 1, January, unsigned short(-1));
+	const unsigned short Date::monthToDays[13] = { 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365 };
 
-	Date::Date(const unsigned char _hour, const unsigned char _day, const Month _month, const unsigned short _year)
-		: year(_year != 0 ? _year : 1), month(_month != 0 && _month <= 12 ? _month : January), hour(_hour <= 24 ? _hour : 0)
+	Date::Date(const unsigned char newHour, const unsigned char newDay, const Month newMonth, const unsigned short newYear)
+		: year(newYear != 0 ? newYear : 1), month(newMonth != 0 && newMonth <= 12 ? newMonth : January), hour(newHour <= 24 ? newHour : 0)
 	{
 		if (day != 0 && ((day <= 28 && month == 2 && !isLeapYear()) ||
 			(day <= 29 && month == 2 && isLeapYear()) ||
 			(day <= 30 && (month == 4 || month == 6 || month == 9 || month == 11)) ||
 			(day <= 31 && (month == 1 || month == 3 || month == 5 || month == 7 || month == 8 || month == 10 || month == 12))))
-			day = _day;
+			day = newDay;
 		else day = 1;
 	}
 
-	Date::Date(const unsigned long long _hours)
+	Date::Date(const unsigned long long hours)
 	{
-		unsigned long long days = _hours / 24;
+		unsigned long long days = hours / 24;
 
 		year = 400 * (days / ((400.0f * 365.0f) + 97.0f)) + 1;
 		year += 100 * ((days % (400 * 365) + 97) / ((100 * 365) + 24)) + ((days % (400 * 365) + 97) < (100 * 365) + 24 ? 1 : 0);
 
 		days -= (year - 1) / 4 - (year - 1) / 100 + (year - 1) / 400;
-		const unsigned short months[13] = { 0, 31, isLeapYear() ? 60 : 59, isLeapYear() ? 91 : 90, isLeapYear() ? 121 : 120, isLeapYear() ? 152 : 151, isLeapYear() ? 182 : 181, isLeapYear() ? 213 : 212, isLeapYear() ? 244 : 243, isLeapYear() ? 274 : 273, isLeapYear() ? 305 : 304, isLeapYear() ? 335 : 334, isLeapYear() ? 366 : 365 };
-		for (month = January; month < 13, days > months[month]; month++);
+		
+		for (month = January; month < 13, days > monthToDays[month] + (month >= 2 ? (isLeapYear() ? 1 : 0) : 0); month++);
+		day = days - monthToDays[month - 1];
 
-		day = days - months[month - 1];
-
-		hour = _hours % 24;
+		hour = hours  % 24;
 	}
 
 	Date::Date(const Date& copy)
@@ -36,6 +36,12 @@ namespace bEnd
 
 	Date::Date()
 		: year(1), month(January), day(1), hour(0) {}
+
+	Date::operator unsigned long long() const
+	{
+		return (int(year * 97.0f / 400.0f) + year * 365 +
+			monthToDays[month - 1] + (month - 1 >= 2 ? (isLeapYear() ? 1 : 0) : 0) + day) * 24 + hour;
+	}
 
 	Date& Date::operator=(const Date& copy)
 	{
@@ -47,28 +53,24 @@ namespace bEnd
 		return *this;
 	}
 
-	Date Date::operator+(const unsigned short days)const
+	Date Date::operator+(const unsigned long long hours)const
 	{
-		Date returnValue;
-		return returnValue;
+		return Date(unsigned long long(*this) + hours);
 	}
 
-	Date Date::operator-(const unsigned short days)const
+	Date Date::operator-(const unsigned long long hours)const
 	{
-		Date returnValue;
-		return returnValue;
+		return Date(unsigned long long(*this) - hours);
 	}
 
-	Date Date::operator+(const Date& _Date)const
+	Date Date::operator+(const Date& date)const
 	{
-		Date returnValue;
-		return returnValue;
+		return Date(unsigned long long(*this) + unsigned long long(date));
 	}
 
-	Date Date::operator-(const Date& _Date)const
+	Date Date::operator-(const Date& date)const
 	{
-		Date returnValue;
-		return returnValue;
+		return Date(unsigned long long(*this) + unsigned long long(date));
 	}
 
 	Date& Date::operator++()
@@ -95,25 +97,35 @@ namespace bEnd
 		return *this;
 	}
 
-	const bool Date::operator<(const Date& _Date)const
+	const bool Date::operator<(const Date& date)const
 	{
-		if (year < _Date.year) return true;
-		else if (year > _Date.year) return false;
+		if (year < date.year) return true;
+		else if (year > date.year) return false;
 
-		if (month < _Date.month) return true;
-		else if (month > _Date.month) return false;
+		if (month < date.month) return true;
+		else if (month > date.month) return false;
 
-		if (day < _Date.day) return true;
-		else if (day > _Date.day) return false;
+		if (day < date.day) return true;
+		else if (day > date.day) return false;
 
-		if (hour < _Date.hour) return true;
+		if (hour < date.hour) return true;
 		else return false;
 	}
 
-	const bool Date::operator==(const Date& _Date)const
+	const bool Date::operator>(const Date& date) const
 	{
-		if (hour == _Date.hour && day == _Date.day && month == _Date.month && year == _Date.year) return true;
+		return !this->operator<(date) && !this->operator==(date);
+	}
+
+	const bool Date::operator==(const Date& date)const
+	{
+		if (hour == date.hour && day == date.day && month == date.month && year == date.year) return true;
 		return false;
+	}
+
+	const bool Date::operator!=(const Date& date) const
+	{
+		return !operator==(date);
 	}
 
 	const bool Date::isLeapYear()const
