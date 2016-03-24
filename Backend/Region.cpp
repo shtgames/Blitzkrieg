@@ -6,11 +6,13 @@
 #include "ResourceDistributor.h"
 #include "LeadershipDistributor.h"
 #include "Unit.h"
+#include "SaveGame.h"
 
 #include <fstream>
 #include <string>
-
-const std::string CACHEDIR = "map/cache/provinces.bin";
+#include <sstream>
+#include <algorithm>
+#include <stack>
 
 using namespace std;
 
@@ -107,9 +109,13 @@ namespace bEnd
 		}
 	}
 
-	const bool Region::loadFromFile(ifstream& file)
+	const bool Region::loadFromMemory(stringstream& source)
 	{
-		return false;
+		while (!source.eof())
+		{
+			const auto statement = std::move(SaveGame::getNextStatement(source));
+			
+		}
 	}
 	
 	const float Region::getLeadership() const

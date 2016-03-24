@@ -16,7 +16,7 @@
 using namespace std;
 
 namespace bEnd
-{ 
+{
 	class Unit;
 	class Region final
 	{
@@ -38,7 +38,7 @@ namespace bEnd
 		void addCore(const Tag&);
 
 		static const bool exists(const unsigned short ID) { return regions.count(ID); }
-		static const bool loadFromFile(ifstream& file);
+		static const bool loadFromMemory(stringstream& source);
 
 		static Region& get(const unsigned short regionID) { return regions.at(regionID); }
 
