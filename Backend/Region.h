@@ -1,9 +1,9 @@
 #ifndef REGION_BACKEND
 #define REGION_BACKEND
 
-
 #include "Resources.h"
 #include "Tag.h"
+#include "SaveGame.h"
 
 #include <map>
 #include <unordered_map>
@@ -20,12 +20,11 @@ namespace bEnd
 	class Unit;
 	class Region final
 	{
-		friend class Production;
 	public:
-		typedef float(BuildingLevel);
-		typedef pair<BuildingLevel, BuildingLevel>(BuildingLevels);
-		
 		~Region() = default;
+
+		void build(const Unit& building);
+		void repairAll();
 
 		const Tag& getOwner()const { return owner; }
 		const Tag& getController()const { return controller; }
@@ -37,12 +36,12 @@ namespace bEnd
 		bool hasCore(const Tag&)const;
 		void addCore(const Tag&);
 
+		static const bool loadFromSave(const SaveGame::Statement& source);
 		static const bool exists(const unsigned short ID) { return regions.count(ID); }
-		static const bool loadFromMemory(stringstream& source);
-
 		static Region& get(const unsigned short regionID) { return regions.at(regionID); }
 
 	private:
+		typedef pair<float, unsigned char>(BuildingLevels);
 
 		Region(const Region&) = default;
 		Region(Region&&) = default;
@@ -52,9 +51,11 @@ namespace bEnd
 		void changeController(const Tag&);
 		void generateResources();
 		void stopGeneratingResources();
-		void build(const Unit& building);
+
+		void repair(const Unit& building, float levels);
 		
-		std::atomic<bool>                                         sea = false, initialized = false, capital = false;
+		std::atomic<unsigned char>                                victoryPoints = 0;
+		std::atomic<bool>                                         sea = false, initialized = false, capital = false, generatingResources = false;
 		mutable map<string, BuildingLevels>                       buildings;
 		mutable map<Resource, pair<atomic<float>, atomic<float>>> resourceGeneration;
 		pair<atomic<float>, atomic<float>>                        leadership = std::make_pair(0.0f, 1.0f), IC = std::make_pair(0.0f, 1.0f), manpowerGeneration = std::make_pair(0.0f, 1.0f);

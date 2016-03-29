@@ -40,7 +40,7 @@ namespace bEnd
 
 		static const bool loadFromFile(ifstream&);
 		static const bool exists(const Tag& tag) { if (leadershipDistributor.count(tag) && leadershipDistributor.at(tag)) return true; return false; }
-		static LeadershipDistributor& get(const Tag& tag) { return *leadershipDistributor.at(tag); }
+		static LeadershipDistributor& get(const Tag& tag) { return *leadershipDistributor[tag]; }
 
 	private:
 

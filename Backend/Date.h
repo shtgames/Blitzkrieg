@@ -26,17 +26,17 @@ namespace bEnd
 	{
 	public:
 
-		Date(const unsigned char hour, const unsigned char day, const Month month, const unsigned short year);
-		Date(const unsigned long long);
-		Date(const Date& copy);
-		Date(Date&&) = default;
-		Date();
+		Date(const Date& copy) = default;
+		Date(Date&& temp) = default;
+		Date() = default;
 		~Date() = default;
+		Date(const unsigned char hour, const unsigned char day, const Month month, const unsigned short year);
+		Date(const unsigned long long hours);
+
+		Date& operator=(const Date& copy) = default;
+		Date& operator=(Date&& temp) = default;
 
 		explicit operator unsigned long long()const;
-
-		Date& operator=(const Date&);
-		Date& operator=(Date&&) = default;
 
 		Date operator+(const unsigned long long hours)const;
 		Date operator-(const unsigned long long hours)const;
@@ -49,10 +49,10 @@ namespace bEnd
 		const bool operator==(const Date& date)const;
 		const bool operator!=(const Date& date)const;
 
-		const unsigned short getYear()const { return year; }
-		const unsigned char getDay()const { return day; }
-		const unsigned char getMonth()const { return month; }
-		const unsigned char getHour()const { return hour; }
+		const unsigned short getYear()const;
+		const unsigned char getDay()const;
+		const unsigned char getMonth()const;
+		const unsigned char getHour()const;
 
 		static const Date NEVER;
 

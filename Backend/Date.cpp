@@ -2,7 +2,7 @@
 
 namespace bEnd
 {
-	const Date Date::NEVER = Date(0, 1, January, unsigned short(-1));
+	const Date Date::NEVER = Date(24, 31, December, unsigned short(-1));
 	const unsigned short Date::monthToDays[13] = { 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365 };
 
 	Date::Date(const unsigned char newHour, const unsigned char newDay, const Month newMonth, const unsigned short newYear)
@@ -31,26 +31,11 @@ namespace bEnd
 		hour = hours  % 24;
 	}
 
-	Date::Date(const Date& copy)
-		: hour(copy.getHour()), day(copy.getDay()), month(copy.getMonth()), year(copy.getYear()) {}
-
-	Date::Date()
-		: year(1), month(January), day(1), hour(0) {}
-
 	Date::operator unsigned long long() const
 	{
-		return (int(year * 97.0f / 400.0f) + year * 365 +
-			monthToDays[month - 1] + (month - 1 >= 2 ? (isLeapYear() ? 1 : 0) : 0) + day) * 24 + hour;
-	}
-
-	Date& Date::operator=(const Date& copy)
-	{
-		hour = copy.getHour();
-		day = copy.getDay();
-		month = copy.getMonth();
-		year = copy.getYear();
-
-		return *this;
+		return (year * 365 + const unsigned short(year * (97.0f / 400.0f)) +
+			monthToDays[month - 1] + (month - 1 >= 2 ? (isLeapYear() ? 1 : 0) : 0) +
+			day) * 24 + hour;
 	}
 
 	Date Date::operator+(const unsigned long long hours)const
@@ -119,8 +104,7 @@ namespace bEnd
 
 	const bool Date::operator==(const Date& date)const
 	{
-		if (hour == date.hour && day == date.day && month == date.month && year == date.year) return true;
-		return false;
+		return hour == date.hour && day == date.day && month == date.month && year == date.year;
 	}
 
 	const bool Date::operator!=(const Date& date) const
@@ -128,10 +112,28 @@ namespace bEnd
 		return !operator==(date);
 	}
 
+	const unsigned short Date::getYear() const
+	{
+		return year;
+	}
+
+	const unsigned char Date::getDay() const
+	{
+		return day;
+	}
+
+	const unsigned char Date::getMonth() const
+	{
+		return month;
+	}
+
+	const unsigned char Date::getHour() const
+	{
+		return hour;
+	}
+
 	const bool Date::isLeapYear()const
 	{
-		if (year % 400 == 0) return true;
-		if (year % 4 == 0 && year % 100 != 0) return true;
-		return false;
+		return (year % 4 == 0 && year % 100 != 0) || year % 400 == 0;
 	}
 }

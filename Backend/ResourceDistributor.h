@@ -63,7 +63,7 @@ namespace bEnd
 
 		static const bool loadFromFile(ifstream&);
 		static const bool exists(const Tag& tag) { if (resourceDistributors.count(tag) && resourceDistributors.at(tag)) return true; return false; }
-		static ResourceDistributor& get(const Tag& tag) { return *resourceDistributors.at(tag); }
+		static ResourceDistributor& get(const Tag& tag) { return *resourceDistributors[tag]; }
 
 	private:
 
