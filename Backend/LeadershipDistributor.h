@@ -2,6 +2,7 @@
 #define LEADERSHIP_DISTRIBUTOR_BACKEND
 
 #include "Tag.h"
+#include "FileProcessor.h"
 
 #include <fstream>
 #include <unordered_map>
@@ -28,6 +29,8 @@ namespace bEnd
 
 		~LeadershipDistributor() = default;
 
+		const bool loadFromSave(const FileProcessor::Statement& source);
+
 		const float getLeadershipDistributionAmount(const LeadershipDistributionCategory category)const { lock_guard<mutex> guard(leadershipDistributionLock); return leadershipDistribution[category].first * leadership.first * leadership.second; }
 
 		void setLeadershipDistributionValue(const LeadershipDistributionCategory category, const double factor);
@@ -38,7 +41,6 @@ namespace bEnd
 
 		void update();
 
-		static const bool loadFromFile(ifstream&);
 		static const bool exists(const Tag& tag) { if (leadershipDistributor.count(tag) && leadershipDistributor.at(tag)) return true; return false; }
 		static LeadershipDistributor& get(const Tag& tag) { return *leadershipDistributor[tag]; }
 

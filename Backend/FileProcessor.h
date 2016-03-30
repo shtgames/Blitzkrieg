@@ -9,12 +9,12 @@
 
 namespace bEnd
 {
-	class SaveGame final : private std::ifstream
+	class FileProcessor final : private std::ifstream
 	{
 	public:
 		struct Statement final
 		{
-			friend class SaveGame;
+			friend class FileProcessor;
 		public:
 			Statement(const Statement& copy) = default;
 			Statement(Statement&& temp) = default;
@@ -31,13 +31,13 @@ namespace bEnd
 			Statement() = default;
 		};
 
-		SaveGame(const SaveGame& copy) = default;
-		SaveGame(SaveGame&& temp) = default;
-		SaveGame() = default;
-		~SaveGame() = default;
+		FileProcessor(const FileProcessor& copy) = default;
+		FileProcessor(FileProcessor&& temp) = default;
+		FileProcessor() = default;
+		~FileProcessor() = default;
 
-		SaveGame& operator=(const SaveGame& copy) = default;
-		SaveGame& operator=(SaveGame&& temp) = default;
+		FileProcessor& operator=(const FileProcessor& copy) = default;
+		FileProcessor& operator=(FileProcessor&& temp) = default;
 
 		const bool open(const std::string& filePath);
 

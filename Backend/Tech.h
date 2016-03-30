@@ -2,6 +2,7 @@
 #define TECH_BACKEND
 
 #include "Date.h"
+#include "FileProcessor.h"
 
 #include <unordered_map>
 #include <map>
@@ -24,12 +25,12 @@ namespace bEnd
 		const unsigned char getDifficulty()const { return difficulty; }
 		const unsigned char getLevels()const { return yearsByLevel.size(); }
 		const unsigned short getYear(const unsigned char level)const { return level < yearsByLevel.size() ? yearsByLevel[level] : 0; }
-		const std::vector<std::pair<std::string, float>>& getExperienceRewards()const { return experienceRewards; }
+		const std::unique_ptr<const std::string>& getExperienceRewards()const { return experienceReward; }
 		const std::string& getName()const { return name; }
 
 		const unsigned short getResearchDays(const Tag& tag)const;
 
-		static const bool loadFromFile(std::ifstream&);
+		static const bool loadFromFile(const FileProcessor::Statement& source);
 		static const bool exists(const std::string& tech) { if (technologies.count(tech) && technologies[tech]) return true; return false; }
 		static const Tech& get(const std::string& tech) { return *technologies.at(tech); }
 
@@ -44,7 +45,7 @@ namespace bEnd
 		unsigned char difficulty = 0;
 		std::vector<unsigned short> yearsByLevel;
 		std::map<std::string, float> experienceModifierWeights;
-		std::vector<std::pair<std::string, float>> experienceRewards;
+		std::unique_ptr<const std::string> experienceReward = nullptr;
 
 		static const unsigned char BASE_RESEARCH_DAYS;
 		static const float TECH_DIFFICULTY_WEIGHT, AHEAD_OF_TIME_PENALTY_WEIGHT, XP_TIME_REDUCTION_WEIGHT, XP_TIME_INCREASE_WEIGHT, XP_BREAKPOINT;

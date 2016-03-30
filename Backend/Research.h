@@ -3,6 +3,7 @@
 
 #include "Tag.h"
 #include "Date.h"
+#include "FileProcessor.h"
 
 #include <string>
 #include <vector>
@@ -21,8 +22,9 @@ namespace bEnd
 	class Research final
 	{
 	public:
-
 		~Research() = default;
+
+		const bool loadFromSave(const FileProcessor::Statement& source);
 
 		void increaseResearchItemPriority(const unsigned short index);
 		void decreaseResearchItemPriority(const unsigned short index);
@@ -35,15 +37,13 @@ namespace bEnd
 		const float setLeadership(const float leadership);
 		void update();
 
-		const float getTechLevel(const std::string& tech)const { std::lock_guard<std::mutex> guard(techLevelsLock); return techLevels.count(tech) ? float(techLevels.at(tech)) : 0.0f; }
-		const float getExperience(const std::string& name)const { std::lock_guard<std::mutex> guard(experienceLock); return experience.count(name) ? float(experience.at(name)) : 0.0f; }
+		const float getTechLevel(const std::string& tech)const { std::lock_guard<std::mutex> guard(techLevelsLock); return techLevels.count(tech) ? float(techLevels.at(tech)) : techLevels[tech] = 0.0f; }
+		const float getExperience(const std::string& name)const { std::lock_guard<std::mutex> guard(experienceLock); return experience.count(name) ? float(experience.at(name)) : experience[name] = 0.0f; }
 
-		static const bool loadFromFile(ifstream& file);
 		static const bool exists(const Tag& tag) { if (research.count(tag) && research.at(tag)) return true; return false; }
 		static Research& get(const Tag& tag) { return *research.at(tag); };
 
-	private:
-		
+	private:		
 		class ResearchItem final
 		{
 		public:

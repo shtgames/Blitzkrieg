@@ -1,4 +1,5 @@
 #include "Region.h"
+#include "Tech.h"
 
 #include "LeadershipDistributor.h"
 
@@ -80,9 +81,16 @@ namespace bEnd
 		leadershipDistributionLock.unlock();
 	}
 
-	const bool LeadershipDistributor::loadFromFile(ifstream& file)
+	const bool LeadershipDistributor::loadFromSave(const FileProcessor::Statement& source)
 	{
-		return false;
+		if (source.lValue != "leadership") return false;
+
+		leadershipDistribution[ToResearch].first = std::stod(source.rStrings.at(0));
+		leadershipDistribution[ToEspionage].first = std::stod(source.rStrings.at(1));
+		leadershipDistribution[ToDiplomacy].first = std::stod(source.rStrings.at(2));
+		leadershipDistribution[ToOfficers].first = std::stod(source.rStrings.at(3));
+
+		return true;
 	}
 
 	void LeadershipDistributor::distributeLeadership()

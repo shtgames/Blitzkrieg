@@ -3,7 +3,7 @@
 
 #include "Resources.h"
 #include "Tag.h"
-#include "SaveGame.h"
+#include "FileProcessor.h"
 
 #include <map>
 #include <unordered_map>
@@ -36,7 +36,7 @@ namespace bEnd
 		bool hasCore(const Tag&)const;
 		void addCore(const Tag&);
 
-		static const bool loadFromSave(const SaveGame::Statement& source);
+		static const bool loadFromSave(const FileProcessor::Statement& source);
 		static const bool exists(const unsigned short ID) { return regions.count(ID); }
 		static Region& get(const unsigned short regionID) { return regions.at(regionID); }
 

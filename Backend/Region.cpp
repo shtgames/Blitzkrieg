@@ -1,5 +1,5 @@
 #include "Unit.h"
-#include "SaveGame.h"
+#include "FileProcessor.h"
 
 #include "Region.h"
 
@@ -174,11 +174,11 @@ namespace bEnd
 		///
 	}
 
-	const bool Region::loadFromSave(const SaveGame::Statement& source)
+	const bool Region::loadFromSave(const FileProcessor::Statement& source)
 	{
-		if (!exists(atoi(source.lValue.c_str()))) return false;
+		if (!exists(std::stoi(source.lValue.c_str()))) return false;
 
-		Region& target(regions.at(atoi(source.lValue.c_str())));
+		Region& target(regions.at(std::stoi(source.lValue.c_str())));
 
 		for (auto it = source.rStatements.begin(), end = source.rStatements.end(); it != end; ++it)
 			if (it->lValue == "owner") target.changeOwner(it->rStrings.at(0).substr(1, 3));

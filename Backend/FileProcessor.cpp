@@ -1,4 +1,4 @@
-#include "SaveGame.h"
+#include "FileProcessor.h"
 
 #include <algorithm>
 #include <stack>
@@ -6,9 +6,9 @@
 
 namespace bEnd 
 {
-	std::unordered_map<std::string, std::function<void(const SaveGame::Statement&)>> SaveGame::previewSyntaxMap, SaveGame::loadSyntaxMap;
+	std::unordered_map<std::string, std::function<void(const FileProcessor::Statement&)>> FileProcessor::previewSyntaxMap, FileProcessor::loadSyntaxMap;
 
-	const bool SaveGame::open(const std::string& filePath)
+	const bool FileProcessor::open(const std::string& filePath)
 	{
 		std::ifstream::open(filePath);
 		if (std::ifstream::is_open())
@@ -16,30 +16,30 @@ namespace bEnd
 		return false;
 	}
 
-	void SaveGame::preview()
+	void FileProcessor::preview()
 	{
 		processFile(0);
 	}
 
-	void SaveGame::load()
+	void FileProcessor::load()
 	{
 		processFile(1);
 	}
 
-	void SaveGame::addSyntax(const std::string& statement, const std::function<void(const Statement&)>& codeBlockProcessor, const bool validityCase)
+	void FileProcessor::addSyntax(const std::string& statement, const std::function<void(const Statement&)>& codeBlockProcessor, const bool validityCase)
 	{
 		auto& target(validityCase ? loadSyntaxMap : previewSyntaxMap);
 		target.count(statement) ? target.at(statement) = codeBlockProcessor : target.emplace(std::make_pair(statement, codeBlockProcessor));
 	}
 
-	void SaveGame::addSyntax(const std::string& statement, std::function<void(const Statement&)>&& codeBlockProcessor, const bool validityCase)
+	void FileProcessor::addSyntax(const std::string& statement, std::function<void(const Statement&)>&& codeBlockProcessor, const bool validityCase)
 	{
 		auto& target(validityCase ? loadSyntaxMap : previewSyntaxMap);
 		target.count(statement) ? target.at(statement) = std::move(codeBlockProcessor) :
 			target.emplace(std::make_pair(statement, std::move(codeBlockProcessor)));
 	}
 
-	const SaveGame::Statement SaveGame::getNextStatement(std::istream& source)
+	const FileProcessor::Statement FileProcessor::getNextStatement(std::istream& source)
 	{
 		Statement returnValue;
 
@@ -85,7 +85,7 @@ namespace bEnd
 		return returnValue;
 	}
 
-	void SaveGame::processFile(const bool asPreviewOrLoad)
+	void FileProcessor::processFile(const bool asPreviewOrLoad)
 	{
 		auto& syntaxMap(asPreviewOrLoad ? loadSyntaxMap : previewSyntaxMap);
 		if (statementsVectorNeedsUpdate)
@@ -106,7 +106,7 @@ namespace bEnd
 			if (syntaxMap.count(it->lValue)) syntaxMap.at(it->lValue)(*it);
 	}
 
-	void SaveGame::skipWhitespace(std::istream& source)
+	void FileProcessor::skipWhitespace(std::istream& source)
 	{
 		char input;
 		do 

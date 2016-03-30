@@ -2,6 +2,7 @@
 #define UNIT_BACKEND
 
 #include "Resources.h"
+#include "FileProcessor.h"
 
 #include <unordered_map>
 #include <memory>
@@ -28,7 +29,7 @@ namespace bEnd
 		const float getRequiredManpower()const;
 		const unsigned short getProductionDays(const Tag& tag)const;
 		const Type getType()const { return type; }
-		const std::vector<std::pair<std::string, float>>& getExperienceRewards()const { return experienceRewards; }
+		const std::unique_ptr<const std::string>& getExperienceReward()const { return experienceReward; }
 		const bool isDelayDeployable()const { return canAwaitDeployment; }
 
 		const std::string& getName()const { return name; }
@@ -41,7 +42,7 @@ namespace bEnd
 		const float getManpowerAddition()const { return ManpowerAddition; }
 		const float getManpowerMultiplier()const { return ManpowerMultiplier; }
 
-		static const bool loadFromFile(const std::string& file);
+		static const bool loadFromFile(const FileProcessor::Statement& file);
 		static const bool exists(const std::string& unit) { if (units.count(unit) && units.at(unit)) return true; return false; }
 		static const Unit& get(const std::string& unit) { return *units.at(unit); }
 
@@ -56,17 +57,19 @@ namespace bEnd
 		const std::string name;
 		float baseRequiredIC = 0.0f;
 		float baseBuildTime = 0.0f;
-		Type type = Building;
+		float baseRequiredManpower = 0.0f;
+		Type type = Land;
 		bool canAwaitDeployment = false;
 		std::map<std::string, float> experienceModifierWeights;
-		std::vector<std::pair<std::string, float>> experienceRewards;
+		std::unique_ptr<const std::string> experienceReward;
 
 		// Building
-		float ICAddition = 0.0f, ICMultiplier = 0.0f, LeadershipAddition = 0.0f, LeadershipMultiplier = 0.0f, ManpowerAddition = 0.0f, ManpowerMultiplier = 0.0f;
+		float ICAddition = 0.0f, ICMultiplier = 0.0f, LeadershipAddition = 0.0f, LeadershipMultiplier = 0.0f,
+			ManpowerAddition = 0.0f, ManpowerMultiplier = 0.0f;
 		std::unordered_map<Resource, std::pair<float, float>> ResourceAdditionAndMultiplier;
 
 		// Land
-		float baseRequiredManpower = 0.0f;
+		bool canParadrop = false;
 
 		static std::unordered_map<std::string, std::unique_ptr<Unit>> units;
 	};
