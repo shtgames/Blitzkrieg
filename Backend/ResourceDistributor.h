@@ -42,6 +42,8 @@ namespace bEnd
 
 		~ResourceDistributor() = default;
 
+		void loadFromSave(const FileProcessor::Statement&);
+
 		const float getDistributedICAmount(const ICDistributionCategory category)const { lock_guard<mutex> guard(ICDistributionLock); return ICDistribution[category].first * IC.first * IC.second * ICResourceBottleneck; }
 		void setICDistributionValue(const ICDistributionCategory category, const double factor);
 		void setICDistributionValueLock(const ICDistributionCategory category, const bool lock = false);
@@ -61,7 +63,6 @@ namespace bEnd
 		const bool contains(const map<Resource, float>& resources)const;
 		void update();
 
-		static const bool loadFromFile(ifstream&);
 		static const bool exists(const Tag& tag) { if (resourceDistributors.count(tag) && resourceDistributors.at(tag)) return true; return false; }
 		static ResourceDistributor& get(const Tag& tag) { return *resourceDistributors[tag]; }
 

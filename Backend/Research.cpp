@@ -136,14 +136,8 @@ namespace bEnd
 					techLevels[(*it)->getTech().getName()] + 1 > (*it)->getTech().getLevels() ? 
 						techLevels[(*it)->getTech().getName()] = (*it)->getTech().getLevels() :
 						techLevels[(*it)->getTech().getName()] = techLevels[(*it)->getTech().getName()] + 1;
-					if ((*it)->getTech().getExperienceRewards())
-					{
-						experience[*(*it)->getTech().getExperienceRewards()] + 1 > 25.0f ? 
-							experience[*(*it)->getTech().getExperienceRewards()] = 25.0f :
-							experience[*(*it)->getTech().getExperienceRewards()] =
-								experience[*(*it)->getTech().getExperienceRewards()] + 1;
-						experienceHasBeenAdded[*(*it)->getTech().getExperienceRewards()] = true;
-					}
+					if ((*it)->getTech().getExperienceReward())
+						addExperienceRewards(*(*it)->getTech().getExperienceReward(), 1.0f);
 					it = researchQueue.erase(it);
 				}
 			}
@@ -157,7 +151,7 @@ namespace bEnd
 		experienceLock.unlock();
 	}
 
-	const bool Research::loadFromSave(const FileProcessor::Statement& source)
+	void Research::loadTechLevels(const FileProcessor::Statement& source)
 	{
 		for (auto it = source.rStatements.begin(), end = source.rStatements.end(); it != end; ++it)
 			if (it->lValue == "technology")
@@ -167,10 +161,17 @@ namespace bEnd
 					else if (Tech::exists(it->lValue))
 						techLevels[it->lValue] = std::stoi(it->rStrings.at(0)) + std::stof(it->rStrings.at(1));
 			}
-			else if (it->lValue == "nocategory") continue;
-			else if (it->lValue == "research")
-				addResearchItem(it->rStrings.front());
-			else experience[it->lValue] = std::stof(it->rStrings.front());
-		return true;
+	}
+
+	void Research::loadResearchItem(const FileProcessor::Statement& source)
+	{
+		if (source.lValue == "research")
+			addResearchItem(source.rStrings.front());
+	}
+
+	void Research::loadExperienceLevels(const FileProcessor::Statement& source)
+	{
+		if (source.lValue == "nocategory") return;
+		else experience[source.lValue] = std::stof(source.rStrings.front());
 	}
 }

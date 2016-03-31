@@ -12,6 +12,11 @@ namespace bEnd
 {
 	unordered_map<Tag, unique_ptr<Production>> Production::production;
 
+	void Production::loadProductionItem(const FileProcessor::Statement& file)
+	{
+
+	}
+
 	void Production::increaseProductionItemPriority(const unsigned short index)
 	{
 		productionLineLock.lock();
@@ -120,8 +125,8 @@ namespace bEnd
 					if (deploy(**it, (*it)->getTarget()));
 					else if ((*it)->getUnit().isDelayDeployable()) deploymentQueue.push_back(std::move(*it));
 
-					for (auto it1 = (*it)->getUnit().getExperienceRewards().begin(), end1 = (*it)->getUnit().getExperienceRewards().end(); it != end; ++it)
-						Research::get(tag).addExperienceRewards(it1->first, it1->second);
+					if ((*it)->getUnit().getExperienceReward())
+						Research::get(tag).addExperienceRewards(*(*it)->getUnit().getExperienceReward(), 1.0f);
 					it = productionLine.erase(it);
 				}
 			}
@@ -129,11 +134,6 @@ namespace bEnd
 		productionLineLock.unlock();
 	}
 	
-	const bool Production::loadFromFile(ifstream& file)
-	{
-		return false;
-	}
-
 	const bool Production::deploy(const ProductionItem& item, const unsigned short targetRegion)
 	{
 		if (Region::exists(targetRegion) && Region::get(targetRegion).getController() == tag)

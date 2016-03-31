@@ -21,6 +21,8 @@ namespace bEnd
 	{
 	public:
 		~Production() = default;
+
+		void loadProductionItem(const FileProcessor::Statement& file);
 		
 		void increaseProductionItemPriority(const unsigned short index);
 		void decreaseProductionItemPriority(const unsigned short index);
@@ -33,7 +35,6 @@ namespace bEnd
 		const float setIC(float IC);
 		void update();
 		
-		static const bool loadFromFile(ifstream& file);
 		static const bool exists(const Tag& tag) { if (production.count(tag) && production.at(tag)) return true; return false; }
 		static Production& get(const Tag& tag) { return *production.at(tag); }
 		

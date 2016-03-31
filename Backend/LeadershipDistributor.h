@@ -29,7 +29,7 @@ namespace bEnd
 
 		~LeadershipDistributor() = default;
 
-		const bool loadFromSave(const FileProcessor::Statement& source);
+		void loadFromSave(const FileProcessor::Statement& source);
 
 		const float getLeadershipDistributionAmount(const LeadershipDistributionCategory category)const { lock_guard<mutex> guard(leadershipDistributionLock); return leadershipDistribution[category].first * leadership.first * leadership.second; }
 

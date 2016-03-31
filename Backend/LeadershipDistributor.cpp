@@ -18,6 +18,16 @@ namespace bEnd
 		leadershipDistribution[ToResearch].first = 1.0f;
 	}
 
+	void LeadershipDistributor::loadFromSave(const FileProcessor::Statement& source)
+	{
+		if (source.lValue != "leadership") return;
+
+		leadershipDistribution[ToResearch].first = std::stod(source.rStrings.at(0));
+		leadershipDistribution[ToEspionage].first = std::stod(source.rStrings.at(1));
+		leadershipDistribution[ToDiplomacy].first = std::stod(source.rStrings.at(2));
+		leadershipDistribution[ToOfficers].first = std::stod(source.rStrings.at(3));
+	}
+
 	void LeadershipDistributor::update()
 	{
 		distributeLeadership();
@@ -79,18 +89,6 @@ namespace bEnd
 		leadershipDistributionLock.lock();
 		leadershipDistribution[category].second = lock;
 		leadershipDistributionLock.unlock();
-	}
-
-	const bool LeadershipDistributor::loadFromSave(const FileProcessor::Statement& source)
-	{
-		if (source.lValue != "leadership") return false;
-
-		leadershipDistribution[ToResearch].first = std::stod(source.rStrings.at(0));
-		leadershipDistribution[ToEspionage].first = std::stod(source.rStrings.at(1));
-		leadershipDistribution[ToDiplomacy].first = std::stod(source.rStrings.at(2));
-		leadershipDistribution[ToOfficers].first = std::stod(source.rStrings.at(3));
-
-		return true;
 	}
 
 	void LeadershipDistributor::distributeLeadership()

@@ -24,7 +24,9 @@ namespace bEnd
 	public:
 		~Research() = default;
 
-		const bool loadFromSave(const FileProcessor::Statement& source);
+		void loadTechLevels(const FileProcessor::Statement& source);
+		void loadResearchItem(const FileProcessor::Statement& source);
+		void loadExperienceLevels(const FileProcessor::Statement& source);
 
 		void increaseResearchItemPriority(const unsigned short index);
 		void decreaseResearchItemPriority(const unsigned short index);

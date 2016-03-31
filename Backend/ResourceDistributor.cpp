@@ -22,6 +22,11 @@ namespace bEnd
 				resources[Resource(it)].second[ResourceChangeCategory(it1)].second = 1.0f;
 	}
 
+	void ResourceDistributor::loadFromSave(const FileProcessor::Statement& source)
+	{
+
+	}
+
 	const bool ResourceDistributor::contains(const std::map<Resource, float>& _rVal)const
 	{
 		std::lock_guard<std::mutex> guard(resourcesLock);
@@ -106,12 +111,7 @@ namespace bEnd
 		ICDistribution[category].second = lock;
 		ICDistributionLock.unlock();
 	}
-
-	const bool ResourceDistributor::loadFromFile(ifstream& file)
-	{
-		return false;
-	}
-
+	
 	void ResourceDistributor::calculateICResourceBottleneck()
 	{
 		if (IC.first > 0.0f)
