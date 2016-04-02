@@ -14,7 +14,7 @@ namespace bEnd
 
 	void Production::loadProductionItem(const FileProcessor::Statement& file)
 	{
-
+		
 	}
 
 	void Production::increaseProductionItemPriority(const unsigned short index)

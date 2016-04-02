@@ -22,10 +22,16 @@ namespace bEnd
 	{
 		if (source.lValue != "leadership") return;
 
-		leadershipDistribution[ToResearch].first = std::stod(source.rStrings.at(0));
-		leadershipDistribution[ToEspionage].first = std::stod(source.rStrings.at(1));
-		leadershipDistribution[ToDiplomacy].first = std::stod(source.rStrings.at(2));
-		leadershipDistribution[ToOfficers].first = std::stod(source.rStrings.at(3));
+		setLeadershipDistributionValue(ToResearch, std::stof(source.rStrings.at(0)));
+		setLeadershipDistributionValueLock(ToResearch, true);
+		setLeadershipDistributionValue(ToEspionage, std::stof(source.rStrings.at(1)));
+		setLeadershipDistributionValueLock(ToEspionage, true);
+		setLeadershipDistributionValue(ToDiplomacy, std::stof(source.rStrings.at(2)));
+		setLeadershipDistributionValueLock(ToDiplomacy, true);
+
+		setLeadershipDistributionValueLock(ToResearch);
+		setLeadershipDistributionValueLock(ToEspionage);
+		setLeadershipDistributionValueLock(ToDiplomacy);
 	}
 
 	void LeadershipDistributor::update()

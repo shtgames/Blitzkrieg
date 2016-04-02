@@ -174,9 +174,9 @@ namespace bEnd
 		///
 	}
 
-	const bool Region::loadFromSave(const FileProcessor::Statement& source)
+	void Region::loadFromSave(const FileProcessor::Statement& source)
 	{
-		if (!exists(std::stoi(source.lValue.c_str()))) return false;
+		if (!exists(std::stoi(source.lValue.c_str()))) return;
 
 		Region& target(regions.at(std::stoi(source.lValue.c_str())));
 

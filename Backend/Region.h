@@ -36,7 +36,7 @@ namespace bEnd
 		bool hasCore(const Tag&)const;
 		void addCore(const Tag&);
 
-		static const bool loadFromSave(const FileProcessor::Statement& source);
+		static void loadFromSave(const FileProcessor::Statement& source);
 		static const bool exists(const unsigned short ID) { return regions.count(ID); }
 		static Region& get(const unsigned short regionID) { return regions.at(regionID); }
 

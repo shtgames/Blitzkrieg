@@ -25,15 +25,14 @@ namespace bEnd
 	class Date final
 	{
 	public:
-
-		Date(const Date& copy) = default;
+		Date(const Date& copy);
 		Date(Date&& temp) = default;
 		Date() = default;
 		~Date() = default;
 		Date(const unsigned char hour, const unsigned char day, const Month month, const unsigned short year);
 		Date(const unsigned long long hours);
 
-		Date& operator=(const Date& copy) = default;
+		Date& operator=(const Date& copy);
 		Date& operator=(Date&& temp) = default;
 
 		explicit operator unsigned long long()const;
@@ -48,6 +47,11 @@ namespace bEnd
 		const bool operator>(const Date& date)const;
 		const bool operator==(const Date& date)const;
 		const bool operator!=(const Date& date)const;
+
+		Date& setHour(const unsigned char hour);
+		Date& setDay(const unsigned char day);
+		Date& setMonth(const unsigned char month);
+		Date& setYear(const unsigned short year);
 
 		const unsigned short getYear()const;
 		const unsigned char getDay()const;

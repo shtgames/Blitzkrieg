@@ -5,15 +5,14 @@ namespace bEnd
 	const Date Date::NEVER = Date(24, 31, December, unsigned short(-1));
 	const unsigned short Date::monthToDays[13] = { 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365 };
 
+	Date::Date(const Date& copy)
+		: hour(unsigned char(copy.hour)), day(unsigned char(copy.day)), month(unsigned char(copy.month)), year(unsigned short(copy.year))
+	{}
+
 	Date::Date(const unsigned char newHour, const unsigned char newDay, const Month newMonth, const unsigned short newYear)
 		: year(newYear != 0 ? newYear : 1), month(newMonth != 0 && newMonth <= 12 ? newMonth : January), hour(newHour <= 24 ? newHour : 0)
 	{
-		if (day != 0 && ((day <= 28 && month == 2 && !isLeapYear()) ||
-			(day <= 29 && month == 2 && isLeapYear()) ||
-			(day <= 30 && (month == 4 || month == 6 || month == 9 || month == 11)) ||
-			(day <= 31 && (month == 1 || month == 3 || month == 5 || month == 7 || month == 8 || month == 10 || month == 12))))
-			day = newDay;
-		else day = 1;
+		setDay(newDay);
 	}
 
 	Date::Date(const unsigned long long hours)
@@ -29,6 +28,14 @@ namespace bEnd
 		day = days - monthToDays[month - 1];
 
 		hour = hours  % 24;
+	}
+
+	Date& Date::operator=(const Date& copy)
+	{
+		hour = unsigned char(copy.hour);
+		day = unsigned char(copy.day);
+		month = unsigned char(copy.month);
+		year = unsigned short(copy.year);
 	}
 
 	Date::operator unsigned long long() const
@@ -110,6 +117,35 @@ namespace bEnd
 	const bool Date::operator!=(const Date& date) const
 	{
 		return !operator==(date);
+	}
+
+	Date& Date::setHour(const unsigned char newHour)
+	{
+		if (newHour <= 24) hour = newHour;
+		return *this;
+	}
+
+	Date& Date::setDay(const unsigned char newDay)
+	{
+		if (day != 0 && ((day <= 28 && month == 2 && !isLeapYear()) ||
+			(day <= 29 && month == 2 && isLeapYear()) ||
+			(day <= 30 && (month == 4 || month == 6 || month == 9 || month == 11)) ||
+			(day <= 31 && (month == 1 || month == 3 || month == 5 || month == 7 || month == 8 || month == 10 || month == 12))))
+			day = newDay;
+
+		return *this;
+	}
+
+	Date& Date::setMonth(const unsigned char newMonth)
+	{
+		if (newMonth <= 12) month = newMonth;
+		return *this;
+	}
+
+	Date& Date::setYear(const unsigned short newYear)
+	{
+		if (newYear != 0) year = newYear;
+		return *this;
 	}
 
 	const unsigned short Date::getYear() const

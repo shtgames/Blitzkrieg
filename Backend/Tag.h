@@ -1,7 +1,8 @@
 #ifndef GAME_TAG
 #define GAME_TAG
 
-#include <mutex>
+#include <atomic>
+#include <string>
 
 namespace bEnd
 {
@@ -19,12 +20,12 @@ namespace bEnd
 	{
 	public:
 		Tag(const std::string&);
-		Tag(const Tag& tag) : a(tag.a), b(tag.b), c(tag.c) {};
+		Tag(const Tag& tag) : a(char(tag.a)), b(char(tag.b)), c(char(tag.c)) {};
 		Tag(Tag&&) = default;
 		~Tag() = default;
 		Tag() : a('N'), b('U'), c('L') {}
 
-		Tag& operator=(const Tag& tag) { a = tag.a; b = tag.b; c = tag.c; return *this; };
+		Tag& operator=(const Tag& tag) { a = char(tag.a); b = char(tag.b); c = char(tag.c); return *this; };
 		Tag& operator=(Tag&&) = default;
 
 		Tag& operator=(const std::string&);
@@ -37,9 +38,10 @@ namespace bEnd
 
 		operator const std::string()const;
 
+		static const bool isTag(const std::string& tag);
+
 	private:
-		char a, b, c;
-		mutable std::mutex lock;
+		std::atomic<char> a, b, c;
 
 		friend struct std::hash<Tag>;
 	};

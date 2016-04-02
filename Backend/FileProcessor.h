@@ -9,6 +9,12 @@
 
 namespace bEnd
 {
+	class FileProcessor;
+
+	void load();
+	void loadSavedGame(const FileProcessor& source);
+	const std::vector<const std::string> getDirectoryContents(const std::string& path);
+
 	class FileProcessor final : private std::ifstream
 	{
 	public:
@@ -35,28 +41,21 @@ namespace bEnd
 		FileProcessor(FileProcessor&& temp) = default;
 		FileProcessor() = default;
 		~FileProcessor() = default;
+		FileProcessor(const std::string& path);
 
 		FileProcessor& operator=(const FileProcessor& copy) = default;
 		FileProcessor& operator=(FileProcessor&& temp) = default;
 
+		const bool isOpen()const;
 		const bool open(const std::string& filePath);
 
-		void preview();
-		void load();
-
-		static void addSyntax(const std::string& statement, const std::function<void(const Statement&)>& codeBlockProcessor, const bool validInPreviewOrLoad = 1);
-		static void addSyntax(const std::string& statement, std::function<void(const Statement&)>&& codeBlockProcessor, const bool validInPreviewOrLoad = 1);
+		const std::vector<Statement>& getStatements()const;
 
 	private:
-		void processFile(const bool asPreviewOrLoad);
-
 		std::vector<Statement> statements;
-		bool statementsVectorNeedsUpdate = true;
 
 		static const Statement getNextStatement(std::istream& source);
 		static void skipWhitespace(std::istream& source);
-
-		static std::unordered_map<std::string, std::function<void(const Statement&)>> previewSyntaxMap, loadSyntaxMap;
 	};
 }
 

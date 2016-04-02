@@ -2,64 +2,52 @@
 
 namespace bEnd
 {
-	Tag::Tag(const std::string& _str)
+	Tag::Tag(const std::string& newTag)
 	{
-		if (_str.size() >= 3)
+		if (newTag.size() >= 3)
 		{
-			a = _str.at(0);
-			b = _str.at(1);
-			c = _str.at(2);
-		}
-		else
-		{
-			a = 0;
-			b = 0;
-			c = 0;
+			a = newTag.at(0);
+			b = newTag.at(1);
+			c = newTag.at(2);
 		}
 	}
 
-	Tag& Tag::operator=(const std::string& _str)
+	Tag& Tag::operator=(const std::string& newTag)
 	{
-		if (_str.size() >= 3)
+		if (newTag.size() >= 3)
 		{
-			lock.lock();
-			a = _str.at(0);
-			b = _str.at(1);
-			c = _str.at(2);
-			lock.unlock();
+			a = newTag.at(0);
+			b = newTag.at(1);
+			c = newTag.at(2);
 		}
 		return *this;
 	}
 
 	const bool Tag::operator==(const Tag& tag)const
 	{
-		std::lock_guard<std::mutex> guard(lock), guard2(tag.lock);
 		if (tag.a == a && tag.b == b && tag.c == c) return true;
 		return false;
 	}
 
-	const bool Tag::operator==(const std::string& _str)const
+	const bool Tag::operator==(const std::string& tag)const
 	{
-		if (_str.size() < 3) return false;
-		std::lock_guard<std::mutex> guard(lock);
-		if (_str.at(0) == a && _str.at(1) == b && _str.at(3) == c) return true;
+		if (tag.size() < 3) return false;
+		if (tag.at(0) == a && tag.at(1) == b && tag.at(3) == c) return true;
 		return false;
 	}
 
-	const bool Tag::operator!=(const Tag& _val)const
+	const bool Tag::operator!=(const Tag& tag)const
 	{
-		return !(this->operator==(_val));
+		return !(this->operator==(tag));
 	}
 
-	const bool Tag::operator!=(const std::string& _str)const
+	const bool Tag::operator!=(const std::string& tag)const
 	{
-		return !(this->operator==(_str));
+		return !(this->operator==(tag));
 	}
 
 	const bool Tag::operator>(const Tag& tag)const
 	{
-		std::lock_guard<std::mutex> guard(lock), guard2(tag.lock);
-
 		if (a > tag.a) return true;
 		if (tag.a > a) return false;
 		if (b > tag.b) return true;
@@ -71,8 +59,6 @@ namespace bEnd
 
 	const bool Tag::operator<(const Tag& tag)const
 	{
-		std::lock_guard<std::mutex> guard(lock), guard2(tag.lock);
-
 		if (a < tag.a) return true;
 		if (tag.a < a) return false;
 		if (b < tag.b) return true;
@@ -85,11 +71,15 @@ namespace bEnd
 	Tag::operator const std::string()const
 	{
 		std::string returnValue;
-		lock.lock();
 		returnValue.push_back(a);
 		returnValue.push_back(b);
 		returnValue.push_back(c);
-		lock.unlock();
 		return returnValue;
+	}
+
+	const bool Tag::isTag(const std::string& tag)
+	{
+		return tag.size() >= 3 && tag.at(0) > 64 && tag.at(0) < 91 &&
+			tag.at(1) > 64 && tag.at(1) < 91 && tag.at(2) > 64 && tag.at(2) < 91;
 	}
 }

@@ -6,7 +6,7 @@ namespace fEnd
 	class Region final
 	{
 	public:
-
+		static void loadRegionDefinitions();
 	private:
 
 	};

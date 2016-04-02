@@ -1,42 +1,134 @@
 #include "FileProcessor.h"
 
+#include "Unit.h"
+#include "Tech.h"
+#include "TimeSystem.h"
+#include "Nation.h"
+#include "Region.h"
+
 #include <algorithm>
 #include <stack>
 #include <cctype>
+#include <io.h>
 
 namespace bEnd 
 {
-	std::unordered_map<std::string, std::function<void(const FileProcessor::Statement&)>> FileProcessor::previewSyntaxMap, FileProcessor::loadSyntaxMap;
+	void load()
+	{
+		auto source(std::move(getDirectoryContents("units/*.*")));
+
+		for (auto it = source.begin(), end = source.end(); it != end; ++it)
+		{
+			FileProcessor file(*it);
+
+			for (auto it1 = file.getStatements().begin(), end1 = file.getStatements().end(); it1 != end1; ++it1)
+				Unit::loadFromFile(*it1);
+		}
+		
+		auto source(std::move(getDirectoryContents("technologies/*.*")));
+
+		for (auto it = source.begin(), end = source.end(); it != end; ++it)
+		{
+			FileProcessor file(*it);
+			for (auto it1 = file.getStatements().begin(), end1 = file.getStatements().end(); it1 != end1; ++it1)
+				Tech::loadFromFile(*it1);
+		}
+	}
+
+	const Date readDate(std::string source)
+	{
+		Date returnValue;
+		std::stringstream ss(source);
+		
+		std::getline(ss, std::string(), '"');
+		std::getline(ss, source, '.');
+		returnValue.setYear(std::stoi(source.c_str()));
+		std::getline(ss, source, '.');
+		returnValue.setMonth(std::stoi(source.c_str()));
+		std::getline(ss, source, '.');
+		returnValue.setDay(std::stoi(source.c_str()));
+		std::getline(ss, source, '.');
+		returnValue.setHour(std::stoi(source.c_str()));
+
+		return returnValue;
+	}
+
+	void loadSavedGame(const FileProcessor& source)
+	{
+		if (!source.isOpen()) return;
+		
+		for (auto it = source.getStatements().begin(), end = source.getStatements().end(); it != end; ++it)
+			if (it->lValue == "date") TimeSystem::reset(readDate(it->rStrings.front()));
+			else if (it->lValue == "player")
+			{
+				std::stringstream ss(it->rStrings.front());
+				std::getline(ss, std::string(), '"');
+				std::string buffer;
+				std::getline(ss, buffer, '"');
+				Nation::player = buffer;
+			}
+			else if (!it->lValue.empty() && std::find_if(it->lValue.begin(),
+				it->lValue.end(), [](char c) { return !std::isdigit(c); }) == it->lValue.end())
+				Region::loadFromSave(*it);
+			else if (Tag::isTag(it->lValue))
+				Nation::loadFromSave(*it);
+	}
+
+	const std::vector<const std::string> getDirectoryContents(const std::string& path)
+	{
+		_finddata_t target;
+		std::vector<const std::string> returnValue;
+
+		auto start = _findfirst(path.c_str(), &target);
+		if (start == -1) return returnValue;
+
+		returnValue.emplace_back(std::move(target.name));
+
+		while (true)
+		{
+			auto next = _findnext(start, &target);
+			if (next == -1) break;
+			if(target.attrib & _A_SUBDIR != _A_SUBDIR)
+				returnValue.emplace_back(std::move(target.name));
+		}
+
+		_findclose(start);
+
+		return returnValue;
+	}
+
+	FileProcessor::FileProcessor(const std::string& path)
+		: FileProcessor()
+	{
+		open(path);
+	}
+
+	const bool FileProcessor::isOpen() const
+	{
+		return std::ifstream::is_open();
+	}
 
 	const bool FileProcessor::open(const std::string& filePath)
 	{
 		std::ifstream::open(filePath);
 		if (std::ifstream::is_open())
-			return !(statementsVectorNeedsUpdate = false);
+		{
+			while (!std::ifstream::eof())
+			{
+				const Statement statement(std::move(getNextStatement(*this)));
+			}
+			std::ifstream::clear();
+			std::ifstream::seekg(0, std::ios::beg);
+
+			return true;
+		}
+		statements.clear();
 		return false;
 	}
 
-	void FileProcessor::preview()
+	const std::vector<FileProcessor::Statement>& FileProcessor::getStatements() const
 	{
-		processFile(0);
-	}
-
-	void FileProcessor::load()
-	{
-		processFile(1);
-	}
-
-	void FileProcessor::addSyntax(const std::string& statement, const std::function<void(const Statement&)>& codeBlockProcessor, const bool validityCase)
-	{
-		auto& target(validityCase ? loadSyntaxMap : previewSyntaxMap);
-		target.count(statement) ? target.at(statement) = codeBlockProcessor : target.emplace(std::make_pair(statement, codeBlockProcessor));
-	}
-
-	void FileProcessor::addSyntax(const std::string& statement, std::function<void(const Statement&)>&& codeBlockProcessor, const bool validityCase)
-	{
-		auto& target(validityCase ? loadSyntaxMap : previewSyntaxMap);
-		target.count(statement) ? target.at(statement) = std::move(codeBlockProcessor) :
-			target.emplace(std::make_pair(statement, std::move(codeBlockProcessor)));
+		return statements;
 	}
 
 	const FileProcessor::Statement FileProcessor::getNextStatement(std::istream& source)
@@ -83,27 +175,6 @@ namespace bEnd
 		}
 
 		return returnValue;
-	}
-
-	void FileProcessor::processFile(const bool asPreviewOrLoad)
-	{
-		auto& syntaxMap(asPreviewOrLoad ? loadSyntaxMap : previewSyntaxMap);
-		if (statementsVectorNeedsUpdate)
-		{
-			if (!std::ifstream::is_open()) return;
-
-			while (!std::ifstream::eof())
-			{
-				const Statement statement(std::move(getNextStatement(*this)));
-				if (syntaxMap.count(statement.lValue))
-					syntaxMap.at(statement.lValue)(statement);
-			}
-			std::ifstream::clear();
-			std::ifstream::seekg(0, std::ios::beg);
-			statementsVectorNeedsUpdate = false;
-		}
-		else for (auto it = statements.begin(), end = statements.end(); it != end; ++it)
-			if (syntaxMap.count(it->lValue)) syntaxMap.at(it->lValue)(*it);
 	}
 
 	void FileProcessor::skipWhitespace(std::istream& source)

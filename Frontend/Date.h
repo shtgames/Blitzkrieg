@@ -10,7 +10,7 @@ namespace fEnd
 	class Date final : public sf::Drawable
 	{
 	public:
-		Date(const Date&) = default;
+		Date(const Date&);
 		Date(Date&&) = default;
 		Date() = default;
 		~Date() = default;
