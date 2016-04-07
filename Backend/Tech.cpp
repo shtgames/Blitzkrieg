@@ -8,7 +8,7 @@
 
 namespace bEnd
 {
-	std::unordered_map<std::string, unique_ptr<Tech>> Tech::technologies;
+	std::unordered_map<std::string, Tech> Tech::technologies;
 
 	const unsigned char Tech::BASE_RESEARCH_DAYS = 125;
 	const float Tech::TECH_DIFFICULTY_WEIGHT = 0.1f, Tech::AHEAD_OF_TIME_PENALTY_WEIGHT = 1.5f, Tech::XP_TIME_REDUCTION_WEIGHT = 0.05f, Tech::XP_TIME_INCREASE_WEIGHT = 0.1f, Tech::XP_BREAKPOINT = 5.0f;
@@ -16,7 +16,7 @@ namespace bEnd
 	const bool Tech::loadFromFile(const FileProcessor::Statement& source)
 	{
 		technologies.emplace(std::make_pair(source.lValue, Tech(source.lValue)));
-		Tech& target = *technologies.at(source.lValue);
+		Tech& target(technologies.at(source.lValue));
 
 		for (auto it = source.rStatements.begin(), end = source.rStatements.end(); it != end; ++it)
 			if (it->lValue == "research_bonus_from")

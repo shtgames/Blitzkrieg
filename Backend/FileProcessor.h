@@ -13,7 +13,7 @@ namespace bEnd
 
 	void load();
 	void loadSavedGame(const FileProcessor& source);
-	const std::vector<const std::string> getDirectoryContents(const std::string& path);
+	const std::vector<std::string> getDirectoryContents(const std::string& path);
 
 	class FileProcessor final : private std::ifstream
 	{
@@ -48,8 +48,11 @@ namespace bEnd
 
 		const bool isOpen()const;
 		const bool open(const std::string& filePath);
+		void close();
 
 		const std::vector<Statement>& getStatements()const;
+
+		static const long long unlimitedStreamsize;
 
 	private:
 		std::vector<Statement> statements;

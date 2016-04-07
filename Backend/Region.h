@@ -15,12 +15,21 @@
 
 using namespace std;
 
+namespace fEnd
+{
+	class Map;
+}
+
 namespace bEnd
 {
 	class Unit;
 	class Region final
 	{
+		friend class fEnd::Map;
 	public:
+		Region(const Region&) = default;
+		Region(Region&&) = default;
+		Region();
 		~Region() = default;
 
 		void build(const Unit& building);
@@ -42,11 +51,7 @@ namespace bEnd
 
 	private:
 		typedef pair<float, unsigned char>(BuildingLevels);
-
-		Region(const Region&) = default;
-		Region(Region&&) = default;
-		Region();
-
+		
 		void changeOwner(const Tag&);
 		void changeController(const Tag&);
 		void generateResources();

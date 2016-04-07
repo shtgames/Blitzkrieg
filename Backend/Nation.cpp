@@ -5,6 +5,8 @@
 #include "ResourceDistributor.h"
 #include "Production.h"
 
+bEnd::Tag bEnd::Nation::player;
+
 void bEnd::Nation::loadFromSave(const FileProcessor::Statement& source)
 {
 	for (auto it = source.rStatements.begin(), end = source.rStatements.end(); it != end; ++it)

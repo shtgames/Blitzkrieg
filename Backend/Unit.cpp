@@ -4,6 +4,8 @@
 
 namespace bEnd
 {
+	std::unordered_map<std::string, Unit> Unit::units;
+
 	const float Unit::getRequiredIC(const Tag& tag)const
 	{
 		return baseRequiredIC; // modifiers...
@@ -22,7 +24,7 @@ namespace bEnd
 	const bool Unit::loadFromFile(const FileProcessor::Statement& source)
 	{
 		units.emplace(std::make_pair(source.lValue, Unit(source.lValue)));
-		Unit& target(*units.at(source.lValue));
+		Unit& target(units.at(source.lValue));
 
 		for (auto it = source.rStatements.begin(), end = source.rStatements.end(); it != end; ++it)
 			if (it->lValue == "type")

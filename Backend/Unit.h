@@ -22,7 +22,9 @@ namespace bEnd
 			Air,
 			Naval
 		};
-		
+
+		Unit(const Unit&) = default;
+		Unit(Unit&&) = default;
 		~Unit() = default;
 
 		const float getRequiredIC(const Tag& tag)const;
@@ -43,13 +45,11 @@ namespace bEnd
 		const float getManpowerMultiplier()const { return ManpowerMultiplier; }
 
 		static const bool loadFromFile(const FileProcessor::Statement& file);
-		static const bool exists(const std::string& unit) { if (units.count(unit) && units.at(unit)) return true; return false; }
-		static const Unit& get(const std::string& unit) { return *units.at(unit); }
+		static const bool exists(const std::string& unit) { if (units.count(unit)) return true; return false; }
+		static const Unit& get(const std::string& unit) { return units.at(unit); }
 
 	private:
 
-		Unit(const Unit&) = default;
-		Unit(Unit&&) = default;
 		Unit() = delete;
 		Unit(const std::string& name);
 
@@ -71,7 +71,7 @@ namespace bEnd
 		// Land
 		bool canParadrop = false;
 
-		static std::unordered_map<std::string, std::unique_ptr<Unit>> units;
+		static std::unordered_map<std::string, Unit> units;
 	};
 }
 

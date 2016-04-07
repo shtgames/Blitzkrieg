@@ -1,4 +1,5 @@
 #include "FileProcessor.h"
+#include "FileProcessor.h"
 
 #include "Unit.h"
 #include "Tech.h"
@@ -13,6 +14,8 @@
 
 namespace bEnd 
 {
+	const long long FileProcessor::unlimitedStreamsize(std::numeric_limits<std::streamsize>::max());
+
 	void load()
 	{
 		auto source(std::move(getDirectoryContents("units/*.*")));
@@ -25,7 +28,7 @@ namespace bEnd
 				Unit::loadFromFile(*it1);
 		}
 		
-		auto source(std::move(getDirectoryContents("technologies/*.*")));
+		source = std::move(getDirectoryContents("technologies/*.*"));
 
 		for (auto it = source.begin(), end = source.end(); it != end; ++it)
 		{
@@ -40,7 +43,7 @@ namespace bEnd
 		Date returnValue;
 		std::stringstream ss(source);
 		
-		std::getline(ss, std::string(), '"');
+		ss.ignore(FileProcessor::unlimitedStreamsize, '"');
 		std::getline(ss, source, '.');
 		returnValue.setYear(std::stoi(source.c_str()));
 		std::getline(ss, source, '.');
@@ -62,7 +65,7 @@ namespace bEnd
 			else if (it->lValue == "player")
 			{
 				std::stringstream ss(it->rStrings.front());
-				std::getline(ss, std::string(), '"');
+				ss.ignore(FileProcessor::unlimitedStreamsize, '"');
 				std::string buffer;
 				std::getline(ss, buffer, '"');
 				Nation::player = buffer;
@@ -74,22 +77,26 @@ namespace bEnd
 				Nation::loadFromSave(*it);
 	}
 
-	const std::vector<const std::string> getDirectoryContents(const std::string& path)
+	const std::vector<std::string> getDirectoryContents(const std::string& path)
 	{
 		_finddata_t target;
-		std::vector<const std::string> returnValue;
+		std::vector<std::string> returnValue;
 
 		auto start = _findfirst(path.c_str(), &target);
 		if (start == -1) return returnValue;
 
-		returnValue.emplace_back(std::move(target.name));
+		returnValue.emplace_back();
+		returnValue.back().assign(target.name);
 
 		while (true)
 		{
 			auto next = _findnext(start, &target);
 			if (next == -1) break;
-			if(target.attrib & _A_SUBDIR != _A_SUBDIR)
-				returnValue.emplace_back(std::move(target.name));
+			if (target.attrib & _A_SUBDIR != _A_SUBDIR)
+			{
+				returnValue.emplace_back();
+				returnValue.back().assign(target.name);
+			}
 		}
 
 		_findclose(start);
@@ -114,9 +121,7 @@ namespace bEnd
 		if (std::ifstream::is_open())
 		{
 			while (!std::ifstream::eof())
-			{
-				const Statement statement(std::move(getNextStatement(*this)));
-			}
+				statements.emplace_back(std::move(getNextStatement(*this)));
 			std::ifstream::clear();
 			std::ifstream::seekg(0, std::ios::beg);
 
@@ -124,6 +129,11 @@ namespace bEnd
 		}
 		statements.clear();
 		return false;
+	}
+
+	void FileProcessor::close()
+	{
+		std::ifstream::close();
 	}
 
 	const std::vector<FileProcessor::Statement>& FileProcessor::getStatements() const
@@ -182,10 +192,10 @@ namespace bEnd
 		char input;
 		do 
 		{
-			source >> input;
+			source.get(input);
 			if (input != ' ' && input != '\n' && input != '\t')
 			{
-				if (input == '#') std::getline(source, std::string(), '\n');
+				if (input == '#') source.ignore(unlimitedStreamsize, '\n');
 				else break;
 			}
 		} while (!source.eof());

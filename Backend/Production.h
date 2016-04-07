@@ -4,6 +4,7 @@
 #include "Tag.h"
 #include "Date.h"
 #include "Resources.h"
+#include "Unit.h"
 
 #include <map>
 #include <unordered_map>

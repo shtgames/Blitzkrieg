@@ -20,6 +20,8 @@ namespace bEnd
 	{
 	public:
 
+		Tech(const Tech&) = default;
+		Tech(Tech&&) = default;
 		~Tech() = default;
 
 		const unsigned char getDifficulty()const { return difficulty; }
@@ -31,13 +33,11 @@ namespace bEnd
 		const unsigned short getResearchDays(const Tag& tag)const;
 
 		static const bool loadFromFile(const FileProcessor::Statement& source);
-		static const bool exists(const std::string& tech) { if (technologies.count(tech) && technologies[tech]) return true; return false; }
-		static const Tech& get(const std::string& tech) { return *technologies.at(tech); }
+		static const bool exists(const std::string& tech) { if (technologies.count(tech)) return true; return false; }
+		static const Tech& get(const std::string& tech) { return technologies.at(tech); }
 
 	private:
 
-		Tech(const Tech&) = default;
-		Tech(Tech&&) = default;
 		Tech() = delete;
 		Tech(const std::string& name) : name(name) {}
 
@@ -50,7 +50,7 @@ namespace bEnd
 		static const unsigned char BASE_RESEARCH_DAYS;
 		static const float TECH_DIFFICULTY_WEIGHT, AHEAD_OF_TIME_PENALTY_WEIGHT, XP_TIME_REDUCTION_WEIGHT, XP_TIME_INCREASE_WEIGHT, XP_BREAKPOINT;
 
-		static std::unordered_map<std::string, std::unique_ptr<Tech>> technologies;
+		static std::unordered_map<std::string, Tech> technologies;
 	};
 }
 

@@ -3,6 +3,7 @@
 
 #include "Resources.h"
 #include "Tag.h"
+#include "FileProcessor.h"
 
 #include <map>
 #include <unordered_map>

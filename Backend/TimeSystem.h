@@ -15,6 +15,8 @@ using namespace std;
 
 namespace bEnd
 {
+	typedef std::chrono::time_point<std::chrono::high_resolution_clock>(TimePoint);
+
 	class Event final
 	{
 	public:
@@ -54,13 +56,13 @@ namespace bEnd
 		
 		static void eventCheck();
 
-		static priority_queue<unique_ptr<Event>>                 events;
-		static std::atomic<unsigned char>                        gameSpeed;
-		static chrono::time_point<chrono::high_resolution_clock> timeOfLastUpdate;
-		static const std::vector<float>                          updateIntervals;
-		static Date                                              currentDate;
-		static std::atomic<bool>                                 paused;
-		static mutex                                             eventQueueMutex;
+		static priority_queue<unique_ptr<Event>> events;
+		static std::atomic<unsigned char>        gameSpeed;
+		static TimePoint                         timeOfLastUpdate;
+		static const std::vector<float>          updateIntervals;
+		static Date                              currentDate;
+		static std::atomic<bool>                 paused;
+		static mutex                             eventQueueMutex;
 	};
 }
 #endif

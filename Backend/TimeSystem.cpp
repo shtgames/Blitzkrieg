@@ -2,13 +2,14 @@
 
 namespace bEnd
 {
-	priority_queue<unique_ptr<Event>>                 TimeSystem::events;
-	const chrono::high_resolution_clock               TimeSystem::gameTime;
-	std::atomic<unsigned char>                        TimeSystem::gameSpeed = 0;
-	chrono::time_point<chrono::high_resolution_clock> TimeSystem::timeOfLastUpdate = TimeSystem::gameTime.now();
-	const std::vector<float>                          TimeSystem::updateIntervals = { -1.0f, 5.0f, 2.0f, 1.0f, 0.5f, 0.042f };
-	Date                                              TimeSystem::currentDate = Date(0, 1, January, 1936);
-	std::atomic<bool>                                 TimeSystem::paused = true;
+	std::mutex                          TimeSystem::eventQueueMutex;
+	priority_queue<unique_ptr<Event>>   TimeSystem::events;
+	const chrono::high_resolution_clock TimeSystem::gameTime;
+	std::atomic<unsigned char>          TimeSystem::gameSpeed = 0;
+	TimePoint                           TimeSystem::timeOfLastUpdate = TimeSystem::gameTime.now();
+	const std::vector<float>            TimeSystem::updateIntervals = { -1.0f, 5.0f, 2.0f, 1.0f, 0.5f, 0.042f };
+	Date                                TimeSystem::currentDate = Date(0, 1, January, 1936);
+	std::atomic<bool>                   TimeSystem::paused = true;
 	
 	const Date& TimeSystem::getCurrentDate()
 	{

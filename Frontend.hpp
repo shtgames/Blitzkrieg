@@ -1,9 +1,8 @@
 #pragma once
 
-#include "Frontend/Date.h"
-#include "Frontend/Topbar.h"
-#include "Frontend/Nation.h"
-#include "Frontend/Region.h"
+#include "Frontend/Map.h"
+
+#include <SFML/System/Vector2.hpp>
 
 namespace fEnd
 {

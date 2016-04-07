@@ -36,11 +36,13 @@ namespace bEnd
 		day = unsigned char(copy.day);
 		month = unsigned char(copy.month);
 		year = unsigned short(copy.year);
+
+		return *this;
 	}
 
 	Date::operator unsigned long long() const
 	{
-		return (year * 365 + const unsigned short(year * (97.0f / 400.0f)) +
+		return (year * 365 + unsigned short(year * (97.0f / 400.0f)) +
 			monthToDays[month - 1] + (month - 1 >= 2 ? (isLeapYear() ? 1 : 0) : 0) +
 			day) * 24 + hour;
 	}
