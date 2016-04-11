@@ -154,16 +154,15 @@ namespace bEnd
 
 		skipWhitespace(source);		
 
-		char input;
-		source >> input;
-
-		if (input != '{')
 		{
-			std::string buffer{input};
+			std::string buffer;
 			source >> buffer;
-			returnValue.rStrings.emplace_back(std::move(buffer));
-			skipWhitespace(source);
-			return returnValue;
+			if (!buffer.empty() && buffer.at(0) != '{')
+			{
+				returnValue.rStrings.emplace_back(std::move(buffer));
+				skipWhitespace(source);
+				return returnValue;
+			}
 		}
 		
 		while (!source.eof())
@@ -199,6 +198,6 @@ namespace bEnd
 				else break;
 			}
 		} while (!source.eof());
-		if (!source.eof()) source.seekg(int(source.tellg()) - 1);
+		if (!source.eof()) source.unget();
 	}
 }

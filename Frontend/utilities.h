@@ -8,7 +8,7 @@
 
 namespace sf
 {
-	typedef Vector2<unsigned short>(Vector2s);
+	typedef Vector2<short>(Vector2s);
 }
 
 namespace utl
@@ -17,7 +17,7 @@ namespace utl
 	std::vector<std::vector<sf::Color>> imageToPixelArray(const sf::Image&);
 	const bool pointsAreOnOneLine(const sf::Vector2s&, const sf::Vector2s&, const sf::Vector2s&);
 	const char angleType(const sf::Vector2s&, const sf::Vector2s&, const sf::Vector2s&);
-	const std::vector<sf::Vector2s> cullBorderTriangles(const std::vector<std::vector<sf::Color>>&, const sf::Color&, std::vector<sf::Vector2s>, std::vector<sf::Vector2s>&);
+	void cullBorderTriangles(const std::vector<std::vector<sf::Color>>&, const sf::Color&, std::vector<sf::Vector2s>&, std::vector<sf::Vector2s>&);
 	void floodFillColorChange(std::vector<std::vector<sf::Color>>&, unsigned short, unsigned short, const sf::Color&, const sf::Color&);
 	const sf::Vector2s findStartingPixel(const std::vector<std::vector<sf::Color>>&, const sf::Color&);
 	const std::vector<std::vector<sf::Vector2s>> marchingSquares(std::vector<std::vector<sf::Color>>&, const sf::Color&);

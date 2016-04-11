@@ -17,7 +17,9 @@
 #include <unordered_map>
 #include <memory>
 #include <chrono>
+#include <mutex>
 
+#include "Camera.h"
 #include "utilities.h"
 
 namespace fEnd
@@ -41,12 +43,10 @@ namespace fEnd
 		Map& setPosition(const float x, const float y)override;
 
 		static void loadRegions();
-		static void updateRegionVisuals(const sf::Vector2s resolution);
+		static void updateRegionVisuals(const sf::Vector2s& resolution);
 		static void loadResources();
 
 	private:
-		void draw(sf::RenderTarget& target, sf::RenderStates states)const override;
-
 		struct Region
 		{
 			void traceShape(std::vector<std::vector<sf::Color>>& pixels, const sf::Color& colorCode,
@@ -55,18 +55,12 @@ namespace fEnd
 			unsigned int indexBegin, indexEnd;
 		};
 
+		void draw(sf::RenderTarget& target, sf::RenderStates states)const override;
+
 		static std::unordered_map<unsigned short, Region> regions;
-		
-		static sf::Vector2s resolution;
-		static sf::FloatRect viewBounds;
-		static sf::View mapView;
-		static gui::TimePoint timeOfLastScroll;
-		static sf::Vector2s scrollAmount;
-		static unsigned char scrollStep;
-		static float zoomFactor;
 
 		static sf::VertexArray stripesBuffer[2], landBuffer[2], seaBuffer[2];
-		static std::atomic<bool> drawableBufferSet;
+		static std::atomic<bool> drawableBufferSet, vertexArraysNeedUpdate, updateThreadLaunched;
 
 		static sf::Vector2s mapSize;
 		static sf::RenderTexture land, sea;
@@ -74,12 +68,12 @@ namespace fEnd
 
 		static sf::Texture mapTile, stripes;
 		static std::pair<sf::Shader, sf::Vector2f> border;
+		static Camera camera;
 
-		static void scroll();
-		static void zoom(const sf::Vector2s& targetPoint, const float factor);
 		static void clickCheck(const sf::Vector2s& point);
 
-		static const std::vector<std::vector<sf::Vector2s>> tesselatePolygonArray(const std::vector<std::vector<sf::Vector2s>>& polygons);
+		static void updateVertexArrays();
+
 		static void assignBorderTriangles(std::vector<sf::Vector2s>& unassignedTriangles,
 			std::map<unsigned short, std::vector<std::vector<sf::Vector2s>>>& provinceContours);
 		static void createProvinceCache();

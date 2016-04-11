@@ -1,8 +1,9 @@
 #include "utilities.h"
 
-#include <iostream>
 #include <cmath>
 #include <algorithm>
+
+#include <iostream>
 #define PI 3.1416
 
 const bool utl::pointsAreOnOneLine(const sf::Vector2s& A, const sf::Vector2s& B, const sf::Vector2s& C)
@@ -20,8 +21,8 @@ const char utl::angleType(const sf::Vector2s& A, const sf::Vector2s& B, const sf
 	return -2;
 }
 
-const std::vector<sf::Vector2s> utl::cullBorderTriangles(const std::vector<std::vector<sf::Color>>& pixels, const sf::Color& colorCode,
-	std::vector<sf::Vector2s> provinceContour, std::vector<sf::Vector2s>& borderTrianglesTarget)
+void utl::cullBorderTriangles(const std::vector<std::vector<sf::Color>>& pixels, const sf::Color& colorCode,
+	std::vector<sf::Vector2s>& provinceContour, std::vector<sf::Vector2s>& borderTrianglesTarget)
 {
 	for (auto it(provinceContour.begin()); it != provinceContour.end(); ++it)
 	{
@@ -40,8 +41,6 @@ const std::vector<sf::Vector2s> utl::cullBorderTriangles(const std::vector<std::
 			it = provinceContour.erase(it);
 		}
 	}
-
-	return provinceContour;
 }
 
 const bool utl::pointIsInsideTriangle(const sf::Vector2s& A1, const sf::Vector2s& B1, const sf::Vector2s& C1, const sf::Vector2s& point1)
@@ -165,7 +164,6 @@ const std::vector<std::vector<sf::Vector2s>> utl::marchingSquares(std::vector<st
 			points.push_back(cell.getPosition());
 			if (points.size() > 5000)
 			{
-				std::cout << ("Error: max point count exceeded: (" + std::to_string(cell.getPosition().x) + ", " + std::to_string(cell.getPosition().y) + ')' + '\n');
 				points.clear();
 				break;
 			}
