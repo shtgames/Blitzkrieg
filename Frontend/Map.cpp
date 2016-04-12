@@ -8,8 +8,6 @@
 #include <sstream>
 #include <set>
 
-#include <iostream>
-
 namespace fEnd
 {
 	const std::string borderShaderCode = 
@@ -39,6 +37,16 @@ namespace fEnd
 			else gl_FragColor = gl_Color * borderColor;\
 		}";
 
+	const std::string stripeShaderCode =
+		"uniform sampler2D stripes, background;\
+		uniform float zoomFactor;\
+		\
+		void main()\
+		{\
+			gl_FragColor.rgb = (gl_Color * texture2D(background, gl_TexCoord[0].xy / zoomFactor)).rgb;\
+			gl_FragColor.a = texture2D(stripes, gl_TexCoord[0].xy).a;\
+		}";
+
 	std::unordered_map<unsigned short, Map::Region> Map::regions;
 
 	sf::Vector2s Map::mapSize;
@@ -50,6 +58,7 @@ namespace fEnd
 
 	sf::Texture Map::mapTile, Map::stripes;
 	std::pair<sf::Shader, sf::Vector2f> Map::border;
+	sf::Shader Map::stripesShader;
 	Camera Map::camera;
 
 	void Map::loadRegions()
@@ -97,8 +106,6 @@ namespace fEnd
 
 				std::getline(line, buffer, ';');	
 				unsigned short provID(std::stoi(buffer));
-
-				std::cout << provID << std::endl;
 				
 				std::getline(line, buffer, ';');
 				provinceColor.r = std::stoi(buffer);
@@ -123,61 +130,75 @@ namespace fEnd
 
 	void Map::updateRegionVisuals(const sf::Vector2s& newResolution)
 	{
-		camera.setPosition(0, 0)
-		.setSize(newResolution)
-		.setScreenResolution(newResolution);
-
 		border.second = sf::Vector2f(1.0f / newResolution.x, 1.0f / newResolution.y);
 		border.first.setParameter("step", border.second);
 
 		land.create(newResolution.x, newResolution.y);
 		sea.create(newResolution.x, newResolution.y);
+
+		const float maxZoomFactor(newResolution.y / (mapSize.y * Camera::upperZoomLimitAsMapSizeFraction));
+
+		stripesShader.loadFromMemory(stripeShaderCode, sf::Shader::Fragment);
+		stripesShader.setParameter("stripes", stripes);
+		stripesShader.setParameter("background", sf::Shader::CurrentTexture);
+		stripesShader.setParameter("zoomFactor", maxZoomFactor);
+
+		for (size_t it(0), end(provinceStripes.getVertexCount()); it != end; ++it)
+		{
+			provinceStripes[it].color.a = 0;//
+			provinceStripes[it].texCoords.x = provinceStripes[it].position.x * maxZoomFactor;
+			provinceStripes[it].texCoords.y = provinceStripes[it].position.y * maxZoomFactor;
+		}
+
+		createStripesTexture(stripes, 64 * maxZoomFactor, 0.5f * maxZoomFactor);
+		stripes.setRepeated(true);
+
+		camera.setPosition(0, 0)
+			.setSize(newResolution)
+			.setScreenResolution(newResolution)
+			.setMapSize(mapSize);
+	}
+
+	void Map::createStripesTexture(sf::Texture& targetTexture, const float size, const float stripeWidth)
+	{
+		sf::RenderTexture buffer;
+
+		buffer.create(size, size);
+		buffer.clear(sf::Color(0, 0, 0, 0));
+
+		sf::VertexArray stripe(sf::PrimitiveType::Quads);
+		stripe.append(sf::Vertex(sf::Vector2f(-(stripeWidth) / 2.0f - size * 1.5f, (stripeWidth) / 2.0f - size * 1.5f), sf::Color(255, 255, 255, 255)));
+		stripe.append(sf::Vertex(sf::Vector2f((stripeWidth) / 2.0f - size * 1.5f, -(stripeWidth) / 2.0f - size * 1.5f), sf::Color(255, 255, 255, 255)));
+		stripe.append(sf::Vertex(sf::Vector2f((stripeWidth) / 2.0f + size * 1.5f, -(stripeWidth) / 2.0f + size * 1.5f), sf::Color(255, 255, 255, 255)));
+		stripe.append(sf::Vertex(sf::Vector2f(-(stripeWidth) / 2.0f + size * 1.5f, (stripeWidth) / 2.0f + size * 1.5f), sf::Color(255, 255, 255, 255)));
+
+		sf::Transform translate;
+		translate.translate(-2 * size, 0);
+		while (translate.transformRect(stripe.getBounds()).left <= size)
+		{
+			buffer.draw(stripe, translate);
+			translate.translate(size / 15.0f, 0);
+		}
+
+		buffer.display();
+
+		targetTexture = buffer.getTexture();
 	}
 
 	void Map::loadResources()
 	{
-		{
-			const float stripeWidth(0.4), tileSize(64);
-
-			sf::RenderTexture stripeTarget;
-			stripeTarget.create(tileSize, tileSize);
-			stripeTarget.clear(sf::Color(0, 0, 0, 0));
-
-			sf::VertexArray stripe(sf::PrimitiveType::Quads);
-			stripe.append(sf::Vertex(sf::Vector2f(-(stripeWidth) / 2.0f - tileSize * 1.5f, (stripeWidth) / 2.0f - tileSize * 1.5f), sf::Color(255, 255, 255, 255)));
-			stripe.append(sf::Vertex(sf::Vector2f((stripeWidth) / 2.0f - tileSize * 1.5f, -(stripeWidth) / 2.0f - tileSize * 1.5f), sf::Color(255, 255, 255, 255)));
-			stripe.append(sf::Vertex(sf::Vector2f((stripeWidth) / 2.0f + tileSize * 1.5f, -(stripeWidth) / 2.0f + tileSize * 1.5f), sf::Color(255, 255, 255, 255)));
-			stripe.append(sf::Vertex(sf::Vector2f(-(stripeWidth) / 2.0f + tileSize * 1.5f, (stripeWidth) / 2.0f + tileSize * 1.5f), sf::Color(255, 255, 255, 255)));
-
-			sf::Transform translate;
-			translate.translate(-2 * tileSize, 0);
-			while (translate.transformRect(stripe.getBounds()).left <= tileSize)
-			{
-				stripeTarget.draw(stripe, translate);
-				translate.translate(tileSize / 15.0f, 0);
-			}
-
-			stripeTarget.display();
-
-			stripes = stripeTarget.getTexture();
-			stripes.setRepeated(true);
-		}
-
 		land.setSmooth(true);
 		sea.setSmooth(true);
 
 		mapTile.loadFromFile("map/resources/mapTile.png");
 		mapTile.setRepeated(true);
+		mapTile.setSmooth(true);
 
 		border.first.loadFromMemory(borderShaderCode, sf::Shader::Fragment);
 		border.first.setParameter("texture", sf::Shader::CurrentTexture);
 		border.first.setParameter("color", sf::Color(5, 10, 15, 255));
 		border.first.setParameter("step", border.second);
-
-		landProvinces.setPrimitiveType(sf::PrimitiveType::Triangles);
-		provinceStripes.setPrimitiveType(sf::PrimitiveType::Triangles);
-		seaProvinces.setPrimitiveType(sf::PrimitiveType::Lines);
-
+		
 		stripesBuffer[0].setPrimitiveType(sf::PrimitiveType::Triangles);
 		landBuffer[0].setPrimitiveType(sf::PrimitiveType::Triangles);
 		seaBuffer[0].setPrimitiveType(sf::PrimitiveType::Lines);
@@ -192,8 +213,6 @@ namespace fEnd
 		oceanGradient.append(sf::Vertex(sf::Vector2f(mapSize.x, 0.0f), sf::Color(125, 130, 165, 255), sf::Vector2f(mapSize.x, 0.0f)));
 		oceanGradient.append(sf::Vertex(sf::Vector2f(mapSize.x, mapSize.y), sf::Color(135, 195, 205, 255), sf::Vector2f(mapSize.x, mapSize.y)));
 		oceanGradient.append(sf::Vertex(sf::Vector2f(0.0f, mapSize.y), sf::Color(135, 195, 205, 255), sf::Vector2f(0.0f, mapSize.y)));
-
-		camera.setMapSize(mapSize);
 
 		if (!updateThreadLaunched)
 		{
@@ -214,11 +233,14 @@ namespace fEnd
 
 		sea.draw(oceanGradient, &mapTile);
 		land.draw(landBuffer[drawableBufferSet], &mapTile);
-		land.draw(stripesBuffer[drawableBufferSet], &stripes);
+
+		states.shader = &stripesShader;
+		states.texture = &mapTile;
+		land.draw(stripesBuffer[drawableBufferSet], states);
 
 		if (camera.getPosition().x < 0)
 		{
-			sf::RenderStates states;
+			states.shader = nullptr;
 			states.transform.translate(-mapSize.x, 0);
 			states.texture = &mapTile;
 
@@ -231,6 +253,7 @@ namespace fEnd
 		sea.display();
 		land.display();
 
+		border.first.setParameter("step", border.second / camera.getTotalZoom());
 		sf::Sprite bufferSprite(sea.getTexture());
 		target.draw(bufferSprite, &border.first);
 		bufferSprite.setTexture(land.getTexture());
@@ -325,42 +348,32 @@ namespace fEnd
 	{
 		for (auto it(provinceContours.begin()), end(provinceContours.end()); it != end; ++it)
 		{
-			std::cout << "A: " << it->first << std::endl;
 			const sf::Color color;
 			regions.at(it->first).indexBegin = (bEnd::Region::regions[it->first].sea ? seaProvinces : landProvinces).getVertexCount();
 
 			for (auto it1(it->second.begin()), end1(it->second.end()); it1 != end1; ++it1)
 			{
-				for (size_t i(0), end3(unassignedTriangles.size()); i < end3; i += 3)
+				bool firstPass = true;
+				while (true)
 				{
-					if (unassignedTriangles.at(i).x == -1) continue;
-
-					auto commonPoints(findCommonPoints(*it1, std::vector<sf::Vector2s> {unassignedTriangles.at(i),
-						unassignedTriangles.at(i + 1), unassignedTriangles.at(i + 2)}));
-
-					if (commonPoints.first.first != it1->end())
+					for (size_t i(0), end3(unassignedTriangles.size()); i < end3; i += 3)
 					{
-						unassignedTriangles.at(i).x = -1;
-						if (commonPoints.first.second) it1->erase(commonPoints.first.first);
-						else if(std::find(it1->begin(), it1->end(), commonPoints.second) == it1->end()) it1->emplace(commonPoints.first.first, commonPoints.second);
+						if (unassignedTriangles.at(i).x == -1) continue;
+
+						auto commonPoints(findCommonPoints(*it1, std::vector<sf::Vector2s> {unassignedTriangles.at(i),
+							unassignedTriangles.at(i + 1), unassignedTriangles.at(i + 2)}));
+
+						if (commonPoints.first.first != it1->end())
+						{
+							unassignedTriangles.at(i).x = -1;
+							if (commonPoints.first.second) it1->erase(commonPoints.first.first);
+							else if (std::find(it1->begin(), it1->end(), commonPoints.second) == it1->end()) it1->emplace(commonPoints.first.first, commonPoints.second);
+						}
 					}
+					if (firstPass) firstPass = false;
+					else break;
 				}
-
-				for (size_t i(0), end3(unassignedTriangles.size()); i < end3; i += 3)
-				{
-					if (unassignedTriangles.at(i).x == -1) continue;
-
-					auto commonPoints(findCommonPoints(*it1, std::vector<sf::Vector2s> {unassignedTriangles.at(i),
-						unassignedTriangles.at(i + 1), unassignedTriangles.at(i + 2)}));
-
-					if (commonPoints.first.first != it1->end())
-					{
-						unassignedTriangles.at(i).x = -1;
-						if (commonPoints.first.second) it1->erase(commonPoints.first.first);
-						else if (std::find(it1->begin(), it1->end(), commonPoints.second) == it1->end()) it1->emplace(commonPoints.first.first, commonPoints.second);
-					}
-				}
-				
+								
 				if (bEnd::Region::regions[it->first].sea)
 				{
 					const std::vector<sf::Vector2s> finalProvince(std::move(utl::simplifyShape(*it1)));
@@ -396,7 +409,7 @@ namespace fEnd
 		}
 		provinceStripes = landProvinces;
 	}
-
+	
 	void Map::createProvinceCache()
 	{
 		std::ofstream cache("map/cache/provinces.bin", std::ios::out | std::ios::binary);
@@ -423,6 +436,7 @@ namespace fEnd
 	{
 		std::ifstream cache("map/cache/provinces.bin", std::ios::in | std::ios::binary);
 
+		const sf::Color color(200, 200, 200);
 		while (!cache.eof())
 		{
 			unsigned short provID(0);
@@ -433,7 +447,6 @@ namespace fEnd
 			unsigned short bytes(0);
 			cache.read((char*)&bytes, sizeof(unsigned short));
 
-			sf::Color color(rand(), rand(), rand());
 
 			regions[provID].indexBegin = target.getVertexCount();
 			for (bytes; bytes > 0; bytes -= 4)
@@ -457,8 +470,9 @@ namespace fEnd
 	void Map::updateVertexArrays()
 	{
 		gui::TimePoint timeOfLastUpdate(gui::Internals::timeSinceStart());
+
 		while (1)
-			if (gui::Duration(gui::Internals::timeSinceStart() - timeOfLastUpdate) < gui::Duration(0.015f)) continue;
+			if (gui::Duration(gui::Internals::timeSinceStart() - timeOfLastUpdate) < gui::Duration(0.015f)) continue;			
 			else if (camera.hasChanged || vertexArraysNeedUpdate)
 			{
 				timeOfLastUpdate = gui::Internals::timeSinceStart();
@@ -472,26 +486,68 @@ namespace fEnd
 				seaBuffer[targetSet].clear();
 
 				for (size_t i(0), end(landProvinces.getVertexCount()); i != end; i += 3)
-					if (bounds.contains(landProvinces[i].position.x, landProvinces[i].position.y) ||
-						bounds.contains(landProvinces[i + 1].position.x, landProvinces[i + 1].position.y) ||
-						bounds.contains(landProvinces[i + 2].position.x, landProvinces[i + 2].position.y))
+					if (bounds.contains(landProvinces[i].position) ||
+						bounds.contains(landProvinces[i + 1].position) ||
+						bounds.contains(landProvinces[i + 2].position))
 					{
 						landBuffer[targetSet].append(landProvinces[i]);
 						landBuffer[targetSet].append(landProvinces[i + 1]);
 						landBuffer[targetSet].append(landProvinces[i + 2]);
 
-						stripesBuffer[targetSet].append(provinceStripes[i]);
-						stripesBuffer[targetSet].append(provinceStripes[i + 1]);
-						stripesBuffer[targetSet].append(provinceStripes[i + 2]);
+						if (provinceStripes[i].color.a != 0)
+						{
+							stripesBuffer[targetSet].append(provinceStripes[i]);
+							stripesBuffer[targetSet].append(provinceStripes[i + 1]);
+							stripesBuffer[targetSet].append(provinceStripes[i + 2]);
+						}
 					}
-
+								
 				for (size_t i(0), end(seaProvinces.getVertexCount()); i != end; i += 2)
-					if (bounds.contains(seaProvinces[i].position.x, seaProvinces[i].position.y) ||
-						bounds.contains(seaProvinces[i + 1].position.x, seaProvinces[i + 1].position.y))
+					if (bounds.contains(seaProvinces[i].position) ||
+						bounds.contains(seaProvinces[i + 1].position))
 					{
 						seaBuffer[targetSet].append(seaProvinces[i]);
 						seaBuffer[targetSet].append(seaProvinces[i + 1]);
 					}
+
+				if (bounds.left < 0)
+				{
+					for (size_t i(0), end(landProvinces.getVertexCount()); i != end; i += 3)
+						if (bounds.contains(landProvinces[i].position.x - mapSize.x, landProvinces[i].position.y) ||
+							bounds.contains(landProvinces[i + 1].position.x - mapSize.x, landProvinces[i + 1].position.y) ||
+							bounds.contains(landProvinces[i + 2].position.x - mapSize.x, landProvinces[i + 2].position.y))
+						{
+							const auto* vertex(&landProvinces[i]);
+							landBuffer[targetSet].append(sf::Vertex(sf::Vector2f(vertex->position.x - mapSize.x, vertex->position.y),
+								vertex->color, vertex->texCoords));
+							landBuffer[targetSet].append(sf::Vertex(sf::Vector2f((vertex = &landProvinces[i + 1])->position.x - mapSize.x, vertex->position.y),
+								vertex->color, vertex->texCoords));
+							landBuffer[targetSet].append(sf::Vertex(sf::Vector2f((vertex = &landProvinces[i + 2])->position.x - mapSize.x, vertex->position.y),
+								vertex->color, vertex->texCoords));
+
+							if (provinceStripes[i].color.a != 0)
+							{
+								vertex = &provinceStripes[i];
+								stripesBuffer[targetSet].append(sf::Vertex(sf::Vector2f(vertex->position.x - mapSize.x, vertex->position.y),
+									vertex->color, vertex->texCoords));
+								stripesBuffer[targetSet].append(sf::Vertex(sf::Vector2f((vertex = &provinceStripes[i + 1])->position.x - mapSize.x, vertex->position.y),
+									vertex->color, vertex->texCoords));
+								stripesBuffer[targetSet].append(sf::Vertex(sf::Vector2f((vertex = &provinceStripes[i + 2])->position.x - mapSize.x, vertex->position.y),
+									vertex->color, vertex->texCoords));
+							}
+						}
+
+					for (size_t i(0), end(seaProvinces.getVertexCount()); i != end; i += 2)
+						if (bounds.contains(seaProvinces[i].position.x - mapSize.x, seaProvinces[i].position.y) ||
+							bounds.contains(seaProvinces[i + 1].position.x - mapSize.x, seaProvinces[i + 1].position.y))
+						{
+							const auto* vertex(&seaProvinces[i]);
+							seaBuffer[targetSet].append(sf::Vertex(sf::Vector2f(vertex->position.x - mapSize.x, vertex->position.y),
+								vertex->color, vertex->texCoords));
+							seaBuffer[targetSet].append(sf::Vertex(sf::Vector2f((vertex = &seaProvinces[i + 1])->position.x - mapSize.x, vertex->position.y),
+								vertex->color, vertex->texCoords));
+						}
+				}
 
 				drawableBufferSet = !drawableBufferSet;
 				camera.hasChanged = false;

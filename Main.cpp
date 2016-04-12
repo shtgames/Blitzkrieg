@@ -3,20 +3,38 @@
 
 #include <GUI/WindowManager.h>
 
-#include <iostream>
-#include <Windows.h>
+#pragma comment(linker, "/SUBSYSTEM:windows /ENTRY:mainCRTStartup")
 
 void main()
 {
 	fEnd::Map::loadRegions();
 
 	sf::RenderWindow window(sf::VideoMode::getDesktopMode(), "Blitzkrieg: The Thousand-Year Reich", sf::Style::Fullscreen);
+
+	{
+		sf::Image icon;
+		icon.loadFromFile("Icon.png");
+		window.setIcon(icon.getSize().x, icon.getSize().y, icon.getPixelsPtr());
+	}
 	
 	fEnd::Map::loadResources();
 	fEnd::Map::updateRegionVisuals(sf::Vector2s(window.getSize().x, window.getSize().y));
 
 	gui::Window map;
 	map.add(fEnd::Map());
+
+	sf::Clock fpsClock;//
+	fpsClock.restart();//
+	unsigned short frames, previousFrames;//
+
+	sf::Font font;//
+	font.loadFromFile("resources/arial.ttf");//
+
+	sf::Text text;//
+	text.setFont(font);//
+	text.setCharacterSize(25);//
+	text.setPosition(window.getSize().x - 100, 50);//
+	text.setColor(sf::Color::Green);//
 
 	while (true)
 	{
@@ -26,7 +44,19 @@ void main()
 			else map.input(event);
 
 		window.clear(sf::Color(128, 128, 128, 255));
-		window.draw(map);
+
+		if (fpsClock.getElapsedTime().asSeconds() >= 1.0f)//
+		{//
+			fpsClock.restart();//
+			previousFrames = frames;//
+			text.setString(std::to_string(previousFrames));//
+			frames = 0;//
+		}//
+		
+		window.draw(map);//
+		window.draw(text);
 		window.display();
+
+		frames++;
 	}
 }

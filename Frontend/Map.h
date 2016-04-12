@@ -68,6 +68,7 @@ namespace fEnd
 
 		static sf::Texture mapTile, stripes;
 		static std::pair<sf::Shader, sf::Vector2f> border;
+		static sf::Shader stripesShader;
 		static Camera camera;
 
 		static void clickCheck(const sf::Vector2s& point);
@@ -76,6 +77,7 @@ namespace fEnd
 
 		static void assignBorderTriangles(std::vector<sf::Vector2s>& unassignedTriangles,
 			std::map<unsigned short, std::vector<std::vector<sf::Vector2s>>>& provinceContours);
+		static void createStripesTexture(sf::Texture& targetTexture, const float size = 64.0f, const float stripeWidth = 0.4f);
 		static void createProvinceCache();
 		static void loadProvinceCache();
 	};

@@ -31,10 +31,13 @@ namespace fEnd
 		Camera& setScreenResolution(const sf::Vector2s& resolution);
 		Camera& setMapSize(const sf::Vector2s& mapSize);
 
+		const float getTotalZoom()const;
 		const sf::Vector2f& getPosition()const override;
 		const sf::FloatRect getGlobalBounds()const override;
 
 		mutable std::atomic<bool> hasChanged = false;
+
+		static const float lowerZoomLimitAsMapSizeFraction, upperZoomLimitAsMapSizeFraction;
 
 	private:
 		void draw(sf::RenderTarget& target, sf::RenderStates states)const override;
@@ -47,6 +50,7 @@ namespace fEnd
 		sf::Vector2s scrollDirection = sf::Vector2s(0, 0), resolution = sf::Vector2s(1024, 768), mapSize;
 		mutable sf::Vector2f position = sf::Vector2f(0, 0);
 		float zoomFactor = 1.10f, scrollStep = 15;
+		std::atomic<float> totalZoom = 1.0f;
 		mutable std::mutex viewLock;
 	};
 }

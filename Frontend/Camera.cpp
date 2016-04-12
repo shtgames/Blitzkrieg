@@ -4,6 +4,8 @@
 
 namespace fEnd
 {
+	const float Camera::lowerZoomLimitAsMapSizeFraction = 0.35f, Camera::upperZoomLimitAsMapSizeFraction = 0.025f;
+
 	Camera::Camera(const Camera& copy)
 		: view(copy.view), timeOfLastScroll(copy.timeOfLastScroll), scrollDirection(copy.scrollDirection), resolution(copy.resolution),
 		position(copy.position), scrollStep(copy.scrollStep), zoomFactor(copy.zoomFactor) {}
@@ -82,7 +84,14 @@ namespace fEnd
 	Camera& Camera::setMapSize(const sf::Vector2s& newMapSize)
 	{
 		mapSize = newMapSize;
+		if (mapSize.y * lowerZoomLimitAsMapSizeFraction < view.getSize().y)
+			zoom(1.01f, sf::Vector2f(resolution.x / 2, resolution.y / 2));
 		return *this;
+	}
+
+	const float Camera::getTotalZoom() const
+	{
+		return totalZoom;
 	}
 
 	const sf::Vector2f& Camera::getPosition() const
@@ -110,12 +119,12 @@ namespace fEnd
 		if ((scrollDirection.x != 0 || scrollDirection.y != 0) && gui::Duration(gui::Internals::timeSinceStart() - timeOfLastScroll) > gui::Duration(0.04))
 		{
 			viewLock.lock();
-				 
-			view.move(short(scrollDirection.x * scrollStep), short(scrollDirection.y * scrollStep));
+			
+			view.move(short(scrollDirection.x * (1 + scrollStep * totalZoom)), short(scrollDirection.y * (1 + scrollStep * totalZoom)));
 
 			if (view.getCenter().x + (view.getSize().x / 2.0f) > mapSize.x)
 				view.move(-mapSize.x, 0);
-			else if (view.getCenter().x - (view.getSize().x / 2.0f) < -mapSize.x)
+			else if (view.getCenter().x + (view.getSize().x / 2.0f) < 0)
 				view.move(mapSize.x, 0);
 
 			if (view.getCenter().y < 0)
@@ -135,36 +144,25 @@ namespace fEnd
 
 	void Camera::zoom(float factor, sf::Vector2f targetPoint)
 	{
-		targetPoint.x += position.x;
-		targetPoint.y += position.y;
+		if ((view.getSize().y == mapSize.y * lowerZoomLimitAsMapSizeFraction && factor > 1.0f) ||
+			(view.getSize().y == mapSize.y * upperZoomLimitAsMapSizeFraction && factor < 1.0f)) return;
+
+		targetPoint.x = position.x + targetPoint.x * totalZoom;
+		targetPoint.y = position.y + targetPoint.y * totalZoom;
+
+		if (view.getSize().y * factor > mapSize.y * lowerZoomLimitAsMapSizeFraction)
+			factor = mapSize.y * lowerZoomLimitAsMapSizeFraction / view.getSize().y;
+		else if (view.getSize().y < mapSize.y * upperZoomLimitAsMapSizeFraction)
+			factor = mapSize.y * upperZoomLimitAsMapSizeFraction / view.getSize().y;
 
 		viewLock.lock();
 		view.zoom(factor);
-		scrollStep *= factor;
 		view.move(short((targetPoint.x - view.getCenter().x) *  (1 - factor)),
 			short((targetPoint.y - view.getCenter().y) *  (1 - factor)));
-		
-		if (view.getSize().y > mapSize.y / 2)
-		{
-			factor = mapSize.y / (2 * view.getSize().y);
-			view.zoom(factor);
-			scrollStep *= factor;
-			view.move(short((targetPoint.x - view.getCenter().x) *  (1 - factor)),
-				short((targetPoint.y - view.getCenter().y) *  (1 - factor)));
-			
-		}
-		else if (view.getSize().y < mapSize.y / 20)
-		{
-			factor = mapSize.y / (20 * view.getSize().y);
-			view.zoom(factor);
-			scrollStep *= factor;
-			view.move(short((targetPoint.x - view.getCenter().x) *  (1 - factor)),
-				short((targetPoint.y - view.getCenter().y) *  (1 - factor)));
-		}
 
 		if (view.getCenter().x + (view.getSize().x / 2.0f) > mapSize.x)
 			view.move(-mapSize.x, 0);
-		else if (view.getCenter().x - (view.getSize().x / 2.0f) < -mapSize.x)
+		else if (view.getCenter().x + (view.getSize().x / 2.0f) < 0)
 			view.move(mapSize.x, 0);
 
 		if (view.getCenter().y < 0)
@@ -172,11 +170,12 @@ namespace fEnd
 		else if (view.getCenter().y > mapSize.y)
 			view.setCenter(view.getCenter().x, mapSize.y);
 
-		position.x = short(view.getCenter().x - view.getSize().x / 2);
-		position.y = short(view.getCenter().y - view.getSize().y / 2);
+		position.x = view.getCenter().x - view.getSize().x / 2;
+		position.y = view.getCenter().y - view.getSize().y / 2;
 
 		viewLock.unlock();
 
+		totalZoom = factor * totalZoom;
 		hasChanged = true;
 	}
 }
