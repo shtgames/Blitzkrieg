@@ -18,6 +18,7 @@
 #include <memory>
 #include <chrono>
 #include <mutex>
+#include <queue>
 
 #include "Camera.h"
 #include "utilities.h"
@@ -42,6 +43,7 @@ namespace fEnd
 		
 		Map& setPosition(const float x, const float y)override;
 
+		static void addRegionNeedingColorUpdate(const unsigned short regionID);
 		static void loadRegions();
 		static void updateRegionVisuals(const sf::Vector2s& resolution);
 		static void loadResources();
@@ -60,7 +62,9 @@ namespace fEnd
 		static std::unordered_map<unsigned short, Region> regions;
 
 		static sf::VertexArray stripesBuffer[2], landBuffer[2], seaBuffer[2];
-		static std::atomic<bool> drawableBufferSet, vertexArraysNeedUpdate, updateThreadLaunched;
+		static std::atomic<bool> drawableBufferSet, vertexArraysVisibilityNeedsUpdate, updateThreadLaunched;
+		static std::queue<unsigned short> regionsNeedingColorUpdate;
+		static std::mutex colorUpdateQueueLock;
 
 		static sf::Vector2s mapSize;
 		static sf::RenderTexture land, sea;

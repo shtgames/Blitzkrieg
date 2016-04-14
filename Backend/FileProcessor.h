@@ -12,7 +12,7 @@ namespace bEnd
 	class FileProcessor;
 
 	void load();
-	void loadSavedGame(const FileProcessor& source);
+	void loadSavedGame(const std::string& source);
 	const std::vector<std::string> getDirectoryContents(const std::string& path);
 
 	class FileProcessor final : private std::ifstream

@@ -19,6 +19,9 @@ void main()
 	
 	fEnd::Map::loadResources();
 	fEnd::Map::updateRegionVisuals(sf::Vector2s(window.getSize().x, window.getSize().y));
+	fEnd::Nation::loadNations();
+
+	bEnd::loadSavedGame("save game/The Road to War.bk");
 
 	gui::Window map;
 	map.add(fEnd::Map());

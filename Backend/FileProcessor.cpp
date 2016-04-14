@@ -16,7 +16,7 @@ namespace bEnd
 {
 	const long long FileProcessor::unlimitedStreamsize(std::numeric_limits<std::streamsize>::max());
 
-	void load()
+	void bEnd::load()
 	{
 		auto source(std::move(getDirectoryContents("units/*.*")));
 
@@ -56,8 +56,9 @@ namespace bEnd
 		return returnValue;
 	}
 
-	void loadSavedGame(const FileProcessor& source)
+	void bEnd::loadSavedGame(const std::string& path)
 	{
+		FileProcessor source(path);
 		if (!source.isOpen()) return;
 		
 		for (auto it = source.getStatements().begin(), end = source.getStatements().end(); it != end; ++it)

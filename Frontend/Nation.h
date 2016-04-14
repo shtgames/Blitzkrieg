@@ -1,28 +1,49 @@
 #ifndef NATION_FRONTEND
 #define NATION_FRONTEND
 
-#include <memory>
 #include <SFML/Graphics.hpp>
+
+#include <memory>
+#include <unordered_map>
+
+#include "../Backend/Tag.h"
 
 namespace fEnd
 {
 	class Nation final
 	{
 	public:
-		Nation(const sf::Texture& flag, const sf::Color& color) : flag(new sf::Texture(flag)), color(color) {}
+		enum class Continent
+		{
+			Europe,
+			Asia,
+			Africa,
+			Oceania,
+			NorthAmerica,
+			SouthAmerica
+		};
+
 		Nation(const Nation&) = default;
 		Nation(Nation&&) = default;
-		~Nation() = default;
 		Nation() = default;
+		~Nation() = default;
 
-		const std::shared_ptr<const sf::Texture> getFlag()const { return flag; }
+		void loadFromFile(const std::string& path);
+
+		const sf::Texture& getFlag()const { return flag; }
 		const sf::Color& getColor()const { return color; }
 
-		Nation& setFlag(const sf::Texture& texture) { flag.reset(new sf::Texture(texture)); return *this; }
-		Nation& setColor(const sf::Color& newColor) { color = newColor; return *this; }
+		static Nation& get(const bEnd::Tag& tag) { return nations[tag]; }
+		static void loadNations();
+
 	private:
-		std::shared_ptr<const sf::Texture> flag = nullptr;
+
+		sf::Texture flag;
 		sf::Color color = sf::Color(0, 0, 0);
+		std::string name;
+		Continent continent;
+
+		static std::unordered_map<bEnd::Tag, Nation> nations;
 	};
 }
 

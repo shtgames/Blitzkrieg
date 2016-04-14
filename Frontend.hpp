@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Frontend/Map.h"
+#include "Frontend/Nation.h"
 
 #include <SFML/System/Vector2.hpp>
 

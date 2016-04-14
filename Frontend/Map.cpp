@@ -2,6 +2,7 @@
 
 #include "../Backend/FileProcessor.h"
 #include "../Backend/Region.h"
+#include "Nation.h"
 #include "utilities.h"
 
 #include <fstream>
@@ -54,12 +55,19 @@ namespace fEnd
 
 	sf::VertexArray Map::oceanGradient, Map::provinceStripes, Map::landProvinces, Map::seaProvinces;
 	sf::VertexArray Map::stripesBuffer[2], Map::landBuffer[2], Map::seaBuffer[2];
-	std::atomic<bool> Map::drawableBufferSet, Map::vertexArraysNeedUpdate = false, Map::updateThreadLaunched = false;
+	std::atomic<bool> Map::drawableBufferSet, Map::vertexArraysVisibilityNeedsUpdate = false, Map::updateThreadLaunched = false;
 
 	sf::Texture Map::mapTile, Map::stripes;
 	std::pair<sf::Shader, sf::Vector2f> Map::border;
 	sf::Shader Map::stripesShader;
 	Camera Map::camera;
+
+	void Map::addRegionNeedingColorUpdate(const unsigned short regionID)
+	{
+		colorUpdateQueueLock.lock();
+		regionsNeedingColorUpdate.emplace(regionID);
+		colorUpdateQueueLock.unlock();
+	}
 
 	void Map::loadRegions()
 	{
@@ -415,7 +423,7 @@ namespace fEnd
 		std::ofstream cache("map/cache/provinces.bin", std::ios::out | std::ios::binary);
 		for (auto it(regions.begin()), end(regions.end()); it != end; ++it)
 		{
-			const bool sea(bEnd::Region::exists(it->first) ? (bEnd::Region::regions.at(it->first).sea ? true : false) : false);
+			const bool sea(bEnd::Region::exists(it->first) ? (bEnd::Region::get(it->first).sea ? true : false) : false);
 			auto source(sea ? seaProvinces : landProvinces);
 
 			cache.write((char*)&it->first, sizeof(unsigned short));
@@ -473,7 +481,7 @@ namespace fEnd
 
 		while (1)
 			if (gui::Duration(gui::Internals::timeSinceStart() - timeOfLastUpdate) < gui::Duration(0.015f)) continue;			
-			else if (camera.hasChanged || vertexArraysNeedUpdate)
+			else if (camera.hasChanged || vertexArraysVisibilityNeedsUpdate)
 			{
 				timeOfLastUpdate = gui::Internals::timeSinceStart();
 
@@ -551,7 +559,26 @@ namespace fEnd
 
 				drawableBufferSet = !drawableBufferSet;
 				camera.hasChanged = false;
-				vertexArraysNeedUpdate = false;
+				vertexArraysVisibilityNeedsUpdate = false;
+			}
+			else
+			{
+				colorUpdateQueueLock.lock();
+				while (regionsNeedingColorUpdate.size() != 0)
+				{
+					if (bEnd::Region::get(regionsNeedingColorUpdate.front()).sea)
+					{
+						regionsNeedingColorUpdate.pop();
+						continue;
+					}
+					for (auto it(regions[regionsNeedingColorUpdate.front()].indexBegin), end(regions[regionsNeedingColorUpdate.front()].indexEnd); it != end; ++it)
+					{
+						landProvinces[it].color = Nation::get(bEnd::Region::get(regionsNeedingColorUpdate.front()).owner).getColor();
+						provinceStripes[it].color = Nation::get(bEnd::Region::get(regionsNeedingColorUpdate.front()).controller).getColor();
+					}
+					regionsNeedingColorUpdate.pop();
+				}
+				colorUpdateQueueLock.unlock();
 			}
 	}
 
