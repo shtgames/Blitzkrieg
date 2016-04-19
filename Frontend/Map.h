@@ -44,6 +44,7 @@ namespace fEnd
 		Map& setPosition(const float x, const float y)override;
 
 		static void addRegionNeedingColorUpdate(const unsigned short regionID);
+		static void updateAllRegionColors();
 		static void loadRegions();
 		static void updateRegionVisuals(const sf::Vector2s& resolution);
 		static void loadResources();

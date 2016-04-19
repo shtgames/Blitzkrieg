@@ -43,15 +43,14 @@ namespace bEnd
 		Date returnValue;
 		std::stringstream ss(source);
 		
-		ss.ignore(FileProcessor::unlimitedStreamsize, '"');
 		std::getline(ss, source, '.');
-		returnValue.setYear(std::stoi(source.c_str()));
+		returnValue.setYear(std::stoi(source));
 		std::getline(ss, source, '.');
-		returnValue.setMonth(std::stoi(source.c_str()));
+		returnValue.setMonth(std::stoi(source));
 		std::getline(ss, source, '.');
-		returnValue.setDay(std::stoi(source.c_str()));
+		returnValue.setDay(std::stoi(source));
 		std::getline(ss, source, '.');
-		returnValue.setHour(std::stoi(source.c_str()));
+		returnValue.setHour(std::stoi(source));
 
 		return returnValue;
 	}
@@ -60,22 +59,16 @@ namespace bEnd
 	{
 		FileProcessor source(path);
 		if (!source.isOpen()) return;
-		
-		for (auto it = source.getStatements().begin(), end = source.getStatements().end(); it != end; ++it)
-			if (it->lValue == "date") TimeSystem::reset(readDate(it->rStrings.front()));
-			else if (it->lValue == "player")
-			{
-				std::stringstream ss(it->rStrings.front());
-				ss.ignore(FileProcessor::unlimitedStreamsize, '"');
-				std::string buffer;
-				std::getline(ss, buffer, '"');
-				Nation::player = buffer;
-			}
-			else if (!it->lValue.empty() && std::find_if(it->lValue.begin(),
-				it->lValue.end(), [](char c) { return !std::isdigit(c); }) == it->lValue.end())
-				Region::loadFromSave(*it);
-			else if (Tag::isTag(it->lValue))
-				Nation::loadFromSave(*it);
+
+		for (auto& it : source.getStatements())
+			if (it.lValue == "date") TimeSystem::reset(readDate(it.rStrings.front()));
+			else if (it.lValue == "player")
+				Nation::player = it.rStrings.front();
+			else if (!it.lValue.empty() && std::find_if(it.lValue.begin(),
+				it.lValue.end(), [](const char c) { return !std::isdigit(c); }) == it.lValue.end())
+				Region::loadFromSave(it);
+			else if (Tag::isTag(it.lValue))
+				Nation::loadFromSave(it);
 	}
 
 	const std::vector<std::string> getDirectoryContents(const std::string& path)
@@ -85,7 +78,6 @@ namespace bEnd
 
 		auto start = _findfirst(path.c_str(), &target);
 		if (start == -1) return returnValue;
-
 		returnValue.emplace_back();
 		returnValue.back().assign(target.name);
 
@@ -93,7 +85,7 @@ namespace bEnd
 		{
 			auto next = _findnext(start, &target);
 			if (next == -1) break;
-			if (target.attrib & _A_SUBDIR != _A_SUBDIR)
+			if ((target.attrib & _A_SUBDIR) != _A_SUBDIR)
 			{
 				returnValue.emplace_back();
 				returnValue.back().assign(target.name);
@@ -121,8 +113,8 @@ namespace bEnd
 		std::ifstream::open(filePath);
 		if (std::ifstream::is_open())
 		{
-			while (!std::ifstream::eof())
-				statements.emplace_back(std::move(getNextStatement(*this)));
+			while (int(std::ifstream::tellg()) != -1)
+				statements.emplace_back(std::move(*getNextStatement(*this)));
 			std::ifstream::clear();
 			std::ifstream::seekg(0, std::ios::beg);
 
@@ -142,61 +134,101 @@ namespace bEnd
 		return statements;
 	}
 
-	const FileProcessor::Statement FileProcessor::getNextStatement(std::istream& source)
+	const std::unique_ptr<FileProcessor::Statement> FileProcessor::getNextStatement(std::istream& source)
 	{
-		Statement returnValue;
+		std::unique_ptr<Statement> returnValue(new Statement());
 
-		skipWhitespace(source);
-		std::getline(source, returnValue.lValue, '=');
-		returnValue.lValue.erase(std::remove(returnValue.lValue.begin(), returnValue.lValue.end(), '\t'),
-			returnValue.lValue.end());
-		returnValue.lValue.erase(std::remove(returnValue.lValue.begin(), returnValue.lValue.end(), ' '),
-			returnValue.lValue.end());
+		returnValue->lValue = std::move(getLeftHandSide(source));
+		auto nextChar(source.get());
+		std::string buffer;
 
-		skipWhitespace(source);		
-
-		{
-			std::string buffer;
-			source >> buffer;
-			if (!buffer.empty() && buffer.at(0) != '{')
+		if (nextChar == '{')
+			while (!source.eof())
 			{
-				returnValue.rStrings.emplace_back(std::move(buffer));
 				skipWhitespace(source);
-				return returnValue;
+
+				nextChar = source.get();
+				if (nextChar == '}' || nextChar == std::char_traits<char>::eof())
+				{
+					nextChar == '}' ? skipWhitespace(source) : source.setstate(std::istream::eofbit);
+					break;
+				}
+				source.unget();
+
+				const auto pos(source.tellg());
+				std::getline(source, buffer, '\n');
+				
+				if (buffer.find_first_of('=') != std::string::npos)
+				{
+					source.seekg(pos);
+					buffer.clear();
+					returnValue->rStatements.emplace_back(std::move(*getNextStatement(source)));
+				}
+				else
+				{
+					source.seekg(pos);
+					if (!buffer.empty() && buffer.front() == '"')
+					{
+						source.ignore(unlimitedStreamsize, '"');
+						std::getline(source, buffer, '"');
+					}
+					else source >> buffer;
+					returnValue->rStrings.emplace_back(std::move(buffer));
+					if (!returnValue->rStrings.back().empty() && returnValue->rStrings.back().back() == '}')
+					{
+						returnValue->rStrings.back().pop_back();
+						break;
+					}
+				}
 			}
-		}
-		
-		while (!source.eof())
+		else if (nextChar == '"')
 		{
-			std::string buffer;
+			std::getline(source, buffer, '"');
 			skipWhitespace(source);
-			const auto pos = source.tellg();
-			std::getline(source, buffer, '\n');
-			if (!buffer.empty() && buffer.front() == '}') break;
-			source.seekg(pos);
-			if (buffer.find_first_of('=') != std::string::npos)
-				returnValue.rStatements.emplace_back(std::move(getNextStatement(source)));
-			else
-			{
-				source >> buffer;
-				returnValue.rStrings.emplace_back(std::move(buffer));
-				skipWhitespace(source);
-			}
+			returnValue->rStrings.emplace_back(std::move(buffer));
+		}
+		else
+		{
+			source.unget();
+			source >> buffer;
+			skipWhitespace(source);
+			returnValue->rStrings.emplace_back(std::move(buffer));
 		}
 
 		return returnValue;
 	}
 
+	const std::string FileProcessor::getLeftHandSide(std::istream& source)
+	{
+		std::string returnValue;
+
+		skipWhitespace(source);
+		std::getline(source, returnValue, '=');
+		skipWhitespace(source);
+
+		returnValue.erase(std::remove_if(returnValue.begin(), returnValue.end(), [&](const char element)
+			{
+				return element == ' ' || element == '\t' || element == '\n';
+			}),
+			returnValue.end());
+
+		return returnValue;
+	}
+	
 	void FileProcessor::skipWhitespace(std::istream& source)
 	{
-		char input;
 		do 
 		{
-			source.get(input);
+			const auto input = source.get();
 			if (input != ' ' && input != '\n' && input != '\t')
 			{
 				if (input == '#') source.ignore(unlimitedStreamsize, '\n');
 				else break;
+			}
+			else if (input == -1)
+			{
+				source.setstate(std::ios_base::eofbit);
+				break;
 			}
 		} while (!source.eof());
 		if (!source.eof()) source.unget();

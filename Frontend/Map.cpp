@@ -56,6 +56,8 @@ namespace fEnd
 	sf::VertexArray Map::oceanGradient, Map::provinceStripes, Map::landProvinces, Map::seaProvinces;
 	sf::VertexArray Map::stripesBuffer[2], Map::landBuffer[2], Map::seaBuffer[2];
 	std::atomic<bool> Map::drawableBufferSet, Map::vertexArraysVisibilityNeedsUpdate = false, Map::updateThreadLaunched = false;
+	std::queue<unsigned short> Map::regionsNeedingColorUpdate;
+	std::mutex Map::colorUpdateQueueLock;
 
 	sf::Texture Map::mapTile, Map::stripes;
 	std::pair<sf::Shader, sf::Vector2f> Map::border;
@@ -67,6 +69,19 @@ namespace fEnd
 		colorUpdateQueueLock.lock();
 		regionsNeedingColorUpdate.emplace(regionID);
 		colorUpdateQueueLock.unlock();
+	}
+
+	void Map::updateAllRegionColors()
+	{
+		for (auto& it : regions)
+			if (bEnd::Region::get(it.first).sea) continue;
+			else for (auto i(it.second.indexBegin), end(it.second.indexEnd); i != end; ++i)
+			{
+				landProvinces[i].color = Nation::get(bEnd::Region::get(it.first).controller).getColor(); 
+				if (bEnd::Region::get(it.first).controller != bEnd::Region::get(it.first).owner)
+					provinceStripes[i].color = Nation::get(bEnd::Region::get(it.first).owner).getColor();
+				else provinceStripes[i].color.a = 0;
+			}
 	}
 
 	void Map::loadRegions()
@@ -240,12 +255,6 @@ namespace fEnd
 		land.clear(sf::Color(0, 0, 0, 0));
 
 		sea.draw(oceanGradient, &mapTile);
-		land.draw(landBuffer[drawableBufferSet], &mapTile);
-
-		states.shader = &stripesShader;
-		states.texture = &mapTile;
-		land.draw(stripesBuffer[drawableBufferSet], states);
-
 		if (camera.getPosition().x < 0)
 		{
 			states.shader = nullptr;
@@ -253,10 +262,15 @@ namespace fEnd
 			states.texture = &mapTile;
 
 			sea.draw(oceanGradient, states);
-			land.draw(landBuffer[drawableBufferSet], states);
-			states.texture = &stripes;
-			land.draw(stripesBuffer[drawableBufferSet], states);
 		}
+
+		sea.draw(seaBuffer[drawableBufferSet]);
+		land.draw(landBuffer[drawableBufferSet], &mapTile);
+
+		states.shader = &stripesShader;
+		states.texture = &mapTile;
+		land.draw(stripesBuffer[drawableBufferSet], states);
+
 
 		sea.display();
 		land.display();
@@ -444,7 +458,6 @@ namespace fEnd
 	{
 		std::ifstream cache("map/cache/provinces.bin", std::ios::in | std::ios::binary);
 
-		const sf::Color color(200, 200, 200);
 		while (!cache.eof())
 		{
 			unsigned short provID(0);
@@ -455,14 +468,13 @@ namespace fEnd
 			unsigned short bytes(0);
 			cache.read((char*)&bytes, sizeof(unsigned short));
 
-
 			regions[provID].indexBegin = target.getVertexCount();
 			for (bytes; bytes > 0; bytes -= 4)
 			{
 				sf::Vector2s vertex(0, 0);
 				cache.read((char*)&vertex.x, sizeof(short));
 				cache.read((char*)&vertex.y, sizeof(short));
-				target.append(sf::Vertex(sf::Vector2f(vertex), color, sf::Vector2f(vertex)));
+				target.append(sf::Vertex(sf::Vector2f(vertex), bEnd::Region::regions.at(provID).sea ? sf::Color(40, 40, 40, 210) : sf::Color(200, 200, 200), sf::Vector2f(vertex)));
 			}
 			regions.at(provID).indexEnd = target.getVertexCount();
 		}
@@ -479,7 +491,7 @@ namespace fEnd
 	{
 		gui::TimePoint timeOfLastUpdate(gui::Internals::timeSinceStart());
 
-		while (1)
+		while (true)
 			if (gui::Duration(gui::Internals::timeSinceStart() - timeOfLastUpdate) < gui::Duration(0.015f)) continue;			
 			else if (camera.hasChanged || vertexArraysVisibilityNeedsUpdate)
 			{

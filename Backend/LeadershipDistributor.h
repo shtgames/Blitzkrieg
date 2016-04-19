@@ -42,7 +42,8 @@ namespace bEnd
 		void update();
 
 		static const bool exists(const Tag& tag) { if (leadershipDistributor.count(tag) && leadershipDistributor.at(tag)) return true; return false; }
-		static LeadershipDistributor& get(const Tag& tag) { return *leadershipDistributor[tag]; }
+		static void emplace(const Tag& tag) { leadershipDistributor[tag].reset(new LeadershipDistributor(tag)); }
+		static LeadershipDistributor& get(const Tag& tag) { if (!leadershipDistributor.count(tag)) emplace(tag); return *leadershipDistributor.at(tag); }
 
 	private:
 

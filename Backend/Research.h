@@ -43,7 +43,8 @@ namespace bEnd
 		const float getExperience(const std::string& name)const { std::lock_guard<std::mutex> guard(experienceLock); return experience.count(name) ? float(experience.at(name)) : experience[name] = 0.0f; }
 
 		static const bool exists(const Tag& tag) { if (research.count(tag) && research.at(tag)) return true; return false; }
-		static Research& get(const Tag& tag) { return *research.at(tag); };
+		static void emplace(const Tag& tag) { research[tag].reset(new Research(tag));  }
+		static Research& get(const Tag& tag) { if (!research.count(tag)) emplace(tag); return *research.at(tag); }
 
 	private:		
 		class ResearchItem final
@@ -85,7 +86,7 @@ namespace bEnd
 		const Tag                          tag;
 		mutable mutex                      researchQueueLock, techLevelsLock, experienceLock;
 
-		static unordered_map<Tag, unique_ptr<Research>> research;
+		static unordered_map<Tag, std::unique_ptr<Research>> research;
 
 		static const float EXPERIENCE_CAP, EXPERIENCE_DECAY_PERCENTAGE;
 	};

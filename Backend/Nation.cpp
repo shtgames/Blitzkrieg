@@ -20,10 +20,10 @@ void bEnd::Nation::loadFromSave(const FileProcessor::Statement& source)
 			LeadershipDistributor::get(source.lValue).loadFromSave(*it);
 		else if (it->lValue == "military_construction" || it->lValue == "building_construction")
 			Production::get(source.lValue).loadProductionItem(*it);
-		else if (it->lValue == "nocategory")
+		/*else if (it->lValue == "nocategory")
 			while (it != end && it->lValue != "research")
 			{
 				Research::get(source.lValue).loadExperienceLevels(*it);
 				++it;
-			}
+			}*/
 }

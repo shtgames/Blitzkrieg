@@ -17,7 +17,6 @@ namespace bEnd
 	class Politics final
 	{
 	public:
-
 		~Politics() = default;
 
 		const float getNationalUnity()const { return nationalUnity; };
@@ -29,10 +28,10 @@ namespace bEnd
 
 		static const bool loadFromFile(ifstream&);
 		static const bool exists(const Tag& tag) { if (politics.count(tag) && politics.at(tag)) return true; return false; }
-		static Politics& get(const Tag& tag) { return *politics.at(tag); };
+		static void emplace(const Tag& tag) { politics[tag].reset(new Politics()); }
+		static Politics& get(const Tag& tag) { if (!politics.count(tag)) emplace(tag); return *politics.at(tag); };
 
 	private:
-
 		Politics(const Politics&) = default;
 		Politics(Politics&&) = default;
 		Politics() = default;

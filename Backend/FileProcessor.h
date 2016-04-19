@@ -9,8 +9,6 @@
 
 namespace bEnd
 {
-	class FileProcessor;
-
 	void load();
 	void loadSavedGame(const std::string& source);
 	const std::vector<std::string> getDirectoryContents(const std::string& path);
@@ -57,7 +55,8 @@ namespace bEnd
 	private:
 		std::vector<Statement> statements;
 
-		static const Statement getNextStatement(std::istream& source);
+		static const std::unique_ptr<Statement> getNextStatement(std::istream& source);
+		static const std::string getLeftHandSide(std::istream& source);
 		static void skipWhitespace(std::istream& source);
 	};
 }

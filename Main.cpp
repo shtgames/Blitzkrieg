@@ -2,14 +2,28 @@
 #include "Frontend.hpp"
 
 #include <GUI/WindowManager.h>
+#include <GUI/AudioSystem.h>
 
 #pragma comment(linker, "/SUBSYSTEM:windows /ENTRY:mainCRTStartup")
 
 void main()
 {
-	fEnd::Map::loadRegions();
+	bEnd::loadSavedGame("save game/The Road to War.bk");
 
 	sf::RenderWindow window(sf::VideoMode::getDesktopMode(), "Blitzkrieg: The Thousand-Year Reich", sf::Style::Fullscreen);
+	{
+		unsigned char index(0);
+		for (auto& it : bEnd::getDirectoryContents("music/*.ogg"))
+		{
+			gui::AudioSystem::loadMusicFile(index, "music/" + it);
+			index++;
+		}
+		gui::AudioSystem::playRandomSong();
+		gui::AudioSystem::setMusicVolume(100);
+		gui::AudioSystem::setMasterVolume(100);
+	}
+	
+	fEnd::Map::loadRegions();
 
 	{
 		sf::Image icon;
@@ -20,8 +34,8 @@ void main()
 	fEnd::Map::loadResources();
 	fEnd::Map::updateRegionVisuals(sf::Vector2s(window.getSize().x, window.getSize().y));
 	fEnd::Nation::loadNations();
-
-	bEnd::loadSavedGame("save game/The Road to War.bk");
+	
+	fEnd::Map::updateAllRegionColors();
 
 	gui::Window map;
 	map.add(fEnd::Map());

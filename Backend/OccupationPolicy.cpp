@@ -3,15 +3,15 @@
 namespace bEnd
 {
 	const std::unordered_map<Policy, OccupationPolicy> OccupationPolicy::occupationPolicies { 
-		std::make_pair(CollaborationGovernment, OccupationPolicy(CollaborationGovernment)),
-		std::make_pair(MilitaryGovernment, OccupationPolicy(MilitaryGovernment)),
-		std::make_pair(FullOccupation, OccupationPolicy(FullOccupation)),
-		std::make_pair(TotalEconomicExploitation, OccupationPolicy(TotalEconomicExploitation))
+		{ CollaborationGovernment, OccupationPolicy(CollaborationGovernment) },
+		{ MilitaryGovernment, OccupationPolicy(MilitaryGovernment) },
+		{ FullOccupation, OccupationPolicy(FullOccupation) },
+		{ TotalEconomicExploitation, OccupationPolicy(TotalEconomicExploitation) }
 	};
 
-	void OccupationPolicy::setPolicy(const Policy _policy)
+	void OccupationPolicy::setPolicy(const Policy newPolicy)
 	{
-		if (_policy == CollaborationGovernment)
+		if (newPolicy == CollaborationGovernment)
 		{
 			manpowerModifier = 0.35f;
 			ICModifier = 0.05f;
@@ -19,7 +19,7 @@ namespace bEnd
 			partisanActivityModifier = 1.5f;
 			ResourceModifier = 0.25f;
 		}
-		else if (_policy == MilitaryGovernment)
+		else if (newPolicy == MilitaryGovernment)
 		{
 			manpowerModifier = 0.3f;
 			ICModifier = 0.2f;
@@ -27,7 +27,7 @@ namespace bEnd
 			partisanActivityModifier = 7.0f;
 			ResourceModifier = 0.5f;
 		}
-		else if (_policy == FullOccupation)
+		else if (newPolicy == FullOccupation)
 		{
 			manpowerModifier = 0.15f;
 			ICModifier = 0.4f;
@@ -35,7 +35,7 @@ namespace bEnd
 			partisanActivityModifier = 11.0f;
 			ResourceModifier = 0.65f;
 		}
-		else if (_policy == TotalEconomicExploitation)
+		else if (newPolicy == TotalEconomicExploitation)
 		{
 			manpowerModifier = 0.05f;
 			ICModifier = 0.6f;
@@ -44,4 +44,13 @@ namespace bEnd
 			ResourceModifier = 0.75f;
 		}
 	}
+
+	/*const bool OccupationPolicy::populateOccupationPolicyMap()
+	{
+		occupationPolicies.emplace(std::make_pair(CollaborationGovernment, OccupationPolicy(CollaborationGovernment)));
+		occupationPolicies.emplace(std::make_pair(MilitaryGovernment, OccupationPolicy(MilitaryGovernment)));
+		occupationPolicies.emplace(std::make_pair(FullOccupation, OccupationPolicy(FullOccupation)));
+		occupationPolicies.emplace(std::make_pair(TotalEconomicExploitation, OccupationPolicy(TotalEconomicExploitation)));
+		return true;
+	}*/
 }

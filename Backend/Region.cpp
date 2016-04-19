@@ -176,37 +176,38 @@ namespace bEnd
 
 	void Region::loadFromSave(const FileProcessor::Statement& source)
 	{
-		if (!exists(std::stoi(source.lValue.c_str()))) return;
+		regions[std::stoi(source.lValue)];
 
-		Region& target(regions.at(std::stoi(source.lValue.c_str())));
+		Region& target(regions.at(std::stoi(source.lValue)));
 
-		for (auto it = source.rStatements.begin(), end = source.rStatements.end(); it != end; ++it)
-			if (it->lValue == "owner") target.changeOwner(it->rStrings.at(0).substr(1, 3));
-			else if (it->lValue == "constroller") target.changeController(it->rStrings.at(0).substr(1, 3));
-			else if (it->lValue == "core") target.addCore(it->rStrings.at(0).substr(1, 3));
-			else if (it->lValue == "manpower") target.manpowerGeneration.first = std::stod(it->rStrings.at(0));
-			else if (it->lValue == "leadership") target.leadership.first = std::stod(it->rStrings.at(0));
-			else if (it->lValue == "points") target.victoryPoints = std::stod(it->rStrings.at(0).c_str());
-			else if (it->lValue == "capital" && it->rStrings.at(0) == "yes") target.capital = true;
-			else if (it->lValue == "pool")
-				for (auto it1 = it->rStatements.begin(), end1 = it->rStatements.end(); it != end; ++it)
-					if (it1->lValue == "energy") ResourceDistributor::get(target.controller).changeResourceAmount(Energy, std::stod(it1->rStrings.at(0)));
-					else if(it1->lValue == "metal") ResourceDistributor::get(target.controller).changeResourceAmount(Metal, std::stod(it1->rStrings.at(0)));
-					else if (it1->lValue == "rare_materials") ResourceDistributor::get(target.controller).changeResourceAmount(RareMaterials, std::stod(it1->rStrings.at(0)));
-					else if (it1->lValue == "crude_oil") ResourceDistributor::get(target.controller).changeResourceAmount(CrudeOil, std::stod(it1->rStrings.at(0)));
-					else if (it1->lValue == "supplies") ResourceDistributor::get(target.controller).changeResourceAmount(Supplies, std::stod(it1->rStrings.at(0)));
-					else if (it1->lValue == "money") ResourceDistributor::get(target.controller).changeResourceAmount(Money, std::stod(it1->rStrings.at(0)));
-					else if (it1->lValue == "fuel") ResourceDistributor::get(target.controller).changeResourceAmount(Fuel, std::stod(it1->rStrings.at(0)));
-			else if (it->lValue == "energy") target.resourceGeneration[Energy].first = target.manpowerGeneration.first = std::stod(it->rStrings.at(0));
-			else if (it->lValue == "metal") target.resourceGeneration[Metal].first = target.manpowerGeneration.first = std::stod(it->rStrings.at(0));
-			else if (it->lValue == "rare_materials") target.resourceGeneration[RareMaterials].first = target.manpowerGeneration.first = std::stod(it->rStrings.at(0));
-			else if (it->lValue == "crude_oil") target.resourceGeneration[CrudeOil].first = target.manpowerGeneration.first = std::stod(it->rStrings.at(0));
-			else if (Unit::exists(it->lValue) && Unit::get(it->lValue).getType() == Unit::Building)
+		for (auto& it : source.rStatements)
+			if (it.lValue == "owner") target.changeOwner(it.rStrings.at(0));
+			else if (it.lValue == "controller") target.changeController(it.rStrings.at(0));
+			else if (it.lValue == "core") target.addCore(it.rStrings.at(0));
+			else if (it.lValue == "manpower") target.manpowerGeneration.first = std::stod(it.rStrings.at(0));
+			else if (it.lValue == "leadership") target.leadership.first = std::stod(it.rStrings.at(0));
+			else if (it.lValue == "points") target.victoryPoints = std::stod(it.rStrings.at(0));
+			else if (it.lValue == "capital" && it.rStrings.at(0) == "yes") target.capital = true;
+			else if (it.lValue == "pool")
+				for (auto& it1 : it.rStatements)
+				{
+					if (it1.lValue == "energy") ResourceDistributor::get(target.controller).changeResourceAmount(Energy, std::stod(it1.rStrings.at(0)));
+					else if (it1.lValue == "metal") ResourceDistributor::get(target.controller).changeResourceAmount(Metal, std::stod(it1.rStrings.at(0)));
+					else if (it1.lValue == "rare_materials") ResourceDistributor::get(target.controller).changeResourceAmount(RareMaterials, std::stod(it1.rStrings.at(0)));
+					else if (it1.lValue == "crude_oil") ResourceDistributor::get(target.controller).changeResourceAmount(CrudeOil, std::stod(it1.rStrings.at(0)));
+					else if (it1.lValue == "supplies") ResourceDistributor::get(target.controller).changeResourceAmount(Supplies, std::stod(it1.rStrings.at(0)));
+					else if (it1.lValue == "money") ResourceDistributor::get(target.controller).changeResourceAmount(Money, std::stod(it1.rStrings.at(0)));
+					else if (it1.lValue == "fuel") ResourceDistributor::get(target.controller).changeResourceAmount(Fuel, std::stod(it1.rStrings.at(0)));
+				}
+			else if (it.lValue == "energy") target.resourceGeneration[Energy].first = target.manpowerGeneration.first = std::stod(it.rStrings.at(0));
+			else if (it.lValue == "metal") target.resourceGeneration[Metal].first = target.manpowerGeneration.first = std::stod(it.rStrings.at(0));
+			else if (it.lValue == "rare_materials") target.resourceGeneration[RareMaterials].first = target.manpowerGeneration.first = std::stod(it.rStrings.at(0));
+			else if (it.lValue == "crude_oil") target.resourceGeneration[CrudeOil].first = target.manpowerGeneration.first = std::stod(it.rStrings.at(0));
+			else if (Unit::exists(it.lValue) && Unit::get(it.lValue).getType() == Unit::Building)
 			{
-				target.buildings[it->lValue].second = std::stod(it->rStrings.at(0).c_str());
-				target.repair(Unit::get(it->lValue), std::stod(it->rStrings.at(1).c_str()));
+				target.buildings[it.lValue].second = std::stod(it.rStrings.at(0));
+				target.repair(Unit::get(it.lValue), std::stod(it.rStrings.at(1)));
 			}
-		
 		target.stopGeneratingResources();
 		target.generateResources();
 	}

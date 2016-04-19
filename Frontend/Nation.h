@@ -39,7 +39,7 @@ namespace fEnd
 	private:
 
 		sf::Texture flag;
-		sf::Color color = sf::Color(0, 0, 0);
+		sf::Color color = sf::Color(180, 180, 180);
 		std::string name;
 		Continent continent;
 

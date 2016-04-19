@@ -37,7 +37,8 @@ namespace bEnd
 		void update();
 		
 		static const bool exists(const Tag& tag) { if (production.count(tag) && production.at(tag)) return true; return false; }
-		static Production& get(const Tag& tag) { return *production.at(tag); }
+		static void emplace(const Tag& tag) { production[tag].reset(new Production(tag)); }
+		static Production& get(const Tag& tag) { if (!production.count(tag)) emplace(tag); return *production.at(tag); }
 		
 	private:
 

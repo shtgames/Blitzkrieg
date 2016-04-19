@@ -3,7 +3,6 @@
 #include <cmath>
 #include <algorithm>
 
-#include <iostream>
 #define PI 3.1416
 
 const bool utl::pointsAreOnOneLine(const sf::Vector2s& A, const sf::Vector2s& B, const sf::Vector2s& C)

@@ -18,6 +18,7 @@ namespace bEnd
 	{
 	public:
 		OccupationPolicy(const Policy policy) { setPolicy(policy); };
+		OccupationPolicy() = default;
 
 		const float getMPModifier()const { return manpowerModifier; }
 		const float getICModifier()const { return ICModifier; }
@@ -26,13 +27,14 @@ namespace bEnd
 		const float getResourceModifier()const { return ResourceModifier; }
 
 		static const OccupationPolicy& get(const Policy policy) { return occupationPolicies.at(policy); };
-
+		
 	private:
 		void setPolicy(const Policy);
 
 		float manpowerModifier, ICModifier, leadershipModifier, partisanActivityModifier, ResourceModifier;
 
 		static const std::unordered_map<Policy, OccupationPolicy> occupationPolicies;
+
 	};
 }
 

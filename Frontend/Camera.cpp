@@ -1,7 +1,5 @@
 #include "Camera.h"
 
-#include <iostream>
-
 namespace fEnd
 {
 	const float Camera::lowerZoomLimitAsMapSizeFraction = 0.35f, Camera::upperZoomLimitAsMapSizeFraction = 0.025f;

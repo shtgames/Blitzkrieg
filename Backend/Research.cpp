@@ -6,7 +6,7 @@
 
 namespace bEnd
 {
-	unordered_map<Tag, unique_ptr<Research>> Research::research;
+	unordered_map<Tag, std::unique_ptr<Research>> Research::research;
 	const float Research::EXPERIENCE_CAP = 25.0f, Research::EXPERIENCE_DECAY_PERCENTAGE = 0.025f;
 
 	const Date Research::ResearchItem::getComlpetionDate()const
@@ -150,17 +150,14 @@ namespace bEnd
 			else it->second = it->second * ( 1.0f - EXPERIENCE_DECAY_PERCENTAGE);
 		experienceLock.unlock();
 	}
-
+	
 	void Research::loadTechLevels(const FileProcessor::Statement& source)
 	{
-		for (auto it = source.rStatements.begin(), end = source.rStatements.end(); it != end; ++it)
-			if (it->lValue == "technology")
-			{
-				for (auto it = source.rStatements.begin(), end = source.rStatements.end(); it != end; ++it)
-					if (it->lValue == "notech") continue;
-					else if (Tech::exists(it->lValue))
-						techLevels[it->lValue] = std::stoi(it->rStrings.at(0)) + std::stof(it->rStrings.at(1));
-			}
+		if (source.lValue != "technology") return;
+
+		for (auto it : source.rStatements)
+			if (it.lValue == "notech") continue;
+			else techLevels[it.lValue] = std::stoi(it.rStrings.at(0)) + std::stof(it.rStrings.at(1));
 	}
 
 	void Research::loadResearchItem(const FileProcessor::Statement& source)
@@ -172,6 +169,6 @@ namespace bEnd
 	void Research::loadExperienceLevels(const FileProcessor::Statement& source)
 	{
 		if (source.lValue == "nocategory") return;
-		else experience[source.lValue] = std::stof(source.rStrings.front());
+		else experience.emplace(source.lValue, std::stof(source.rStrings.front()));
 	}
 }
