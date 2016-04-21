@@ -4,10 +4,11 @@
 #include <GUI/WindowManager.h>
 #include <GUI/AudioSystem.h>
 
-#pragma comment(linker, "/SUBSYSTEM:windows /ENTRY:mainCRTStartup")
+//#pragma comment(linker, "/SUBSYSTEM:windows /ENTRY:mainCRTStartup")
 
 void main()
 {
+	fEnd::Map::loadRegions();
 	bEnd::loadSavedGame("save game/The Road to War.bk");
 
 	sf::RenderWindow window(sf::VideoMode::getDesktopMode(), "Blitzkrieg: The Thousand-Year Reich", sf::Style::Fullscreen);
@@ -23,8 +24,6 @@ void main()
 		gui::AudioSystem::setMasterVolume(100);
 	}
 	
-	fEnd::Map::loadRegions();
-
 	{
 		sf::Image icon;
 		icon.loadFromFile("Icon.png");

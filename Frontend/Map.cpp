@@ -105,7 +105,7 @@ namespace fEnd
 					for (auto it1 = it->rStrings.begin(), end1 = it->rStrings.end(); it1 != end1; ++it1)
 						bEnd::Region::regions[std::stoi(*it1)].sea = true;
 		}
-
+		
 		if (!std::ifstream("map/cache/provinces.bin").good())
 		{
 			std::ifstream definitions("map/definition.csv");
@@ -128,7 +128,7 @@ namespace fEnd
 				sf::Color provinceColor;
 
 				std::getline(line, buffer, ';');	
-				unsigned short provID(std::stoi(buffer));
+				const unsigned short provID(std::stoi(buffer));
 				
 				std::getline(line, buffer, ';');
 				provinceColor.r = std::stoi(buffer);
@@ -142,7 +142,8 @@ namespace fEnd
 				regions[provID].traceShape(pixels, provinceColor, unassignedBorderTriangles, provinceContourPoints[provID]);
 			}
 
-			regions[unsigned short(-1)].traceShape(pixels, sf::Color::White, unassignedBorderTriangles, provinceContourPoints[unsigned short(-1)]);
+			bEnd::Region::regions[-1].sea = true;
+			regions[-1].traceShape(pixels, sf::Color::White, unassignedBorderTriangles, provinceContourPoints[-1]);
 			
 			assignBorderTriangles(unassignedBorderTriangles, provinceContourPoints);
 
@@ -264,7 +265,7 @@ namespace fEnd
 			sea.draw(oceanGradient, states);
 		}
 
-		sea.draw(seaBuffer[drawableBufferSet]);
+		if (camera.getTotalZoom() < 0.2f) sea.draw(seaBuffer[drawableBufferSet]);
 		land.draw(landBuffer[drawableBufferSet], &mapTile);
 
 		states.shader = &stripesShader;
@@ -594,20 +595,81 @@ namespace fEnd
 			}
 	}
 
+	const bool isRegionAnIsland(const std::vector<std::vector<sf::Color>>& pixels, const std::vector<sf::Vector2s> contour, const sf::Color& colorCode)
+	{
+		if (pixels.empty() || contour.empty()) return false;
+
+		std::unique_ptr<sf::Color> firstBorderColor(nullptr);
+
+		for (const auto& point : contour)
+		{
+			if (pixels.at(point.x - 1).at(point.y) != colorCode)
+			{
+				if (firstBorderColor)
+				{
+					if (pixels.at(point.x - 1).at(point.y) != *firstBorderColor) return false;
+				}
+				else firstBorderColor.reset(new sf::Color(pixels.at(point.x - 1).at(point.y)));
+			}
+			if (pixels.at(point.x + 1).at(point.y) != colorCode)
+			{
+				if (firstBorderColor)
+				{
+					if (pixels.at(point.x + 1).at(point.y) != *firstBorderColor) return false;
+				}
+				else firstBorderColor.reset(new sf::Color(pixels.at(point.x + 1).at(point.y)));
+
+			}
+			if (pixels.at(point.x).at(point.y - 1) != colorCode)
+			{
+				if (firstBorderColor)
+				{
+					if (pixels.at(point.x).at(point.y - 1) != *firstBorderColor) return false;
+				}
+				else firstBorderColor.reset(new sf::Color(pixels.at(point.x).at(point.y - 1)));
+			}
+			if (pixels.at(point.x - 1).at(point.y + 1) != colorCode)
+			{
+				if (firstBorderColor)
+				{
+					if (pixels.at(point.x).at(point.y + 1) != *firstBorderColor) return false;
+				}
+				else firstBorderColor.reset(new sf::Color(pixels.at(point.x).at(point.y + 1)));
+			}
+		}
+		
+		return true;
+	}
+
+	void cullBorderTriangles(std::vector<sf::Vector2s>& provinceContour)
+	{
+		for (auto it(provinceContour.begin()); it != provinceContour.end(); ++it)
+		{
+			const auto A((it == provinceContour.begin() ? provinceContour.end() : it) - 1),
+				B(it),
+				C(it == provinceContour.end() - 1 ? provinceContour.begin() : it + 1),
+				prev((A == provinceContour.begin() ? provinceContour.end() : A) - 1),
+				next(C == provinceContour.end() - 1 ? provinceContour.begin() : C + 1);
+			if (utl::angleType(*A, *B, *C) >= 0 && !(utl::pointsAreOnOneLine(*prev, *A, *B) &&
+					utl::pointsAreOnOneLine(*B, *C, *next)) && (B->x - C->x != A->x - next->x ||
+					B->y - C->y != A->y - next->y) && (B->x - A->x != C->x - prev->x || B->y - A->y != C->y - prev->y))
+				it = provinceContour.erase(it);
+		}
+	}
+
 	void Map::Region::traceShape(std::vector<std::vector<sf::Color>>& pixels, const sf::Color& colorCode,
 		std::vector<sf::Vector2s>& borderTrianglesTarget, std::vector<std::vector<sf::Vector2s>>& contourPointsTarget)
 	{
 		auto points(std::move(utl::marchingSquares(pixels, colorCode)));
 
-		for (auto it = points.begin(); it != points.end(); ++it)
+		for (auto& it : points)
 		{
-			if (it->empty()) continue;
+			if (it.empty()) continue;
 			
-			utl::cullBorderTriangles(pixels, colorCode, *it, borderTrianglesTarget);
+			isRegionAnIsland(pixels, it, colorCode) ? cullBorderTriangles(it) :
+				utl::cullBorderTriangles(pixels, colorCode, it, borderTrianglesTarget);
 
-			contourPointsTarget.emplace_back();
-			for (auto it1 = it->begin(), end1 = it->end(); it1 != end1; ++it1)
-				contourPointsTarget.back().push_back(*it1);
+			contourPointsTarget.emplace_back(it);
 		}
 	}
 }

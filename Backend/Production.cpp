@@ -10,7 +10,7 @@
 
 namespace bEnd
 {
-	unordered_map<Tag, unique_ptr<Production>> Production::production;
+	std::unordered_map<Tag, std::unique_ptr<Production>> Production::production;
 
 	void Production::loadProductionItem(const FileProcessor::Statement& file)
 	{

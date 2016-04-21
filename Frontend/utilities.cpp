@@ -168,14 +168,14 @@ const std::vector<std::vector<sf::Vector2s>> utl::marchingSquares(std::vector<st
 			}
 		}
 		floodFillColorChange(pixels, points.front().x, points.front().y, color, sf::Color(0, 0, 0, 0));
-		previousPointColors.emplace_back(points.front().x, points.front().y);
+		previousPointColors.emplace_back(points.front());
 
 		if (points.empty()) continue;
 		else returnValue.push_back(points);
 	}
 
-	for (auto it(previousPointColors.begin()), end(previousPointColors.end()); it != end; ++it)
-		floodFillColorChange(pixels, it->x, it->y, sf::Color(0, 0, 0, 0), color);
+	for (const auto& it : previousPointColors)
+		floodFillColorChange(pixels, it.x, it.y, sf::Color(0, 0, 0, 0), color);
 
 	return returnValue;
 }
