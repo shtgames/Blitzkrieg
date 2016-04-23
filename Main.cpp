@@ -4,14 +4,12 @@
 #include <GUI/WindowManager.h>
 #include <GUI/AudioSystem.h>
 
-//#pragma comment(linker, "/SUBSYSTEM:windows /ENTRY:mainCRTStartup")
+#pragma comment(linker, "/SUBSYSTEM:windows /ENTRY:mainCRTStartup")
 
 void main()
 {
-	fEnd::Map::loadRegions();
-	bEnd::loadSavedGame("save game/The Road to War.bk");
-
 	sf::RenderWindow window(sf::VideoMode::getDesktopMode(), "Blitzkrieg: The Thousand-Year Reich", sf::Style::Fullscreen);
+
 	{
 		unsigned char index(0);
 		for (auto& it : bEnd::getDirectoryContents("music/*.ogg"))
@@ -29,12 +27,16 @@ void main()
 		icon.loadFromFile("Icon.png");
 		window.setIcon(icon.getSize().x, icon.getSize().y, icon.getPixelsPtr());
 	}
-	
+
+	fEnd::Map::loadRegions();
 	fEnd::Map::loadResources();
 	fEnd::Map::updateRegionVisuals(sf::Vector2s(window.getSize().x, window.getSize().y));
 	fEnd::Nation::loadNations();
-	
+
+	bEnd::loadSavedGame("save game/The Road to War.bk");
 	fEnd::Map::updateAllRegionColors();
+
+	fEnd::Map::launchRegionUpdateThread();
 
 	gui::Window map;
 	map.add(fEnd::Map());
@@ -51,7 +53,7 @@ void main()
 	text.setCharacterSize(25);//
 	text.setPosition(window.getSize().x - 100, 50);//
 	text.setColor(sf::Color::Green);//
-
+	
 	while (true)
 	{
 		sf::Event event;
@@ -63,14 +65,16 @@ void main()
 
 		if (fpsClock.getElapsedTime().asSeconds() >= 1.0f)//
 		{//
+			if (!gui::AudioSystem::isSongPlaying())
+				gui::AudioSystem::playRandomSong();
 			fpsClock.restart();//
 			previousFrames = frames;//
 			text.setString(std::to_string(previousFrames));//
 			frames = 0;//
 		}//
 		
-		window.draw(map);//
-		window.draw(text);
+		window.draw(map);
+		window.draw(text);//
 		window.display();
 
 		frames++;

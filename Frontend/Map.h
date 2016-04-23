@@ -48,6 +48,8 @@ namespace fEnd
 		static void loadRegions();
 		static void updateRegionVisuals(const sf::Vector2s& resolution);
 		static void loadResources();
+		static void launchRegionUpdateThread();
+		static void stopRegionUpdateThread();
 
 	private:
 		struct Region
@@ -68,7 +70,7 @@ namespace fEnd
 		static std::mutex colorUpdateQueueLock;
 
 		static sf::Vector2s mapSize;
-		static sf::RenderTexture land, sea;
+		static sf::RenderTexture land;
 		static sf::VertexArray oceanGradient, provinceStripes, landProvinces, seaProvinces;
 
 		static sf::Texture mapTile, stripes;

@@ -51,7 +51,7 @@ namespace fEnd
 	std::unordered_map<unsigned short, Map::Region> Map::regions;
 
 	sf::Vector2s Map::mapSize;
-	sf::RenderTexture Map::land, Map::sea;
+	sf::RenderTexture Map::land;
 
 	sf::VertexArray Map::oceanGradient, Map::provinceStripes, Map::landProvinces, Map::seaProvinces;
 	sf::VertexArray Map::stripesBuffer[2], Map::landBuffer[2], Map::seaBuffer[2];
@@ -63,6 +63,8 @@ namespace fEnd
 	std::pair<sf::Shader, sf::Vector2f> Map::border;
 	sf::Shader Map::stripesShader;
 	Camera Map::camera;
+
+	sf::VertexArray mapBuffer;
 
 	void Map::addRegionNeedingColorUpdate(const unsigned short regionID)
 	{
@@ -82,6 +84,8 @@ namespace fEnd
 					provinceStripes[i].color = Nation::get(bEnd::Region::get(it.first).owner).getColor();
 				else provinceStripes[i].color.a = 0;
 			}
+
+		vertexArraysVisibilityNeedsUpdate = true;
 	}
 
 	void Map::loadRegions()
@@ -158,7 +162,6 @@ namespace fEnd
 		border.first.setParameter("step", border.second);
 
 		land.create(newResolution.x, newResolution.y);
-		sea.create(newResolution.x, newResolution.y);
 
 		const float maxZoomFactor(newResolution.y / (mapSize.y * Camera::upperZoomLimitAsMapSizeFraction));
 
@@ -169,7 +172,7 @@ namespace fEnd
 
 		for (size_t it(0), end(provinceStripes.getVertexCount()); it != end; ++it)
 		{
-			provinceStripes[it].color.a = 0;//
+			provinceStripes[it].color.a = 0;
 			provinceStripes[it].texCoords.x = provinceStripes[it].position.x * maxZoomFactor;
 			provinceStripes[it].texCoords.y = provinceStripes[it].position.y * maxZoomFactor;
 		}
@@ -181,6 +184,13 @@ namespace fEnd
 			.setSize(newResolution)
 			.setScreenResolution(newResolution)
 			.setMapSize(mapSize);
+
+		mapBuffer.clear();
+		mapBuffer.setPrimitiveType(sf::PrimitiveType::Quads);
+		mapBuffer.append(sf::Vertex(sf::Vector2f(0, 0), sf::Vector2f(0, 0)));
+		mapBuffer.append(sf::Vertex(sf::Vector2f(newResolution.x, 0), sf::Vector2f(newResolution.x, 0)));
+		mapBuffer.append(sf::Vertex(sf::Vector2f(newResolution.x, newResolution.y), sf::Vector2f(newResolution.x, newResolution.y)));
+		mapBuffer.append(sf::Vertex(sf::Vector2f(0, newResolution.y), sf::Vector2f(0, newResolution.y)));
 	}
 
 	void Map::createStripesTexture(sf::Texture& targetTexture, const float size, const float stripeWidth)
@@ -212,7 +222,6 @@ namespace fEnd
 	void Map::loadResources()
 	{
 		land.setSmooth(true);
-		sea.setSmooth(true);
 
 		mapTile.loadFromFile("map/resources/mapTile.png");
 		mapTile.setRepeated(true);
@@ -237,50 +246,56 @@ namespace fEnd
 		oceanGradient.append(sf::Vertex(sf::Vector2f(mapSize.x, 0.0f), sf::Color(125, 130, 165, 255), sf::Vector2f(mapSize.x, 0.0f)));
 		oceanGradient.append(sf::Vertex(sf::Vector2f(mapSize.x, mapSize.y), sf::Color(135, 195, 205, 255), sf::Vector2f(mapSize.x, mapSize.y)));
 		oceanGradient.append(sf::Vertex(sf::Vector2f(0.0f, mapSize.y), sf::Color(135, 195, 205, 255), sf::Vector2f(0.0f, mapSize.y)));
+	}
 
-		if (!updateThreadLaunched)
-		{
-			std::thread updateThread(updateVertexArrays);
-			updateThread.detach();
+	void Map::launchRegionUpdateThread()
+	{
+		if (updateThreadLaunched) return;
 
-			updateThreadLaunched = true;
-		}
+		updateThreadLaunched = true;
+
+		std::thread updateThread(updateVertexArrays);
+		updateThread.detach();
+	}
+
+	void Map::stopRegionUpdateThread()
+	{
+		updateThreadLaunched = false;
 	}
 
 	void Map::draw(sf::RenderTarget& target, sf::RenderStates states)const
 	{
-		sea.draw(camera, states);
-		sea.clear(sf::Color(0, 0, 0, 0));
+		target.draw(camera, states);
 
 		land.draw(camera, states);
 		land.clear(sf::Color(0, 0, 0, 0));
 
-		sea.draw(oceanGradient, &mapTile);
+		target.draw(oceanGradient, &mapTile);
 		if (camera.getPosition().x < 0)
 		{
-			states.shader = nullptr;
 			states.transform.translate(-mapSize.x, 0);
 			states.texture = &mapTile;
 
-			sea.draw(oceanGradient, states);
-		}
+			target.draw(oceanGradient, states);
 
-		if (camera.getTotalZoom() < 0.2f) sea.draw(seaBuffer[drawableBufferSet]);
-		land.draw(landBuffer[drawableBufferSet], &mapTile);
+			states.transform.translate(mapSize.x, 0);
+		}
 
 		states.shader = &stripesShader;
 		states.texture = &mapTile;
 		land.draw(stripesBuffer[drawableBufferSet], states);
 
+		if (camera.getTotalZoom() < 0.2f) target.draw(seaBuffer[drawableBufferSet]);
+		land.draw(landBuffer[drawableBufferSet], &mapTile);
 
-		sea.display();
 		land.display();
 
 		border.first.setParameter("step", border.second / camera.getTotalZoom());
-		sf::Sprite bufferSprite(sea.getTexture());
-		target.draw(bufferSprite, &border.first);
-		bufferSprite.setTexture(land.getTexture());
-		target.draw(bufferSprite, &border.first);
+
+		states.shader = &border.first;
+		states.texture = &land.getTexture();
+		target.setView(target.getDefaultView());
+		target.draw(mapBuffer, states);
 	}
 
 	std::unique_ptr<gui::Interactive> Map::copy() const
@@ -459,6 +474,8 @@ namespace fEnd
 	{
 		std::ifstream cache("map/cache/provinces.bin", std::ios::in | std::ios::binary);
 
+		bEnd::Region::regions[-1].sea = true;
+
 		while (!cache.eof())
 		{
 			unsigned short provID(0);
@@ -492,7 +509,7 @@ namespace fEnd
 	{
 		gui::TimePoint timeOfLastUpdate(gui::Internals::timeSinceStart());
 
-		while (true)
+		while (updateThreadLaunched)
 			if (gui::Duration(gui::Internals::timeSinceStart() - timeOfLastUpdate) < gui::Duration(0.015f)) continue;			
 			else if (camera.hasChanged || vertexArraysVisibilityNeedsUpdate)
 			{
@@ -599,43 +616,56 @@ namespace fEnd
 	{
 		if (pixels.empty() || contour.empty()) return false;
 
-		std::unique_ptr<sf::Color> firstBorderColor(nullptr);
+		std::vector<sf::Vector2s> pointVector;
 
-		for (const auto& point : contour)
-		{
-			if (pixels.at(point.x - 1).at(point.y) != colorCode)
+		for (const auto& it : contour)
+			if (pixels.at(it.x).at(it.y) == colorCode)
 			{
-				if (firstBorderColor)
-				{
-					if (pixels.at(point.x - 1).at(point.y) != *firstBorderColor) return false;
-				}
+				pointVector.push_back(it);
+				break;
+			}
+		
+		std::unique_ptr<sf::Color> firstBorderColor(nullptr);
+		std::unordered_map<unsigned short, std::unordered_map<unsigned short, bool>> flag;
+
+		while (!pointVector.empty())
+		{
+			const sf::Vector2s point(pointVector.back());
+			pointVector.pop_back();
+
+			if (!flag[point.x + 1][point.y])
+			{
+				if (pixels.at(point.x + 1).at(point.y) == colorCode)
+					pointVector.emplace_back(point.x + 1, point.y);
+				else if (firstBorderColor && *firstBorderColor != pixels.at(point.x + 1).at(point.y)) return false;
+				else firstBorderColor.reset(new sf::Color(pixels.at(point.x + 1).at(point.y)));
+			}
+
+			if (!flag[point.x - 1][point.y])
+			{
+				if (pixels.at(point.x - 1).at(point.y) == colorCode)
+					pointVector.emplace_back(point.x - 1, point.y);
+				else if (firstBorderColor && *firstBorderColor != pixels.at(point.x - 1).at(point.y)) return false;
 				else firstBorderColor.reset(new sf::Color(pixels.at(point.x - 1).at(point.y)));
 			}
-			if (pixels.at(point.x + 1).at(point.y) != colorCode)
-			{
-				if (firstBorderColor)
-				{
-					if (pixels.at(point.x + 1).at(point.y) != *firstBorderColor) return false;
-				}
-				else firstBorderColor.reset(new sf::Color(pixels.at(point.x + 1).at(point.y)));
 
-			}
-			if (pixels.at(point.x).at(point.y - 1) != colorCode)
+			if (!flag[point.x][point.y + 1])
 			{
-				if (firstBorderColor)
-				{
-					if (pixels.at(point.x).at(point.y - 1) != *firstBorderColor) return false;
-				}
-				else firstBorderColor.reset(new sf::Color(pixels.at(point.x).at(point.y - 1)));
-			}
-			if (pixels.at(point.x - 1).at(point.y + 1) != colorCode)
-			{
-				if (firstBorderColor)
-				{
-					if (pixels.at(point.x).at(point.y + 1) != *firstBorderColor) return false;
-				}
+				if (pixels.at(point.x).at(point.y + 1) == colorCode)
+					pointVector.emplace_back(point.x, point.y + 1);
+				else if (firstBorderColor && *firstBorderColor != pixels.at(point.x).at(point.y + 1)) return false;
 				else firstBorderColor.reset(new sf::Color(pixels.at(point.x).at(point.y + 1)));
 			}
+
+			if (!flag[point.x][point.y - 1])
+			{
+				if (pixels.at(point.x).at(point.y - 1) == colorCode)
+					pointVector.emplace_back(point.x, point.y - 1);
+				else if (firstBorderColor && *firstBorderColor != pixels.at(point.x).at(point.y - 1)) return false;
+				else firstBorderColor.reset(new sf::Color(pixels.at(point.x).at(point.y - 1)));
+			}
+
+			flag[point.x][point.y] = true;
 		}
 		
 		return true;
@@ -643,6 +673,8 @@ namespace fEnd
 
 	void cullBorderTriangles(std::vector<sf::Vector2s>& provinceContour)
 	{
+		if (provinceContour.size() <= 4) return;
+		
 		for (auto it(provinceContour.begin()); it != provinceContour.end(); ++it)
 		{
 			const auto A((it == provinceContour.begin() ? provinceContour.end() : it) - 1),
@@ -651,9 +683,11 @@ namespace fEnd
 				prev((A == provinceContour.begin() ? provinceContour.end() : A) - 1),
 				next(C == provinceContour.end() - 1 ? provinceContour.begin() : C + 1);
 			if (utl::angleType(*A, *B, *C) >= 0 && !(utl::pointsAreOnOneLine(*prev, *A, *B) &&
-					utl::pointsAreOnOneLine(*B, *C, *next)) && (B->x - C->x != A->x - next->x ||
-					B->y - C->y != A->y - next->y) && (B->x - A->x != C->x - prev->x || B->y - A->y != C->y - prev->y))
-				it = provinceContour.erase(it);
+				utl::pointsAreOnOneLine(*B, *C, *next)) && (B->x - C->x != A->x - next->x || B->y - C->y != A->y - next->y) &&
+				(B->x - A->x != C->x - prev->x || B->y - A->y != C->y - prev->y))
+					it = provinceContour.erase(it);
+
+			if (it == provinceContour.end()) break;
 		}
 	}
 
