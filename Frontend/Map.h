@@ -3,6 +3,7 @@
 
 #include <GUI/Interactive.h>
 #include <GUI/Internals.h>
+#include <GUI/FadeAnimation.h>
 
 #include <SFML/System/Vector2.hpp>
 #include <SFML/Graphics/Rect.hpp>
@@ -43,6 +44,8 @@ namespace fEnd
 		
 		Map& setPosition(const float x, const float y)override;
 
+		static const Camera& getCamera();
+
 		static void addRegionNeedingColorUpdate(const unsigned short regionID);
 		static void updateAllRegionColors();
 		static void loadRegions();
@@ -61,6 +64,8 @@ namespace fEnd
 		};
 
 		void draw(sf::RenderTarget& target, sf::RenderStates states)const override;
+
+		static gui::FadeAnimation animation;
 
 		static std::unordered_map<unsigned short, Region> regions;
 

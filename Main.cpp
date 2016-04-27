@@ -3,6 +3,7 @@
 
 #include <GUI/WindowManager.h>
 #include <GUI/AudioSystem.h>
+#include <GUI/FPSMeter.h>
 
 #pragma comment(linker, "/SUBSYSTEM:windows /ENTRY:mainCRTStartup")
 
@@ -41,19 +42,13 @@ void main()
 	gui::Window map;
 	map.add(fEnd::Map());
 
-	sf::Clock fpsClock;//
-	fpsClock.restart();//
-	unsigned short frames, previousFrames;//
-
-	sf::Font font;//
-	font.loadFromFile("resources/arial.ttf");//
-
-	sf::Text text;//
-	text.setFont(font);//
-	text.setCharacterSize(25);//
-	text.setPosition(window.getSize().x - 100, 50);//
-	text.setColor(sf::Color::Green);//
+	sf::Font font;
+	font.loadFromFile("resources/arial.ttf");
 	
+	gui::FPSMeter fpsMeter(font, 25);
+	fpsMeter.setColor(sf::Color(0, 255, 0))
+		.setPosition(window.getSize().x - 100, 100);
+
 	while (true)
 	{
 		sf::Event event;
@@ -62,21 +57,9 @@ void main()
 			else map.input(event);
 
 		window.clear(sf::Color(128, 128, 128, 255));
-
-		if (fpsClock.getElapsedTime().asSeconds() >= 1.0f)//
-		{//
-			if (!gui::AudioSystem::isSongPlaying())
-				gui::AudioSystem::playRandomSong();
-			fpsClock.restart();//
-			previousFrames = frames;//
-			text.setString(std::to_string(previousFrames));//
-			frames = 0;//
-		}//
 		
 		window.draw(map);
-		window.draw(text);//
+		window.draw(fpsMeter);
 		window.display();
-
-		frames++;
 	}
 }

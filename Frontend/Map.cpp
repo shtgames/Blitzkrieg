@@ -48,6 +48,8 @@ namespace fEnd
 			gl_FragColor.a = texture2D(stripes, gl_TexCoord[0].xy).a;\
 		}";
 
+	gui::FadeAnimation Map::animation;
+
 	std::unordered_map<unsigned short, Map::Region> Map::regions;
 
 	sf::Vector2s Map::mapSize;
@@ -246,6 +248,9 @@ namespace fEnd
 		oceanGradient.append(sf::Vertex(sf::Vector2f(mapSize.x, 0.0f), sf::Color(125, 130, 165, 255), sf::Vector2f(mapSize.x, 0.0f)));
 		oceanGradient.append(sf::Vertex(sf::Vector2f(mapSize.x, mapSize.y), sf::Color(135, 195, 205, 255), sf::Vector2f(mapSize.x, mapSize.y)));
 		oceanGradient.append(sf::Vertex(sf::Vector2f(0.0f, mapSize.y), sf::Color(135, 195, 205, 255), sf::Vector2f(0.0f, mapSize.y)));
+
+		animation.setAnimationDuration(1.0f);
+		animation.setFadeDirection(0);
 	}
 
 	void Map::launchRegionUpdateThread()
@@ -285,7 +290,10 @@ namespace fEnd
 		states.texture = &mapTile;
 		land.draw(stripesBuffer[drawableBufferSet], states);
 
-		if (camera.getTotalZoom() < 0.2f) target.draw(seaBuffer[drawableBufferSet]);
+		target.draw(animation);
+		if (animation.getFadeAmount() > 0.0f)
+			target.draw(seaBuffer[drawableBufferSet], &animation.getShaderNonTextured());
+
 		land.draw(landBuffer[drawableBufferSet], &mapTile);
 
 		land.display();
@@ -314,8 +322,12 @@ namespace fEnd
 		{
 		case sf::Event::MouseMoved:
 		case sf::Event::MouseWheelMoved:
+		{	
 			camera.input(event);
-			break;
+			if (camera.getTotalZoom() <= 0.2f) animation.setFadeDirection(1);
+			else animation.setFadeDirection(0);
+			break; 
+		}
 		case sf::Event::MouseButtonReleased:
 			clickCheck(sf::Vector2s(event.mouseButton.x, event.mouseButton.y));
 			break;
@@ -339,6 +351,11 @@ namespace fEnd
 	{
 		camera.setPosition(x, y);
 		return *this;
+	}
+
+	const Camera& Map::getCamera()
+	{
+		return camera;
 	}
 
 	std::pair<std::pair<std::vector<sf::Vector2s>::const_iterator, bool>, sf::Vector2s> findCommonPoints(const std::vector<sf::Vector2s>& polygon, const std::vector<sf::Vector2s>& triangle)
