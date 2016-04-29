@@ -2,6 +2,7 @@
 
 #include "../Backend/FileProcessor.h"
 #include "../Backend/Region.h"
+
 #include "Nation.h"
 #include "utilities.h"
 
@@ -65,7 +66,7 @@ namespace fEnd
 	std::pair<sf::Shader, sf::Vector2f> Map::border;
 	sf::Shader Map::stripesShader;
 	Camera Map::camera;
-
+	
 	sf::VertexArray mapBuffer;
 
 	void Map::addRegionNeedingColorUpdate(const unsigned short regionID)
@@ -353,9 +354,9 @@ namespace fEnd
 		return *this;
 	}
 
-	const Camera& Map::getCamera()
+	const sf::Vector2s& Map::size()
 	{
-		return camera;
+		return mapSize;
 	}
 
 	std::pair<std::pair<std::vector<sf::Vector2s>::const_iterator, bool>, sf::Vector2s> findCommonPoints(const std::vector<sf::Vector2s>& polygon, const std::vector<sf::Vector2s>& triangle)
@@ -509,12 +510,19 @@ namespace fEnd
 				sf::Vector2s vertex(0, 0);
 				cache.read((char*)&vertex.x, sizeof(short));
 				cache.read((char*)&vertex.y, sizeof(short));
-				target.append(sf::Vertex(sf::Vector2f(vertex), bEnd::Region::regions.at(provID).sea ? sf::Color(40, 40, 40, 210) : sf::Color(200, 200, 200), sf::Vector2f(vertex)));
+				target.append(sf::Vertex(sf::Vector2f(vertex), bEnd::Region::regions.at(provID).sea ? sf::Color(56, 60, 65, 230) : sf::Color(200, 200, 200), sf::Vector2f(vertex)));
 			}
 			regions.at(provID).indexEnd = target.getVertexCount();
 		}
 
 		provinceStripes = landProvinces;
+	}
+
+	void Map::initialize()
+	{
+		fEnd::Map::loadRegions();
+		fEnd::Map::loadResources();
+		fEnd::Map::launchRegionUpdateThread();
 	}
 
 	void Map::clickCheck(const sf::Vector2s& point)

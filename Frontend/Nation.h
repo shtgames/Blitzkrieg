@@ -44,6 +44,8 @@ namespace fEnd
 		Continent continent;
 
 		static std::unordered_map<bEnd::Tag, Nation> nations;
+		static const bool init;
+		static const bool initialize();
 	};
 }
 

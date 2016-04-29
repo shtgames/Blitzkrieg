@@ -54,13 +54,19 @@ namespace fEnd
 		return true;
 	}
 
-	Camera& Camera::setPosition(const float x, const float y)
+	Camera& Camera::setPosition(float x, float y)
 	{
 		viewLock.lock();
+		if (x + view.getSize().x < 0) x += mapSize.x;
+		if (x + view.getSize().x > mapSize.x) x -= mapSize.x;
+		if (y + view.getSize().y / 2 < 0) y += mapSize.y;
+		if (y + view.getSize().y / 2 > mapSize.y) y -= mapSize.y;
+
 		view.setCenter(short(x + view.getSize().x / 2.0f), short(y + view.getSize().y / 2.0f));
 		position.x = short(x);
 		position.y = short(y);
 		viewLock.unlock();
+		hasChanged = true;
 
 		return *this;
 	}
@@ -70,6 +76,8 @@ namespace fEnd
 		viewLock.lock();
 		view.setSize(size.x, size.y);
 		viewLock.unlock();
+		hasChanged = true;
+
 		return *this;
 	}
 
@@ -102,6 +110,11 @@ namespace fEnd
 	{
 		std::lock_guard<std::mutex> guard(viewLock);
 		return sf::FloatRect(position, view.getSize());
+	}
+
+	const sf::Vector2f& Camera::getSize() const
+	{
+		return view.getSize();
 	}
 
 	void Camera::draw(sf::RenderTarget& target, sf::RenderStates states) const 

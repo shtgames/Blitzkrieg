@@ -5,6 +5,7 @@
 namespace fEnd
 {
 	std::unordered_map<bEnd::Tag, Nation> Nation::nations;
+	const bool Nation::init = Nation::initialize();
 
 	void Nation::loadFromFile(const std::string& path)
 	{
@@ -54,5 +55,11 @@ namespace fEnd
 				nations.at(it1.lValue).loadFromFile(it1.rStrings.front());
 			}
 		}
+	}
+
+	const bool Nation::initialize()
+	{
+		fEnd::Nation::loadNations();
+		return true;
 	}
 }

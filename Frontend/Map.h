@@ -44,8 +44,9 @@ namespace fEnd
 		
 		Map& setPosition(const float x, const float y)override;
 
-		static const Camera& getCamera();
+		static const sf::Vector2s& size();
 
+		static void initialize();
 		static void addRegionNeedingColorUpdate(const unsigned short regionID);
 		static void updateAllRegionColors();
 		static void loadRegions();
@@ -53,6 +54,8 @@ namespace fEnd
 		static void loadResources();
 		static void launchRegionUpdateThread();
 		static void stopRegionUpdateThread();
+
+		static Camera camera;
 
 	private:
 		struct Region
@@ -81,10 +84,8 @@ namespace fEnd
 		static sf::Texture mapTile, stripes;
 		static std::pair<sf::Shader, sf::Vector2f> border;
 		static sf::Shader stripesShader;
-		static Camera camera;
-
+		
 		static void clickCheck(const sf::Vector2s& point);
-
 		static void updateVertexArrays();
 
 		static void assignBorderTriangles(std::vector<sf::Vector2s>& unassignedTriangles,

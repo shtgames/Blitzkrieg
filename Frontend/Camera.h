@@ -26,7 +26,7 @@ namespace fEnd
 
 		const bool input(const sf::Event& event) override;
 
-		Camera& setPosition(const float x, const float y)override;
+		Camera& setPosition(float x, float y)override;
 		Camera& setSize(const sf::Vector2s& size);
 		Camera& setScreenResolution(const sf::Vector2s& resolution);
 		Camera& setMapSize(const sf::Vector2s& mapSize);
@@ -34,6 +34,7 @@ namespace fEnd
 		const float getTotalZoom()const;
 		const sf::Vector2f& getPosition()const override;
 		const sf::FloatRect getGlobalBounds()const override;
+		const sf::Vector2f& getSize()const;
 
 		mutable std::atomic<bool> hasChanged = false;
 

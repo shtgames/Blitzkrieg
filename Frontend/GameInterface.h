@@ -6,31 +6,32 @@
 
 #include <GUI/WindowManager.h>
 #include <GUI/Window.h>
+#include <GUI/FPSMeter.h>
+
+#include <SFML/Graphics/Font.hpp>
+#include <SFML/Graphics/RenderWindow.hpp>
 
 namespace fEnd
 {
-	class Minimap final : public gui::Window
-	{
-		void draw(sf::RenderTarget& target, sf::RenderStates states);
+	void setIcon(sf::RenderWindow& window);
 
-		sf::VertexArray rectangle;
-		sf::Sprite mapVisual;
-
-	public:
-		Minimap();
-		~Minimap() = default;
-	};
-
-	class GameInterace final : public sf::Drawable
+	class GameInterface final : public sf::Drawable
 	{
 	public:
-		GameInterace();
-		~GameInterace() = default;
-		const bool input(const sf::Event& event);
+		GameInterface(const sf::Vector2u& resolution);
+		~GameInterface() = default;
+
+		void input(const sf::Event& event);
+
+		void resetResolution(const sf::Vector2u& resolution);
+		void updatePlayer();
 
 	private:
 		void draw(sf::RenderTarget& target, sf::RenderStates states)const override;
 
-		gui::WindowManager windows;
+		gui::WindowManager m_windows;
+		sf::Sprite cursor;
+		gui::FPSMeter m_fpsMeter;
+		bool m_showFPSMeter = false;
 	};
 }
