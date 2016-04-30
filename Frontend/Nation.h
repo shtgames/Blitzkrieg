@@ -32,6 +32,7 @@ namespace fEnd
 
 		const sf::Texture& getFlag()const { return flag; }
 		const sf::Color& getColor()const { return color; }
+		const std::string& getName()const { return name; }
 
 		static Nation& get(const bEnd::Tag& tag) { return nations[tag]; }
 		static void loadNations();

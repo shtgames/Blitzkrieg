@@ -1,15 +1,41 @@
 #include "Date.h"
 
-#include <sstream>
+#include "../Backend/TimeSystem.h"
+#include "../Backend/Date.h"
 
-const std::string DATE_FORMAT = "HH, DD MM, YYYY";
+#include <sstream>
 
 namespace fEnd
 {
-	Date& fEnd::Date::setDate(const bEnd::Date& newDate)
+	Date::Date(const Date& copy)
+		: date(copy.date) {}
+
+	Date::Date(const sf::Font& font)
+	{
+		date.setFont(font);
+		date.setCharacterSize(13);
+		date.setColor(sf::Color(213, 213, 213));
+	}
+
+	std::unique_ptr<gui::Interactive> Date::copy() const
+	{
+		return std::unique_ptr<gui::Interactive>(new Date(*this));
+	}
+
+	std::unique_ptr<gui::Interactive> Date::move()
+	{
+		return std::unique_ptr<gui::Interactive>(new Date(std::move(*this)));
+	}
+
+	const bool Date::input(const sf::Event& event)
+	{
+		return false;
+	}
+
+	Date& fEnd::Date::setDate(const bEnd::Date& newDate)const
 	{
 		date.setString(toString(newDate));
-		return *this;
+		return (Date&)*this;
 	}
 
 	Date& Date::setFont(const sf::Font& font)
@@ -30,80 +56,79 @@ namespace fEnd
 		return *this;
 	}
 
+	Date& Date::setPosition(const sf::Vector2f& position)
+	{ 
+		return setPosition(position.x, position.y);
+	}
+
+	const sf::Vector2f& Date::getPosition() const
+	{
+		return date.getPosition();
+	}
+
+	const sf::FloatRect Date::getGlobalBounds() const
+	{
+		return date.getGlobalBounds();
+	}
+
 	const std::string Date::toString(const bEnd::Date& lVal)
 	{
 		std::string returnValue;
-		for (auto it = DATE_FORMAT.begin(), end = DATE_FORMAT.end(); it != end; ++it)
+
+		returnValue += (lVal.getHour() < 10 ? "0" : 0) + std::to_string(unsigned short(lVal.getHour())) +
+			":00, " + std::to_string(unsigned short(lVal.getDay())) + " ";
+
+		switch (lVal.getMonth())
 		{
-			if (*it == 'H')
-			{
-				returnValue += lVal.getHour() < 10 ? "0" : "";
-				returnValue += static_cast<std::ostringstream*>(&(std::ostringstream() << lVal.getHour()))->str() + ":00";
-				it++;
-				continue;
-			}
-			else if (*it == 'D')
-			{
-				returnValue += static_cast<std::ostringstream*>(&(std::ostringstream() << lVal.getDay()))->str();
-				it++;
-				continue;
-			}
-			else if (*it == 'M')
-			{
-				switch (lVal.getMonth())
-				{
-				case bEnd::January:
-					returnValue += "January";
-					break;
-				case bEnd::February:
-					returnValue += "February";
-					break;
-				case bEnd::March:
-					returnValue += "March";
-					break;
-				case bEnd::April:
-					returnValue += "April";
-					break;
-				case bEnd::May:
-					returnValue += "May";
-					break;
-				case bEnd::June:
-					returnValue += "June";
-					break;
-				case bEnd::July:
-					returnValue += "July";
-					break;
-				case bEnd::August:
-					returnValue += "August";
-					break;
-				case bEnd::September:
-					returnValue += "September";
-					break;
-				case bEnd::October:
-					returnValue += "October";
-					break;
-				case bEnd::November:
-					returnValue += "November";
-					break;
-				case bEnd::December:
-					returnValue += "December";
-					break;
-				}
-				it++;
-				continue;
-			}
-			else if (*it == 'Y')
-			{
-				returnValue += static_cast<std::ostringstream*>(&(std::ostringstream() << lVal.getYear()))->str();
-				it++; it++; it++;
-				continue;
-			}
-			else returnValue += *it;
+		case bEnd::January:
+			returnValue += "January";
+			break;
+		case bEnd::February:
+			returnValue += "February";
+			break;
+		case bEnd::March:
+			returnValue += "March";
+			break;
+		case bEnd::April:
+			returnValue += "April";
+			break;
+		case bEnd::May:
+			returnValue += "May";
+			break;
+		case bEnd::June:
+			returnValue += "June";
+			break;
+		case bEnd::July:
+			returnValue += "July";
+			break;
+		case bEnd::August:
+			returnValue += "August";
+			break;
+		case bEnd::September:
+			returnValue += "September";
+			break;
+		case bEnd::October:
+			returnValue += "October";
+			break;
+		case bEnd::November:
+			returnValue += "November";
+			break;
+		case bEnd::December:
+			returnValue += "December";
+			break;
 		}
-		return returnValue;
+
+		return returnValue += ", " + std::to_string(lVal.getYear());
 	}
+
 	void Date::draw(sf::RenderTarget& target, sf::RenderStates states)const
 	{
+		if (gui::Duration(gui::Internals::timeSinceStart() - timeOfLastUpdate) > gui::Duration(1.0f / gui::Internals::getUPS()))
+		{
+			setDate(bEnd::TimeSystem::getCurrentDate());
+			timeOfLastUpdate = gui::Internals::timeSinceStart();
+		}
+
 		target.draw(date, states);
 	}
 }
