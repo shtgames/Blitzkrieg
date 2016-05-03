@@ -21,7 +21,7 @@ namespace bEnd
 	const float Region::ANNEXED_NON_CORE_PENALTY = 0.7f;
 
 	Region::Region()
-		: IC(std::make_pair(0.0f, 1.0f)), leadership(std::make_pair(0.0f, 1.0f)), manpowerGeneration(std::make_pair(0.0f, 1.0f))
+		: IC(std::make_pair(0.0f, 1.0f)), leadership(std::make_pair(0.0f, 1.0f)), manpowerGeneration(std::make_pair(0.0f, 1.0f)), generatingResources(false)
 	{
 		for (unsigned char it = 0; it < Resource::Last; it++)
 			resourceGeneration[Resource(it)] = make_pair(0.0f, 1.0f);
@@ -58,8 +58,8 @@ namespace bEnd
 		resourceDistributor.changeManpowerGain(getManpowerGeneration());
 
 		resourceLock.lock();
-		for (unsigned char it = 0; it < Resource::Last; it++)
-			resourceDistributor.changeResourceGain((Resource)it, getResourceGeneration((Resource)it));
+		for (auto it = 0; it < Resource::Last; it++)
+			resourceDistributor.changeResourceGain(Resource(it), getResourceGeneration(Resource(it)), ResourceDistributor::Generated);
 		resourceLock.unlock();
 
 		LeadershipDistributor::get(controller).changeLeadershipAmount(getLeadership());
@@ -77,7 +77,7 @@ namespace bEnd
 
 		resourceLock.lock();
 		for (unsigned char it = 0; it < Resource::Last; it++)
-			resourceDistributor.changeResourceGain(Resource(it), (-1) * getResourceGeneration(Resource(it)));
+			resourceDistributor.changeResourceGain(Resource(it), (-1) * getResourceGeneration(Resource(it)), ResourceDistributor::Generated);
 		resourceLock.unlock();
 
 		LeadershipDistributor::get(controller).changeLeadershipAmount((-1) * getLeadership());
@@ -176,39 +176,41 @@ namespace bEnd
 
 	void Region::loadFromSave(const FileProcessor::Statement& source)
 	{
-		regions[std::stoi(source.lValue)];
+		Region& target(regions[std::stoi(source.lValue)]);
 
-		Region& target(regions.at(std::stoi(source.lValue)));
-
-		for (auto& it : source.rStatements)
+		for (const auto& it : source.rStatements)
+		{
 			if (it.lValue == "owner") target.changeOwner(it.rStrings.at(0));
 			else if (it.lValue == "controller") target.changeController(it.rStrings.at(0));
 			else if (it.lValue == "core") target.addCore(it.rStrings.at(0));
-			else if (it.lValue == "manpower") target.manpowerGeneration.first = std::stod(it.rStrings.at(0));
-			else if (it.lValue == "leadership") target.leadership.first = std::stod(it.rStrings.at(0));
-			else if (it.lValue == "points") target.victoryPoints = std::stod(it.rStrings.at(0));
+			else if (it.lValue == "manpower") target.manpowerGeneration.first = std::stof(it.rStrings.at(0));
+			else if (it.lValue == "leadership") target.leadership.first = std::stof(it.rStrings.at(0));
+			else if (it.lValue == "points") target.victoryPoints = std::stof(it.rStrings.at(0));
 			else if (it.lValue == "capital" && it.rStrings.at(0) == "yes") target.capital = true;
 			else if (it.lValue == "pool")
-				for (auto& it1 : it.rStatements)
+				for (const auto& it1 : it.rStatements)
 				{
-					if (it1.lValue == "energy") ResourceDistributor::get(target.controller).changeResourceAmount(Energy, std::stod(it1.rStrings.at(0)));
-					else if (it1.lValue == "metal") ResourceDistributor::get(target.controller).changeResourceAmount(Metal, std::stod(it1.rStrings.at(0)));
-					else if (it1.lValue == "rare_materials") ResourceDistributor::get(target.controller).changeResourceAmount(RareMaterials, std::stod(it1.rStrings.at(0)));
-					else if (it1.lValue == "crude_oil") ResourceDistributor::get(target.controller).changeResourceAmount(CrudeOil, std::stod(it1.rStrings.at(0)));
-					else if (it1.lValue == "supplies") ResourceDistributor::get(target.controller).changeResourceAmount(Supplies, std::stod(it1.rStrings.at(0)));
-					else if (it1.lValue == "money") ResourceDistributor::get(target.controller).changeResourceAmount(Money, std::stod(it1.rStrings.at(0)));
-					else if (it1.lValue == "fuel") ResourceDistributor::get(target.controller).changeResourceAmount(Fuel, std::stod(it1.rStrings.at(0)));
+					if (it1.lValue == "energy") ResourceDistributor::get(target.controller).changeResourceAmount(Energy, std::stof(it1.rStrings.at(0)));
+					else if (it1.lValue == "metal") ResourceDistributor::get(target.controller).changeResourceAmount(Metal, std::stof(it1.rStrings.at(0)));
+					else if (it1.lValue == "rare_materials") ResourceDistributor::get(target.controller).changeResourceAmount(RareMaterials, std::stof(it1.rStrings.at(0)));
+					else if (it1.lValue == "crude_oil") ResourceDistributor::get(target.controller).changeResourceAmount(CrudeOil, std::stof(it1.rStrings.at(0)));
+					else if (it1.lValue == "supplies") ResourceDistributor::get(target.controller).changeResourceAmount(Supplies, std::stof(it1.rStrings.at(0)));
+					else if (it1.lValue == "money") ResourceDistributor::get(target.controller).changeResourceAmount(Money, std::stof(it1.rStrings.at(0)));
+					else if (it1.lValue == "fuel") ResourceDistributor::get(target.controller).changeResourceAmount(Fuel, std::stof(it1.rStrings.at(0)));
 				}
-			else if (it.lValue == "energy") target.resourceGeneration[Energy].first = target.manpowerGeneration.first = std::stod(it.rStrings.at(0));
-			else if (it.lValue == "metal") target.resourceGeneration[Metal].first = target.manpowerGeneration.first = std::stod(it.rStrings.at(0));
-			else if (it.lValue == "rare_materials") target.resourceGeneration[RareMaterials].first = target.manpowerGeneration.first = std::stod(it.rStrings.at(0));
-			else if (it.lValue == "crude_oil") target.resourceGeneration[CrudeOil].first = target.manpowerGeneration.first = std::stod(it.rStrings.at(0));
+			else if (it.lValue == "max_producing")
+				for (const auto& it1 : it.rStatements)
+					if (it1.lValue == "energy")	target.resourceGeneration[Energy].first = target.manpowerGeneration.first = std::stof(it1.rStrings.at(0));
+					else if (it1.lValue == "metal") target.resourceGeneration[Metal].first = target.manpowerGeneration.first = std::stof(it1.rStrings.at(0));
+					else if (it1.lValue == "rare_materials") target.resourceGeneration[RareMaterials].first = target.manpowerGeneration.first = std::stof(it1.rStrings.at(0));
+					else if (it1.lValue == "crude_oil") target.resourceGeneration[CrudeOil].first = target.manpowerGeneration.first = std::stof(it1.rStrings.at(0));
 			else if (Unit::exists(it.lValue) && Unit::get(it.lValue).getType() == Unit::Building)
 			{
-				target.buildings[it.lValue].second = std::stod(it.rStrings.at(0));
-				target.repair(Unit::get(it.lValue), std::stod(it.rStrings.at(1)));
+				target.buildings[it.lValue].second = std::stof(it.rStrings.at(0));
+				target.repair(Unit::get(it.lValue), std::stof(it.rStrings.at(1)));
 			}
-		target.stopGeneratingResources();
+		}
+		target.generatingResources = false;
 		target.generateResources();
 	}
 	
@@ -241,7 +243,7 @@ namespace bEnd
 			modifier *= OccupationPolicy::get(Politics::get(controller).getOccupationPolicy(owner)).getResourceModifier();
 		else if (!hasCore(controller))
 			modifier *= ANNEXED_NON_CORE_PENALTY;
-
+		
 		return resourceGeneration.at(resourceType).first * resourceGeneration.at(resourceType).second * modifier;
 	}
 

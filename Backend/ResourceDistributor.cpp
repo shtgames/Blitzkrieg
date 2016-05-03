@@ -4,22 +4,29 @@
 
 #include "Production.h"
 
+#include <iostream>
+
 namespace bEnd
 {
 	unordered_map<Tag, unique_ptr<ResourceDistributor>> ResourceDistributor::resourceDistributors;
 	const float ResourceDistributor::BASE_IC = 1.0f, ResourceDistributor::ENERGY_PER_IC_POINT = 2.0f, ResourceDistributor::METAL_PER_IC_POINT = 1.0f, ResourceDistributor::RARE_MATERIALS_PER_IC_POINT = 0.5f;
-
-
+	
 	ResourceDistributor::ResourceDistributor(const Tag& tag)
 		: tag(tag)
 	{
-		manpower.second.second = 1.0f;
+		manpower.second = std::make_pair(0.0f, 1.0f);
 
-		ICDistribution[ToProductionLine].first = 1.0f;
+		for (auto it(0); it <= ICDistributionCategory::ToLendLease; it++)
+			ICDistribution[ICDistributionCategory(it)] = std::make_pair(0.0f, false);
+		ICDistribution[ToProductionLine] = std::make_pair(1.0f, false);
 
-		for (unsigned char it = 0; it < Resource::Last; it++)
+		for (auto it(0); it < Resource::Last; it++)
+		{
+			resources[Resource(it)].first = 0;
 			for (unsigned char it1 = 0; it1 < ResourceChangeCategory::Last; it1++)
-				resources[Resource(it)].second[ResourceChangeCategory(it1)].second = 1.0f;
+				resources[Resource(it)].second[ResourceChangeCategory(it1)] = std::make_pair(0.0f, 1.0f);
+			resources[Resource(it)].second[Total] = std::make_pair(0.0f, 1.0f);
+		}
 	}
 
 	void ResourceDistributor::loadFromSave(const FileProcessor::Statement& source)
@@ -34,7 +41,7 @@ namespace bEnd
 		setICDistributionValueLock(ToSupplyProduction, true);
 		setICDistributionValue(ToProductionLine, std::stof(source.rStrings.at(3)));
 		setICDistributionValueLock(ToProductionLine, true);
-		
+
 		setICDistributionValueLock(ToUpgrades);
 		setICDistributionValueLock(ToReinforcement);
 		setICDistributionValueLock(ToSupplyProduction);
@@ -58,14 +65,16 @@ namespace bEnd
 
 		manpower.first = manpower.first + manpower.second.first * manpower.second.first;
 
-		for (unsigned char it = 0; it < Resource::Last; it++)
-			for (unsigned char it1 = 0; it1 < ResourceChangeCategory::Last; it1++)
-			{
-				resourcesLock.lock();
-				auto& buffer = resources[Resource(it)];
-				buffer.first += buffer.second[ResourceChangeCategory(it1)].first * buffer.second[ResourceChangeCategory(it1)].second;
-				resourcesLock.unlock();
-			}
+		resourcesLock.lock();
+		for (auto it(0); it < Resource::Last; it++)
+		{
+			auto& buffer(resources[Resource(it)]);
+			buffer.second[Total].first = 0;
+			for (auto it1(0); it1 < ResourceChangeCategory::Last; it1++)
+				buffer.second[Total].first += buffer.second[ResourceChangeCategory(it1)].first * buffer.second[ResourceChangeCategory(it1)].second;
+			buffer.first += buffer.second[Total].first;
+		}
+		resourcesLock.unlock();
 
 		Production::get(tag).update();
 		// Upgrades::...
@@ -74,49 +83,51 @@ namespace bEnd
 
 	void ResourceDistributor::setICDistributionValue(const ICDistributionCategory category, const double factor)
 	{
-		ICDistributionLock.lock();
+		std::lock_guard<std::mutex> guard(ICDistributionLock);
+
 		ICDistribution[category].second = false;
-		const double difference = (factor >= 0.0f ? factor : 0.0f) - ICDistribution[category].first;
 
-		if(difference > 0.0f) do
-		{
-			double min = 1.0f;
-			unsigned char unlockedCategoryCount = 0;
+		std::vector<decltype(ICDistribution.begin())> sources;
+		const double difference((factor >= 0.0f ? factor : 0.0f) - ICDistribution[category].first);
 
-			for (auto it = ICDistribution.begin(), end = ICDistribution.end(); it != end; ++it)
+		if(difference > 0.0f)
+			do
 			{
-				if (it->first == category) continue;
-				if (!it->second.second && !(difference > 0.0f && it->second.first == 0.0f))
+				double min(1.0f);
+
+				for (auto it = ICDistribution.begin(), end = ICDistribution.end(); it != end; ++it)
 				{
-					unlockedCategoryCount++;
-					if (it->second.first < min) min = it->second.first;
+					if (it->first == category) continue;
+					if (!it->second.second && it->second.first != 0.0f)
+					{
+						sources.push_back(it);
+						if (it->second.first < min) min = it->second.first;
+					}
 				}
-			}
-			if (unlockedCategoryCount == 0) break;
+				if (sources.size() == 0) return;
 
-			const double changeAmount = difference / unlockedCategoryCount > min ? min : difference / unlockedCategoryCount;
-			for (auto it = ICDistribution.begin(), end = ICDistribution.end(); it != end; ++it)
-				if(it->first != category) it->second.first -= changeAmount;
+				if (min > difference / sources.size()) min = difference / sources.size();
+				for (const auto& it : sources)
+					it->second.first -= min;
 
-			ICDistribution[category].first += changeAmount * unlockedCategoryCount;
+				ICDistribution[category].first += min * sources.size();
 
-		} while (ICDistribution[category].first != factor);
-		else
+			} while (int(ICDistribution[category].first * 100) != int(factor * 100));
+		else if (difference != 0.0f)
 		{
-			unsigned char unlockedCategoryCount = 0;
 			for (auto it = ICDistribution.begin(), end = ICDistribution.end(); it != end; ++it)
 			{
 				if (it->first == category) continue;
-				if (!it->second.second) unlockedCategoryCount++;
+				if (!it->second.second)
+					sources.push_back(it);
 			}
+			if (sources.size() == 0) return;
 
-			const double changeAmount = difference / unlockedCategoryCount;
-			for (auto it = ICDistribution.begin(), end = ICDistribution.end(); it != end; ++it)
-				if (it->first != category) it->second.first -= changeAmount;
+			for (const auto& it : sources)
+				it->second.first -= difference / sources.size();
 
-			ICDistribution[category].first += changeAmount * unlockedCategoryCount;
+			ICDistribution[category].first += difference;
 		}
-		ICDistributionLock.unlock();
 	}
 
 	void ResourceDistributor::setICDistributionValueLock(const ICDistributionCategory category, const bool lock)

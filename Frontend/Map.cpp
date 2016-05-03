@@ -292,7 +292,7 @@ namespace fEnd
 		land.draw(stripesBuffer[drawableBufferSet], states);
 
 		target.draw(animation);
-		if (animation.getFadeAmount() > 0.0f)
+		if (animation.getFadeAmount() != 0.0f)
 			target.draw(seaBuffer[drawableBufferSet], &animation.getShaderNonTextured());
 
 		land.draw(landBuffer[drawableBufferSet], &mapTile);

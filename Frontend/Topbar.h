@@ -1,6 +1,7 @@
 #pragma once
 
 #include <GUI/Window.h>
+#include <GUI/TextArea.h>
 
 #include "../Backend/Tag.h"
 
@@ -15,12 +16,14 @@ namespace fEnd
 		Topbar();
 		~Topbar() = default;
 		
+		const bEnd::Tag& getTarget()const;
 		Topbar& setTarget(const bEnd::Tag& tag);
 
 		std::unique_ptr<gui::Window> copy()const override;
 		std::unique_ptr<gui::Window> move()override;
 
 	private:
+
 		void draw(sf::RenderTarget& target, sf::RenderStates states)const override;
 
 		bEnd::Tag target;

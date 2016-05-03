@@ -26,9 +26,10 @@ void main()
 	}
 
 	bEnd::loadSavedGame("save game/The Road to War.bk");
+	bEnd::ResourceDistributor::get(bEnd::Tag("BUL")).update();
 	fEnd::Map::updateAllRegionColors();
 	interface.updatePlayer();
-
+	
 	sf::Event event;
 	while (true)
 	{

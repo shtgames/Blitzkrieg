@@ -2,8 +2,6 @@
 
 #include "../Backend/FileProcessor.h"
 
-#include <iostream>
-
 namespace fEnd
 {
 	std::unordered_map<std::string, sf::Texture> Resources::textures;

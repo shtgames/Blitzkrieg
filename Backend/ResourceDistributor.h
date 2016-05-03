@@ -38,7 +38,8 @@ namespace bEnd
 			ConvertedFrom,
 			IntoNetwork,
 			ReturnedToStockpile,
-			Last
+			Last,
+			Total
 		};
 
 		~ResourceDistributor() = default;
@@ -50,7 +51,11 @@ namespace bEnd
 		void setICDistributionValueLock(const ICDistributionCategory category, const bool lock = false);
 
 		const float getICAmount()const { return IC.first * IC.second; }
-		const float getResourceGain(const Resource resource, const ResourceChangeCategory category)const { lock_guard<mutex> guard(resourcesLock); return resources[resource].second[category].first * resources[resource].second[category].second; };
+		const float getResourceGain(const Resource resource, const ResourceChangeCategory category)const 
+		{ 
+			lock_guard<mutex> guard(resourcesLock);
+			return resources[resource].second[category].first * resources[resource].second[category].second;
+		}
 		const float getResourceAmount(const Resource resource)const { lock_guard<mutex> guard(resourcesLock); return resources[resource].first; };
 		const float getManpowerGain()const { return manpower.second.first * manpower.second.second; }
 		const float getManpowerAmount()const { return manpower.first; }
@@ -58,8 +63,16 @@ namespace bEnd
 		void changeICAmount(const float amount) { IC.first = IC.first + amount; }
 		void changeManpowerGain(const float amount) { manpower.second.first = manpower.second.first + amount; }
 		void changeManpowerAmount(const float amount) { manpower.first + amount >= 0.0f ? manpower.first = manpower.first + amount : manpower.first = 0.0f; }
-		void changeResourceGain(const Resource resource, const float changeAmount, const ResourceChangeCategory category = Generated) { lock_guard<mutex> guard(resourcesLock); resources[resource].second[category].first += changeAmount; }
-		void changeResourceAmount(const Resource resource, const float amount) { lock_guard<mutex> guard(resourcesLock); resources[resource].first + amount >= 0.0f ? resources[resource].first += amount : resources[resource].first = 0.0f; }
+		void changeResourceGain(const Resource resource, const float changeAmount, const ResourceChangeCategory category)
+		{
+			lock_guard<mutex> guard(resourcesLock);
+			resources[resource].second[category].first += changeAmount;
+		}
+		void changeResourceAmount(const Resource resource, const float amount)
+		{ 
+			lock_guard<mutex> guard(resourcesLock);
+			resources[resource].first + amount >= 0.0f ? resources[resource].first += amount : resources[resource].first = 0.0f;
+		}
 		
 		const bool contains(const map<Resource, float>& resources)const;
 		void update();
@@ -69,7 +82,6 @@ namespace bEnd
 		static ResourceDistributor& get(const Tag& tag) { if (!resourceDistributors.count(tag)) emplace(tag); return *resourceDistributors.at(tag); }
 
 	private:
-
 		typedef map<ResourceChangeCategory, pair<float, float>>(ResourceChangeSummary);
 
 		ResourceDistributor(const ResourceDistributor&) = default;
