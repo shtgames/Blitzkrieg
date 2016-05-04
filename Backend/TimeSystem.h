@@ -33,27 +33,29 @@ namespace bEnd
 		const Date trigger;
 
 	private:
-
 		const std::function<void()> action;
 	};
 
 	class TimeSystem final
 	{
 	public:
-
-		static const Date& getCurrentDate();
 		static void        update();
 		static void        pause();
+		static void        resume();
 		static void        increaseSpeed();
 		static void        decreaseSpeed();
 		static void        addEvent(const Event& event);
 		static void        addEvent(Event&& event);
 		static void        reset(const Date& date);
 
+		static const bool isPaused();
+		static const Date& getCurrentDate();
+
 		static const chrono::high_resolution_clock gameTime;
 
 	private:
-		
+		typedef std::chrono::duration<float>(Duration);
+
 		static void eventCheck();
 
 		static priority_queue<unique_ptr<Event>> events;

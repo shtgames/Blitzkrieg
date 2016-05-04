@@ -61,7 +61,6 @@ namespace bEnd
 		static const Date NEVER;
 
 	private:
-
 		const bool isLeapYear()const;
 
 		std::atomic<unsigned char> day = 1, hour = 0;

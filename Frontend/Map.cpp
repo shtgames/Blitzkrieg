@@ -542,7 +542,7 @@ namespace fEnd
 
 				const bool targetSet(!drawableBufferSet);
 
-				const sf::FloatRect bounds(camera.getGlobalBounds());
+				const sf::FloatRect bounds(camera.getGlobalBounds().left - 30, camera.getGlobalBounds().top - 30, camera.getGlobalBounds().width + 60, camera.getGlobalBounds().height + 60);
 
 				landBuffer[targetSet].clear();
 				stripesBuffer[targetSet].clear();

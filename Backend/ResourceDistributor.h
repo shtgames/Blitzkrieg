@@ -18,6 +18,7 @@ namespace bEnd
 	class Region;
 	class ResourceDistributor final
 	{
+		friend class TimeSystem;
 	public:
 		enum ICDistributionCategory
 		{

@@ -26,17 +26,23 @@ void main()
 	}
 
 	bEnd::loadSavedGame("save game/The Road to War.bk");
-	bEnd::ResourceDistributor::get(bEnd::Tag("BUL")).update();
+
 	fEnd::Map::updateAllRegionColors();
 	interface.updatePlayer();
-	
+
+	std::thread updateThread([]()
+	{
+		while (true) bEnd::TimeSystem::update();
+	});
+	updateThread.detach();
+
 	sf::Event event;
 	while (true)
 	{
 		while (window.pollEvent(event))
 			interface.input(event);
 
-		window.clear(sf::Color(128, 128, 128, 255));
+		window.clear(sf::Color(117, 121, 126, 255));
 		
 		window.draw(interface);
 		window.display();

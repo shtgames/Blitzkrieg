@@ -1,16 +1,24 @@
 #include "TimeSystem.h"
 
+#include "Nation.h"
+#include "ResourceDistributor.h"
+
 namespace bEnd
 {
 	std::mutex                          TimeSystem::eventQueueMutex;
 	priority_queue<unique_ptr<Event>>   TimeSystem::events;
 	const chrono::high_resolution_clock TimeSystem::gameTime;
-	std::atomic<unsigned char>          TimeSystem::gameSpeed = 0;
+	std::atomic<unsigned char>          TimeSystem::gameSpeed = 4;
 	TimePoint                           TimeSystem::timeOfLastUpdate = TimeSystem::gameTime.now();
-	const std::vector<float>            TimeSystem::updateIntervals = { -1.0f, 5.0f, 2.0f, 1.0f, 0.5f, 0.042f };
+	const std::vector<float>            TimeSystem::updateIntervals = { 4.0f, 2.0f, 1.0f, 0.5f, 0.042f };
 	Date                                TimeSystem::currentDate = Date(0, 1, January, 1936);
 	std::atomic<bool>                   TimeSystem::paused = true;
 	
+	const bool TimeSystem::isPaused()
+	{
+		return paused;
+	}
+
 	const Date& TimeSystem::getCurrentDate()
 	{
 		return currentDate;
@@ -18,9 +26,11 @@ namespace bEnd
 
 	void TimeSystem::update()
 	{
-		if (gameSpeed != 0 && (gameTime.now() - timeOfLastUpdate).count() > updateIntervals.at(gameSpeed))
+		if (!paused && Duration(gameTime.now() - timeOfLastUpdate).count() > updateIntervals.at(gameSpeed))
 		{
-			if (currentDate.getDay() != (++currentDate).getDay()) 0;
+			if (currentDate.getDay() != (++currentDate).getDay())
+				for (auto& it : ResourceDistributor::resourceDistributors)
+					it.second->update();
 			eventCheck();
 			timeOfLastUpdate = gameTime.now();
 		}
@@ -29,6 +39,11 @@ namespace bEnd
 	void TimeSystem::pause()
 	{
 		paused = true;
+	}
+
+	void TimeSystem::resume()
+	{
+		paused = false;
 	}
 
 	void TimeSystem::increaseSpeed()
@@ -63,7 +78,7 @@ namespace bEnd
 	void TimeSystem::eventCheck()
 	{
 		eventQueueMutex.lock();
-		if (events.top()->trigger == currentDate)
+		if (!events.empty() && events.top()->trigger == currentDate)
 		{
 			events.top()->initiate();
 			events.pop();

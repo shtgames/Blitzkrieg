@@ -2,12 +2,14 @@
 
 #include "Date.h"
 #include "../Frontend.hpp"
+#include "../Backend/TimeSystem.h"
 #include "../Backend/ResourceDistributor.h"
 #include "../Backend/LeadershipDistributor.h"
 #include "../Backend/Nation.h"
 
 #include <GUI/Icon.h>
 #include <GUI/TextArea.h>
+#include <GUI/CheckBox.h>
 
 #include <iomanip>
 
@@ -28,7 +30,6 @@ namespace fEnd
 		const auto fullstop(gui::bind(".", sf::Color::White));
 		const sf::Color color(231, 194, 18);
 
-		setBackgroundTexture(Resources::texture("topbar_shadow"), false);
 		add("flag", gui::Icon());
 		add("energy_icon", gui::Icon(Resources::texture("icon_energy"), true).setPosition(95, -1)
 			.setMessage(default.setText(gui::bind("Energy\n", color) + gui::bind("Production covers various sources of power, mainly\ncoal. ", sf::Color::White)
@@ -167,6 +168,13 @@ the longer we will fight before considering surrender.", sf::Color::White))));
 			ss << std::fixed << std::setprecision(1) << amount;
 			return gui::bind(ss.str(), sf::Color::White);
 		}).setMessage(default.setText(gui::bind("This is the number of spies we currently train per day.", sf::Color::White))));
+
+		add("pause", gui::CheckBox(gui::Button(
+			gui::Icon(Resources::texture("pause"), true))
+			.setName(std::move(gui::TextArea("Pause", Resources::font("arial"), 14).setColor(sf::Color::White))).bindAction(gui::Button::Released, bEnd::TimeSystem::pause), gui::Button(
+				gui::Icon(Resources::texture("resume"), true))
+			.setName(gui::TextArea("Resume", Resources::font("arial"), 14).setColor(sf::Color::White)).bindAction(gui::Button::Released, bEnd::TimeSystem::resume), sf::Vector2f(322, 28),
+			bEnd::TimeSystem::isPaused()));
 
 		shadow.setTexture(Resources::texture("topbar_shadow"));
 		flagShadow.setTexture(Resources::texture("topbarflag_shadow"));
