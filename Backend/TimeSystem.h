@@ -49,6 +49,7 @@ namespace bEnd
 		static void        reset(const Date& date);
 
 		static const bool isPaused();
+		static const unsigned char getSpeed();
 		static const Date& getCurrentDate();
 
 		static const chrono::high_resolution_clock gameTime;

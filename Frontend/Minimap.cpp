@@ -17,19 +17,22 @@ namespace fEnd
 		target.draw(m_nightShadow, states);
 		if (m_nightShadow.getPosition().x < m_map.getPosition().x)
 		{
+			const sf::Transform prev(states.transform);
 			states.transform.translate(m_map.getTexture()->getSize().x, 0);
 			target.draw(m_nightShadow, states);
-			states.transform.translate((-1) * m_map.getTexture()->getSize().x, 0);
+			states.transform = prev;
 		}
 
 		target.draw(m_viewArea, states);
 		if (m_viewArea.getPosition().x < m_map.getPosition().x)
 		{
+			const sf::Transform prev(states.transform);
 			states.transform.translate(m_map.getTexture()->getSize().x, 0);
 			target.draw(m_viewArea, states);
+			states.transform = prev;
 		}
 
-		target.draw(background());
+		target.draw(background(), states);
 
 		target.setView(target.getDefaultView());
 	}

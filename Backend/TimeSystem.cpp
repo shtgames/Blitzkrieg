@@ -19,6 +19,11 @@ namespace bEnd
 		return paused;
 	}
 
+	const unsigned char TimeSystem::getSpeed()
+	{
+		return gameSpeed;
+	}
+
 	const Date& TimeSystem::getCurrentDate()
 	{
 		return currentDate;
@@ -48,7 +53,7 @@ namespace bEnd
 
 	void TimeSystem::increaseSpeed()
 	{
-		if (gameSpeed < updateIntervals.size()) gameSpeed++;
+		if (gameSpeed < updateIntervals.size() - 1) gameSpeed++;
 	}
 
 	void TimeSystem::decreaseSpeed()
