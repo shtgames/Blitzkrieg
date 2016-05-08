@@ -61,7 +61,7 @@ namespace fEnd
 	{
 		m_viewArea.setFillColor(sf::Color(0, 0, 0, 0));
 		m_viewArea.setOutlineThickness(1);
-		m_viewArea.setOutlineColor(sf::Color::White);
+		m_viewArea.setOutlineColor(sf::Color(200, 200, 200, 200));
 
 		setBackgroundTexture(Resources::texture("minimap_frame"));
 		m_map.setTexture(Resources::texture("minimap"));

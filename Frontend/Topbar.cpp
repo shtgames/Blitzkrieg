@@ -23,7 +23,8 @@ namespace fEnd
 
 	Topbar::Topbar()
 	{
-		gui::HoverMessage default(gui::bind("", sf::Color()), Resources::font("arial"), 13);
+		const auto& font(Resources::font("arial"));
+		gui::HoverMessage default(gui::bind("", sf::Color()), font, 13);
 		default.setBackgroundFill(sf::Color(30, 30, 35, 240))
 			.setBorderThickness(2)
 			.setBorderFill(sf::Color(45, 45, 50, 245));
@@ -81,8 +82,8 @@ of consumer goods to the civillian economy. If\nleft ignored, this will start to
 		add("unity_icon", gui::Icon(Resources::texture("icon_unity"), true).setPosition(913, -4)
 			.setMessage(default.setText(gui::bind("National Unity\n", color) + gui::bind("Represents the willingness of our people to fight a war to the finish. The higher\nthis value is \
 the longer we will fight before considering surrender.", sf::Color::White))));
-		add("date", Date(Resources::font("arial")).setPosition(99, 29));
-		add("nation_name", gui::TextArea("", Resources::font("arial"), 13).setPosition(99, 47));
+		add("date", Date(font).setPosition(99, 29));
+		add("nation_name", gui::TextArea("", font, 13).setColor(sf::Color(165, 169, 163)).setPosition(99, 47));
 
 		auto resourceBreakdown([](const bEnd::Resource resource, const bEnd::ResourceDistributor::ResourceChangeCategory category, const gui::ColoredText& text)
 		{
@@ -97,9 +98,9 @@ the longer we will fight before considering surrender.", sf::Color::White))));
 			}
 		});
 
-		auto addResourceGauge([color, &default, fullstop, this, &resourceBreakdown](const bEnd::Resource resource, const std::string& name, const sf::Vector2f& position)
+		auto addResourceGauge([color, &default, fullstop, this, &resourceBreakdown, &font](const bEnd::Resource resource, const std::string& name, const sf::Vector2f& position)
 		{
-			add(name, gui::TextArea("", Resources::font("arial"), 12).setPosition(position).setUpdateFunction([color, resource]()
+			add(name, gui::TextArea("", font, 12).setPosition(position).setUpdateFunction([color, resource]()
 			{
 				const auto& source(bEnd::ResourceDistributor::get(bEnd::Nation::player));
 				return gui::bind(std::to_string(int(source.getResourceAmount(resource))),
@@ -141,7 +142,7 @@ the longer we will fight before considering surrender.", sf::Color::White))));
 
 		addResourceGauge(bEnd::Money, "money", sf::Vector2f(611, 2));
 
-		add("manpower", gui::TextArea("", Resources::font("arial"), 12).setPosition(691, 2).setUpdateFunction([]()
+		add("manpower", gui::TextArea("", font, 12).setPosition(691, 2).setUpdateFunction([]()
 		{
 			return gui::bind(std::to_string(int(bEnd::ResourceDistributor::get(bEnd::Nation::player).getManpowerAmount())), sf::Color::White);
 		})
@@ -149,7 +150,7 @@ the longer we will fight before considering surrender.", sf::Color::White))));
 			gui::bind("0.0", color) + gui::bind("\nevery day.\nMonthly gain: ", sf::Color::White) +
 			gui::bind(std::to_string(bEnd::ResourceDistributor::get(bEnd::Nation::player).getManpowerGain()), color))));
 
-		add("diplo_infl", gui::TextArea("", Resources::font("arial"), 12).setPosition(763, 2).setUpdateFunction([]()
+		add("diplo_infl", gui::TextArea("", font, 12).setPosition(763, 2).setUpdateFunction([]()
 		{
 			return gui::bind("0", sf::Color::White);
 		}).setMessage(default.setText(gui::bind("", sf::Color()) + [color, fullstop]()
@@ -160,7 +161,7 @@ the longer we will fight before considering surrender.", sf::Color::White))));
 				gui::bind(std::to_string(amount), amount > 0 ? sf::Color::Green : amount == 0 ? color : sf::Color::Red) + fullstop;
 		})));
 
-		add("espionage", gui::TextArea("", Resources::font("arial"), 12).setPosition(803, 2).setUpdateFunction([]()
+		add("espionage", gui::TextArea("", font, 12).setPosition(803, 2).setUpdateFunction([]()
 		{
 			const auto amount(bEnd::LeadershipDistributor::get(bEnd::Nation::player).getLeadershipAmount() *
 				bEnd::LeadershipDistributor::get(bEnd::Nation::player).getLeadershipDistributionAmount(bEnd::LeadershipDistributor::ToEspionage));
@@ -171,10 +172,10 @@ the longer we will fight before considering surrender.", sf::Color::White))));
 			.setMessage(default.setText(gui::bind("This is the number of spies we currently train per day.", sf::Color::White))));
 
 		add("pause", gui::CheckBox(gui::Button(gui::Icon(Resources::texture("pause"), true))
-				.setName(std::move(gui::TextArea("Pause", Resources::font("arial"), 14).setPosition(-1, -3).setColor(sf::Color(255, 255, 255, 200))))
+				.setName(std::move(gui::TextArea("Pause", font, 14).setPosition(-1, -3).setColor(sf::Color(255, 255, 255, 200))))
 				.bindAction(gui::Button::Released, bEnd::TimeSystem::pause), 
 			gui::Button(gui::Icon(Resources::texture("resume"), true))
-				.setName(gui::TextArea("Resume", Resources::font("arial"), 14).setPosition(-1, -3).setColor(sf::Color(255, 255, 255, 200)))
+				.setName(gui::TextArea("Resume", font, 14).setPosition(-1, -3).setColor(sf::Color(255, 255, 255, 200)))
 				.bindAction(gui::Button::Released, bEnd::TimeSystem::resume), bEnd::TimeSystem::isPaused())
 			.setPosition(322, 26));
 
@@ -185,6 +186,32 @@ the longer we will fight before considering surrender.", sf::Color::White))));
 		add("spd_dwn", gui::Button(gui::Icon(Resources::texture("button_speeddown"), true))
 			.setPosition(299, 32)
 			.bindAction(gui::Button::Released, bEnd::TimeSystem::decreaseSpeed));
+
+		add("spd", GameSpeedIndicator().setPosition(265, 35));
+
+		{ // overlay buttons
+			auto txtDefault(gui::TextArea("", font, 14).setColor(sf::Color(28, 29, 32, 230)).setPosition(0, -3));
+			constexpr auto buttonY(27);
+			add("dipl", gui::Button(gui::Icon(Resources::texture("topbarbutton_diplo"), true))
+				.setName(txtDefault.setText("Diplomacy"))
+				.setPosition(417, buttonY));
+			add("prod", gui::Button(gui::Icon(Resources::texture("topbarbutton_prod"), true))
+				.setName(txtDefault.setText("Production"))
+				.setPosition(515, buttonY));
+			add("tech", gui::Button(gui::Icon(Resources::texture("topbarbutton_tech"), true))
+				.setName(txtDefault.setText("Technology"))
+				.setPosition(613, buttonY));
+			add("polit", gui::Button(gui::Icon(Resources::texture("topbarbutton_politics"), true))
+				.setName(txtDefault.setText("Politics"))
+				.setPosition(711, buttonY));
+			add("intel", gui::Button(gui::Icon(Resources::texture("topbarbutton_intel"), true))
+				.setName(txtDefault.setText("Intelligence"))
+				.setPosition(809, buttonY));
+			add("stats", gui::Button(gui::Icon(Resources::texture("topbarbutton_stats"), true))
+				.setName(txtDefault.setText("Statistics"))
+				.setPosition(907, buttonY)
+				.setPredicates(gui::Button::PredicateArray{ []() { return false; } }));
+		}
 
 		shadow.setTexture(Resources::texture("topbar_shadow"));
 		flagShadow.setTexture(Resources::texture("topbarflag_shadow"));
@@ -201,7 +228,7 @@ the longer we will fight before considering surrender.", sf::Color::White))));
 
 		setBackgroundTexture(Resources::texture(Resources::textureExists("topbar_" + std::string(tag)) ? "topbar_" + std::string(tag) : "topbar_generic"));
 		((gui::Icon&)at("flag")).setTexture(Nation::get(tag).getFlag());
-		((gui::TextArea&)at("nation_name")).setText(gui::bind(Nation::get(tag).getName(), sf::Color(165, 169, 163)));
+		((gui::TextArea&)at("nation_name")).setText(Nation::get(tag).getName());
 
 		return *this;
 	}
@@ -221,5 +248,31 @@ the longer we will fight before considering surrender.", sf::Color::White))));
 		target.draw(shadow, states);
 		Window::draw(target, states);
 		target.draw(flagShadow);
+	}
+
+	Topbar::GameSpeedIndicator::GameSpeedIndicator()
+		: gui::Icon(Resources::texture("speed")), paused(Resources::texture("paused")) {}
+
+	Topbar::GameSpeedIndicator& Topbar::GameSpeedIndicator::setPosition(const float x, const float y)
+	{
+		gui::Icon::setPosition(x, y);
+		paused.setPosition(x, y);
+		return *this;
+	}
+
+	void Topbar::GameSpeedIndicator::draw(sf::RenderTarget& target, sf::RenderStates states) const
+	{
+		if (bEnd::TimeSystem::isPaused())
+		{
+			target.draw(paused, states);
+			return;
+		}
+
+		states.transform.translate(0, 4);
+		for (auto it(bEnd::TimeSystem::getSpeed() + 1); it != 0; --it)
+		{
+			gui::Icon::draw(target, states);
+			states.transform.translate(0, -3);
+		}
 	}
 }
