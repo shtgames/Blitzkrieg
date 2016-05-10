@@ -134,6 +134,22 @@ the longer we will fight before considering surrender.", sf::Color::White))));
 			gui::bind("Energy", color) + fullstop) + resourceBreakdown(bEnd::CrudeOil, bEnd::ResourceDistributor::ConvertedFrom, gui::bind(" converted into ", sf::Color::White) +
 				gui::bind("Fuel", color) + fullstop);
 
+		add("IC", gui::TextPane(gui::bind("") + []() 
+		{
+			const float amount(bEnd::ResourceDistributor::get(bEnd::Nation::player).getWastedIC());
+			return gui::bind(std::to_string(unsigned short(amount)), amount == 0 ? sf::Color::Green : sf::Color::Red);
+		} + gui::bind("-", sf::Color(188, 183, 169)) + []()
+		{
+			const auto& source(bEnd::ResourceDistributor::get(bEnd::Nation::player));
+			return gui::bind(std::to_string(unsigned short(source.getBaseIC() * source.getICResourceBottleneck())),
+				source.getICResourceBottleneck() == 1 ? sf::Color::Green : sf::Color::Red);
+		} + gui::bind("-", sf::Color(188, 183, 169)) + []()
+		{
+			const auto& source(bEnd::ResourceDistributor::get(bEnd::Nation::player));
+			return gui::bind(std::to_string(unsigned short(source.getAvailableIC() * source.getICResourceBottleneck())),
+				source.getICResourceBottleneck() == 1 ? sf::Color::Green : sf::Color::Red);
+		}, font, 13).setPosition(383, 3));
+
 		addResourceGauge(bEnd::Supplies, "supplies", sf::Vector2f(504, 2));
 
 		addResourceGauge(bEnd::Fuel, "fuel", sf::Vector2f(558, 2));
@@ -147,8 +163,10 @@ the longer we will fight before considering surrender.", sf::Color::White))));
 			return gui::bind(std::to_string(int(bEnd::ResourceDistributor::get(bEnd::Nation::player).getManpowerAmount())), sf::Color::White);
 		})
 			.setMessage(default.setText(gui::bind("Our army needs ", sf::Color::White) + gui::bind("0.0", color) + gui::bind(" manpower to reinforce, and we use ", sf::Color::White) +
-			gui::bind("0.0", color) + gui::bind("\nevery day.\nMonthly gain: ", sf::Color::White) +
-			gui::bind(std::to_string(bEnd::ResourceDistributor::get(bEnd::Nation::player).getManpowerGain()), color))));
+				gui::bind("0.0", color) + gui::bind("\nevery day.\nMonthly gain: ", sf::Color::White) +	[color]() 
+				{
+					return gui::bind(std::to_string(bEnd::ResourceDistributor::get(bEnd::Nation::player).getManpowerGain()), color);
+				})));
 
 		add("diplo_infl", gui::TextArea("", font, 12).setPosition(763, 2).setUpdateFunction([]()
 		{
@@ -189,7 +207,7 @@ the longer we will fight before considering surrender.", sf::Color::White))));
 
 		add("spd", GameSpeedIndicator().setPosition(265, 35));
 
-		{ // overlay buttons
+		{
 			auto txtDefault(gui::TextArea("", font, 14).setColor(sf::Color(28, 29, 32, 230)).setPosition(0, -3));
 			constexpr auto buttonY(27);
 			add("dipl", gui::Button(gui::Icon(Resources::texture("topbarbutton_diplo"), true))

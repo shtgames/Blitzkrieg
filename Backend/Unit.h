@@ -39,8 +39,8 @@ namespace bEnd
 		const float getICMultiplier()const { return ICMultiplier; }
 		const float getLeadershipAddition()const { return LeadershipAddition; }
 		const float getLeadershipMultiplier()const { return LeadershipMultiplier; }
-		const float getResourceAddition(const Resource resource)const { return ResourceAdditionAndMultiplier.at(resource).first; }
-		const float getResourceMultiplier(const Resource resource)const { return ResourceAdditionAndMultiplier.at(resource).first; }
+		const float getResourceAddition(const Resource resource)const { return ResourceAdditionAndMultiplier[resource].first; }
+		const float getResourceMultiplier(const Resource resource)const { return ResourceAdditionAndMultiplier[resource].first; }
 		const float getManpowerAddition()const { return ManpowerAddition; }
 		const float getManpowerMultiplier()const { return ManpowerMultiplier; }
 
@@ -48,8 +48,9 @@ namespace bEnd
 		static const bool exists(const std::string& unit) { if (units.count(unit)) return true; return false; }
 		static const Unit& get(const std::string& unit) { return units.at(unit); }
 
-	private:
+		static void load();
 
+	private:
 		Unit() = delete;
 		Unit(const std::string& name);
 
@@ -66,11 +67,11 @@ namespace bEnd
 		// Building
 		float ICAddition = 0.0f, ICMultiplier = 0.0f, LeadershipAddition = 0.0f, LeadershipMultiplier = 0.0f,
 			ManpowerAddition = 0.0f, ManpowerMultiplier = 0.0f;
-		std::unordered_map<Resource, std::pair<float, float>> ResourceAdditionAndMultiplier;
+		mutable std::unordered_map<Resource, std::pair<float, float>> ResourceAdditionAndMultiplier;
 
 		// Land
 		bool canParadrop = false;
-
+		
 		static std::unordered_map<std::string, Unit> units;
 	};
 }

@@ -63,7 +63,7 @@ namespace bEnd
 		distributeIC();
 		calculateMoneyChangeAmount();
 
-		manpower.first = manpower.first + manpower.second.first * manpower.second.first;
+		manpower.first = manpower.first + (manpower.second.first * manpower.second.first) / 30;
 
 		resourcesLock.lock();
 		for (auto it(0); it < Resource::Last; it++)

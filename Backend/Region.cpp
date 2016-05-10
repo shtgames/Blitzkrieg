@@ -99,23 +99,23 @@ namespace bEnd
 
 		stopGeneratingResources();
 		resourceLock.lock();
-		for (unsigned char it = 0; it < Resource::Last; it++)
+		for (unsigned char it(0); it < Resource::Last; it++)
 		{
-			resourceGeneration.at((Resource)it).first = resourceGeneration.at((Resource)it).first +
-				building.getResourceAddition((Resource)it) * levels;
-			resourceGeneration.at((Resource)it).second = resourceGeneration.at((Resource)it).second +
-				building.getResourceMultiplier((Resource)it) * levels;
+			resourceGeneration[Resource(it)].first = resourceGeneration[Resource(it)].first +
+				building.getResourceAddition(Resource(it)) * levels;
+			resourceGeneration[Resource(it)].second = resourceGeneration[Resource(it)].second *
+				pow(building.getResourceMultiplier(Resource(it)), levels);
 		}
 		resourceLock.unlock();
 
 		IC.first = IC.first + building.getICAddition() * levels;
-		IC.second = IC.second + building.getICMultiplier() * levels;
+		IC.second = IC.second * pow(building.getICMultiplier(), levels);
 
 		leadership.first = leadership.first + building.getLeadershipAddition() * levels;
-		leadership.second = leadership.second + building.getLeadershipMultiplier() * levels;
+		leadership.second = leadership.second * pow(building.getLeadershipMultiplier(), levels);
 
 		manpowerGeneration.first = manpowerGeneration.first + building.getManpowerAddition() * levels;
-		manpowerGeneration.second = manpowerGeneration.second + building.getManpowerMultiplier() * levels;
+		manpowerGeneration.second = manpowerGeneration.second * pow(building.getManpowerMultiplier(), levels);
 
 		generateResources();
 
@@ -146,21 +146,21 @@ namespace bEnd
 		{
 			stopGeneratingResources();
 			resourceLock.lock();
-			for (unsigned char it = 0; it < Resource::Last; it++)
+			for (unsigned char it(0); it < Resource::Last; it++)
 			{
 				resourceGeneration.at((Resource)it).first = resourceGeneration.at((Resource)it).first + building.getResourceAddition((Resource)it);
-				resourceGeneration.at((Resource)it).second = resourceGeneration.at((Resource)it).second + building.getResourceMultiplier((Resource)it);
+				resourceGeneration.at((Resource)it).second = resourceGeneration.at((Resource)it).second * building.getResourceMultiplier((Resource)it);
 			}
 			resourceLock.unlock();
 
 			IC.first = IC.first + building.getICAddition();
-			IC.second = IC.second + building.getICMultiplier();
+			IC.second = IC.second * building.getICMultiplier();
 
 			leadership.first = leadership.first + building.getLeadershipAddition();
-			leadership.second = leadership.second + building.getLeadershipMultiplier();
+			leadership.second = leadership.second * building.getLeadershipMultiplier();
 
 			manpowerGeneration.first = manpowerGeneration.first + building.getManpowerAddition();
-			manpowerGeneration.second = manpowerGeneration.second + building.getManpowerMultiplier();
+			manpowerGeneration.second = manpowerGeneration.second * building.getManpowerMultiplier();
 
 			generateResources();
 
@@ -200,10 +200,12 @@ namespace bEnd
 				}
 			else if (it.lValue == "max_producing")
 				for (const auto& it1 : it.rStatements)
+				{
 					if (it1.lValue == "energy")	target.resourceGeneration[Energy].first = target.manpowerGeneration.first = std::stof(it1.rStrings.at(0));
 					else if (it1.lValue == "metal") target.resourceGeneration[Metal].first = target.manpowerGeneration.first = std::stof(it1.rStrings.at(0));
 					else if (it1.lValue == "rare_materials") target.resourceGeneration[RareMaterials].first = target.manpowerGeneration.first = std::stof(it1.rStrings.at(0));
 					else if (it1.lValue == "crude_oil") target.resourceGeneration[CrudeOil].first = target.manpowerGeneration.first = std::stof(it1.rStrings.at(0));
+				}
 			else if (Unit::exists(it.lValue) && Unit::get(it.lValue).getType() == Unit::Building)
 			{
 				target.buildings[it.lValue].second = std::stof(it.rStrings.at(0));

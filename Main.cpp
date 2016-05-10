@@ -25,6 +25,8 @@ void main()
 		gui::AudioSystem::setMasterVolume(100);
 	}
 
+	bEnd::Unit::load();
+
 	bEnd::loadSavedGame("save game/The Road to War.bk");
 
 	fEnd::Map::updateAllRegionColors();

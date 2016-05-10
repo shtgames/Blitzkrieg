@@ -51,7 +51,10 @@ namespace bEnd
 		void setICDistributionValue(const ICDistributionCategory category, const double factor);
 		void setICDistributionValueLock(const ICDistributionCategory category, const bool lock = false);
 
-		const float getICAmount()const { return IC.first * IC.second; }
+		const float getAvailableIC()const { return IC.first * IC.second; }
+		const float getBaseIC()const { return IC.first; }
+		const float getICResourceBottleneck()const { return ICResourceBottleneck; }
+		const float getWastedIC()const { return wastedIC; }
 		const float getResourceGain(const Resource resource, const ResourceChangeCategory category)const 
 		{ 
 			lock_guard<mutex> guard(resourcesLock);
