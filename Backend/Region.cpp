@@ -23,8 +23,8 @@ namespace bEnd
 	Region::Region()
 		: IC(std::make_pair(0.0f, 1.0f)), leadership(std::make_pair(0.0f, 1.0f)), manpowerGeneration(std::make_pair(0.0f, 1.0f)), generatingResources(false)
 	{
-		for (unsigned char it = 0; it < Resource::Last; it++)
-			resourceGeneration[Resource(it)] = make_pair(0.0f, 1.0f);
+		for (unsigned char it(0); it < Resource::Last; it++)
+			resourceGeneration[(Resource)it] = make_pair(0.0f, 1.0f);
 	}
 
 	void Region::changeOwner(const Tag& tag)
@@ -59,7 +59,7 @@ namespace bEnd
 
 		resourceLock.lock();
 		for (auto it = 0; it < Resource::Last; it++)
-			resourceDistributor.changeResourceGain(Resource(it), getResourceGeneration(Resource(it)), ResourceDistributor::Generated);
+			resourceDistributor.changeResourceGain((Resource)it, getResourceGeneration((Resource)it), ResourceDistributor::Generated);
 		resourceLock.unlock();
 
 		LeadershipDistributor::get(controller).changeLeadershipAmount(getLeadership());
@@ -77,7 +77,7 @@ namespace bEnd
 
 		resourceLock.lock();
 		for (unsigned char it = 0; it < Resource::Last; it++)
-			resourceDistributor.changeResourceGain(Resource(it), (-1) * getResourceGeneration(Resource(it)), ResourceDistributor::Generated);
+			resourceDistributor.changeResourceGain((Resource)it, (-1) * getResourceGeneration((Resource)it), ResourceDistributor::Generated);
 		resourceLock.unlock();
 
 		LeadershipDistributor::get(controller).changeLeadershipAmount((-1) * getLeadership());
@@ -101,10 +101,10 @@ namespace bEnd
 		resourceLock.lock();
 		for (unsigned char it(0); it < Resource::Last; it++)
 		{
-			resourceGeneration[Resource(it)].first = resourceGeneration[Resource(it)].first +
-				building.getResourceAddition(Resource(it)) * levels;
-			resourceGeneration[Resource(it)].second = resourceGeneration[Resource(it)].second *
-				pow(building.getResourceMultiplier(Resource(it)), levels);
+			resourceGeneration[(Resource)it].first = resourceGeneration[(Resource)it].first +
+				building.getResourceAddition((Resource)it) * levels;
+			resourceGeneration[(Resource)it].second = resourceGeneration[(Resource)it].second *
+				pow(building.getResourceMultiplier((Resource)it), levels);
 		}
 		resourceLock.unlock();
 

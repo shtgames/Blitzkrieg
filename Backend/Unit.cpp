@@ -74,7 +74,11 @@ namespace bEnd
 	}
 
 	Unit::Unit(const std::string& name)
-		: name(name) {}
+		: name(name) 
+	{
+		for (auto it(0); it != Resource::Last; ++it)
+			ResourceAdditionAndMultiplier[(Resource)it].second = 1.0f;
+	}
 
 	void Unit::load()
 	{

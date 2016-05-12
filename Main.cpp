@@ -8,6 +8,7 @@
 void main()
 {
 	fEnd::Resources::load();
+	bEnd::Unit::load();
 
 	sf::RenderWindow window(sf::VideoMode::getDesktopMode(), "Blitzkrieg: The Thousand-Year Reich", sf::Style::Fullscreen);
 	fEnd::setIcon(window);
@@ -24,9 +25,7 @@ void main()
 		gui::AudioSystem::setMusicVolume(100);
 		gui::AudioSystem::setMasterVolume(100);
 	}
-
-	bEnd::Unit::load();
-
+	
 	bEnd::loadSavedGame("save game/The Road to War.bk");
 
 	fEnd::Map::updateAllRegionColors();

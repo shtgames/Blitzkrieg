@@ -40,7 +40,7 @@ namespace bEnd
 		const float getLeadershipAddition()const { return LeadershipAddition; }
 		const float getLeadershipMultiplier()const { return LeadershipMultiplier; }
 		const float getResourceAddition(const Resource resource)const { return ResourceAdditionAndMultiplier[resource].first; }
-		const float getResourceMultiplier(const Resource resource)const { return ResourceAdditionAndMultiplier[resource].first; }
+		const float getResourceMultiplier(const Resource resource)const { return ResourceAdditionAndMultiplier[resource].second; }
 		const float getManpowerAddition()const { return ManpowerAddition; }
 		const float getManpowerMultiplier()const { return ManpowerMultiplier; }
 
@@ -65,8 +65,8 @@ namespace bEnd
 		std::unique_ptr<const std::string> experienceReward;
 
 		// Building
-		float ICAddition = 0.0f, ICMultiplier = 0.0f, LeadershipAddition = 0.0f, LeadershipMultiplier = 0.0f,
-			ManpowerAddition = 0.0f, ManpowerMultiplier = 0.0f;
+		float ICAddition = 0.0f, ICMultiplier = 1.0f, LeadershipAddition = 0.0f, LeadershipMultiplier = 1.0f,
+			ManpowerAddition = 0.0f, ManpowerMultiplier = 1.0f;
 		mutable std::unordered_map<Resource, std::pair<float, float>> ResourceAdditionAndMultiplier;
 
 		// Land

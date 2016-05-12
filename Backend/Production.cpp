@@ -102,13 +102,11 @@ namespace bEnd
 		totalDedicatedIC = IC;
 		productionLineLock.lock();
 		for (auto it = productionLine.begin(), end = productionLine.end(); it != end; ++it)
-			if (*it)
-			{
-				const float requiredIC = (*it)->getUnit().getRequiredIC(tag);
-				(*it)->setIC(IC / requiredIC);
-				IC > requiredIC ? IC -= requiredIC : IC = 0.0f;
-			}
-			else it = productionLine.erase(it);
+		{
+			const float requiredIC((*it)->getUnit().getRequiredIC(tag));
+			(*it)->setIC(IC / requiredIC);
+			IC > requiredIC ? IC -= requiredIC : IC = 0.0f;
+		}
 		productionLineLock.unlock();
 		return IC;
 	}

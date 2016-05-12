@@ -20,7 +20,7 @@ namespace fEnd
 			.emplace("Minimap", Minimap(sf::Vector2f(resolution)), true)
 			.emplace("Map", gui::Window().add("Map", fEnd::Map()), true);
 
-		m_fpsMeter.setFont(Resources::font("arial")).setCharacterSize(17).setColor(sf::Color::White).setPosition(25, 20);
+		m_fpsMeter.setFont(Resources::font("arial")).setCharacterSize(17).setColor(sf::Color::White).setPosition(20, 70);
 	}
 
 	void GameInterface::input(const sf::Event& event)

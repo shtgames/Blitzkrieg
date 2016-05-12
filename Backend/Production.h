@@ -56,7 +56,7 @@ namespace bEnd
 			const Date getComlpetionDate()const;
 			const unsigned short getTarget()const { return targetRegion; }
 
-			ProductionItem& setIC(const float IC) { if (IC >= 0.0f) dedicatedICPercentage = IC <= 1.0f ? IC : 1.0f; return *this; }
+			ProductionItem& setIC(const float IC) { if (IC >= 0.0f) dedicatedICPercentage = (IC <= 1.0f ? IC : 1.0f); return *this; }
 			ProductionItem& updateProductionDays(const Tag& tag);
 
 			const bool produce();
