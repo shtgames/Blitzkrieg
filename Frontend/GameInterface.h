@@ -13,8 +13,6 @@
 
 namespace fEnd
 {
-	void setIcon(sf::RenderWindow& window);
-
 	class GameInterface final : public sf::Drawable
 	{
 	public:

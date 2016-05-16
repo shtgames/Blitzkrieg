@@ -7,27 +7,20 @@
 
 void main()
 {
-	fEnd::Resources::load();
-	bEnd::Unit::load();
-
 	sf::RenderWindow window(sf::VideoMode::getDesktopMode(), "Blitzkrieg: The Thousand-Year Reich", sf::Style::Fullscreen);
-	fEnd::setIcon(window);
+	window.clear();
+	window.display();
+
+	std::atomic<bool> loading(true);
+	std::thread loadingScreen([&window, &loading] () { fEnd::drawLoadingScreen(window, loading); });
+	loadingScreen.detach();
+
+	fEnd::initializeWindow(window);
+	fEnd::Resources::load(window);
+
 	fEnd::GameInterface interface(window.getSize());
 
-	{
-		unsigned char index(0);
-		for (auto& it : bEnd::getDirectoryContents("music/*.ogg"))
-		{
-			gui::AudioSystem::loadMusicFile(index, "music/" + it);
-			index++;
-		}
-		gui::AudioSystem::playRandomSong();
-		gui::AudioSystem::setMusicVolume(100);
-		gui::AudioSystem::setMasterVolume(100);
-	}
-	
 	bEnd::loadSavedGame("save game/The Road to War.bk");
-
 	fEnd::Map::updateAllRegionColors();
 	interface.updatePlayer();
 
@@ -36,6 +29,8 @@ void main()
 		while (true) bEnd::TimeSystem::update();
 	});
 	updateThread.detach();
+
+	loading = false;
 
 	sf::Event event;
 	while (true)

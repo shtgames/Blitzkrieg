@@ -250,7 +250,7 @@ namespace fEnd
 		oceanGradient.append(sf::Vertex(sf::Vector2f(mapSize.x, mapSize.y), sf::Color(135, 195, 205, 255), sf::Vector2f(mapSize.x, mapSize.y)));
 		oceanGradient.append(sf::Vertex(sf::Vector2f(0.0f, mapSize.y), sf::Color(135, 195, 205, 255), sf::Vector2f(0.0f, mapSize.y)));
 
-		animation.setAnimationDuration(1.0f);
+		animation.setDuration(1.0f);
 		animation.setFadeDirection(0);
 	}
 

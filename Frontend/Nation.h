@@ -38,15 +38,12 @@ namespace fEnd
 		static void loadNations();
 
 	private:
-
 		sf::Texture flag;
 		sf::Color color = sf::Color(180, 180, 180);
 		std::string name;
 		Continent continent;
 
 		static std::unordered_map<bEnd::Tag, Nation> nations;
-		static const bool init;
-		static const bool initialize();
 	};
 }
 

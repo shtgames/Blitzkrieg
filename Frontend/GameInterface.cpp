@@ -10,7 +10,6 @@ namespace fEnd
 {
 	GameInterface::GameInterface(const sf::Vector2u& resolution)
 	{
-		Map::initialize();
 		Map::updateRegionVisuals(sf::Vector2s(resolution.x, resolution.y));
 
 		cursor.setTexture(Resources::texture("cursor"));
@@ -56,14 +55,5 @@ namespace fEnd
 		if (m_showFPSMeter) target.draw(m_fpsMeter);
 
 		target.draw(cursor);
-	}
-
-	void setIcon(sf::RenderWindow& window)
-	{
-		window.setMouseCursorVisible(false);
-
-		sf::Image icon;
-		icon.loadFromFile("Icon.png");
-		window.setIcon(icon.getSize().x, icon.getSize().y, icon.getPixelsPtr());
 	}
 }
