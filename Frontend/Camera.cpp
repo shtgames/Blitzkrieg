@@ -117,6 +117,15 @@ namespace fEnd
 		return view.getSize();
 	}
 
+	const sf::Vector2f Camera::mapPixelToCoords(sf::Vector2f point) const
+	{
+		point.x *= totalZoom;
+		point.y *= totalZoom;
+		point.x += position.x;
+		point.y += position.y;
+		return point;
+	}
+
 	void Camera::draw(sf::RenderTarget& target, sf::RenderStates states) const 
 	{
 		scroll();

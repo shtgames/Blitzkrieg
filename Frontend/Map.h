@@ -29,6 +29,15 @@ namespace fEnd
 	class Map final : public gui::Interactive
 	{
 	public:
+		struct Region
+		{
+			void traceShape(std::vector<std::vector<sf::Color>>& pixels, const sf::Color& colorCode,
+				std::vector<sf::Vector2s>& borderTrianglesTarget, std::vector<std::vector<sf::Vector2s>>& contourPointsTarget);
+			std::string name;
+			unsigned int indexBegin, indexEnd;
+			std::atomic<bool> highlighted = false;
+		};
+
 		Map(const Map& copy) = default;
 		Map(Map&&) = default;
 		Map() = default;
@@ -46,6 +55,7 @@ namespace fEnd
 
 		static const sf::Vector2s& size();
 
+		static Region& get(const unsigned short regionID);
 		static void initialize();
 		static void addRegionNeedingColorUpdate(const unsigned short regionID);
 		static void updateAllRegionColors();
@@ -56,16 +66,9 @@ namespace fEnd
 		static void stopRegionUpdateThread();
 
 		static Camera camera;
+		static std::unique_ptr<unsigned short> target;
 
 	private:
-		struct Region
-		{
-			void traceShape(std::vector<std::vector<sf::Color>>& pixels, const sf::Color& colorCode,
-				std::vector<sf::Vector2s>& borderTrianglesTarget, std::vector<std::vector<sf::Vector2s>>& contourPointsTarget);
-			std::string name;
-			unsigned int indexBegin, indexEnd;
-		};
-
 		void draw(sf::RenderTarget& target, sf::RenderStates states)const override;
 
 		static gui::FadeAnimation animation;
@@ -85,7 +88,7 @@ namespace fEnd
 		static std::pair<sf::Shader, sf::Vector2f> border;
 		static sf::Shader stripesShader;
 		
-		static void clickCheck(const sf::Vector2s& point);
+		static const unsigned short clickCheck(sf::Vector2s point);
 		static void updateVertexArrays();
 
 		static void assignBorderTriangles(std::vector<sf::Vector2s>& unassignedTriangles,

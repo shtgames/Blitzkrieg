@@ -35,6 +35,7 @@ namespace fEnd
 		const sf::Vector2f& getPosition()const override;
 		const sf::FloatRect getGlobalBounds()const override;
 		const sf::Vector2f& getSize()const;
+		const sf::Vector2f mapPixelToCoords(sf::Vector2f point)const;
 
 		mutable std::atomic<bool> hasChanged = false;
 

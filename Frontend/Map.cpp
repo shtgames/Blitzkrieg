@@ -66,6 +66,7 @@ namespace fEnd
 	std::pair<sf::Shader, sf::Vector2f> Map::border;
 	sf::Shader Map::stripesShader;
 	Camera Map::camera;
+	std::unique_ptr<unsigned short> Map::target;
 	
 	sf::VertexArray mapBuffer;
 
@@ -322,20 +323,31 @@ namespace fEnd
 		switch (event.type)
 		{
 		case sf::Event::MouseMoved:
+			return camera.input(event);
 		case sf::Event::MouseWheelMoved:
 		{	
-			camera.input(event);
+			const bool ret(camera.input(event));
 			if (camera.getTotalZoom() <= 0.2f) animation.setFadeDirection(1);
 			else animation.setFadeDirection(0);
-			break; 
+			return ret;
 		}
 		case sf::Event::MouseButtonReleased:
-			clickCheck(sf::Vector2s(event.mouseButton.x, event.mouseButton.y));
-			break;
+			if (target)
+			{
+				regions[*target].highlighted = false;
+				addRegionNeedingColorUpdate(*target);
+			}
+			target.reset(new auto(clickCheck(sf::Vector2s(event.mouseButton.x, event.mouseButton.y))));
+			if (*target == unsigned short(-2)) target.reset();
+			else
+			{
+				regions[*target].highlighted = true;
+				addRegionNeedingColorUpdate(*target);
+			}
+			return true;
 		default:
 			return false;
 		}
-		return true;
 	}
 
 	const sf::FloatRect Map::getGlobalBounds() const
@@ -518,6 +530,11 @@ namespace fEnd
 		provinceStripes = landProvinces;
 	}
 
+	Map::Region& Map::get(const unsigned short regionID)
+	{
+		return regions[regionID];
+	}
+
 	void Map::initialize()
 	{
 		fEnd::Map::loadRegions();
@@ -525,9 +542,21 @@ namespace fEnd
 		fEnd::Map::launchRegionUpdateThread();
 	}
 
-	void Map::clickCheck(const sf::Vector2s& point)
+	const unsigned short Map::clickCheck(sf::Vector2s point)
 	{
-		//
+		point = sf::Vector2s(camera.mapPixelToCoords(sf::Vector2f(point)));
+		for (const auto& it : regions)
+			if (bEnd::Region::get(it.first).sea)
+			{
+				if (utl::pointIsInsidePolygon(seaProvinces, it.second.indexBegin, it.second.indexEnd, sf::Vector2f(point)))
+					return it.first;
+			}
+			else for (auto i(it.second.indexBegin); i != it.second.indexEnd; i += 3)
+			{
+				if (utl::pointIsInsideTriangle(sf::Vector2s(landProvinces[i].position), sf::Vector2s(landProvinces[i + 1].position),
+					sf::Vector2s(landProvinces[i + 2].position), point)) return it.first;
+			}
+		return unsigned short(-2);
 	}
 
 	void Map::updateVertexArrays()
@@ -626,14 +655,32 @@ namespace fEnd
 						regionsNeedingColorUpdate.pop();
 						continue;
 					}
-					for (auto it(regions[regionsNeedingColorUpdate.front()].indexBegin), end(regions[regionsNeedingColorUpdate.front()].indexEnd); it != end; ++it)
-					{
-						landProvinces[it].color = Nation::get(bEnd::Region::get(regionsNeedingColorUpdate.front()).owner).getColor();
-						provinceStripes[it].color = Nation::get(bEnd::Region::get(regionsNeedingColorUpdate.front()).controller).getColor();
-					}
+					const auto& Controller(Nation::get(bEnd::Region::get(regionsNeedingColorUpdate.front()).controller)),
+						Owner(Nation::get(bEnd::Region::get(regionsNeedingColorUpdate.front()).owner));
+					const auto& region(regions[regionsNeedingColorUpdate.front()]);
+					if (&Controller != &Owner)
+						for (auto it(regions[regionsNeedingColorUpdate.front()].indexBegin), end(regions[regionsNeedingColorUpdate.front()].indexEnd); it != end; ++it)
+						{
+							landProvinces[it].color.r = Controller.getColor().r + (region.highlighted ? (255 - Controller.getColor().r) * 0.3f : 0);
+							landProvinces[it].color.g = Controller.getColor().g + (region.highlighted ? (255 - Controller.getColor().g) * 0.3f : 0);
+							landProvinces[it].color.b = Controller.getColor().b + (region.highlighted ? (255 - Controller.getColor().b) * 0.3f : 0);
+							provinceStripes[it].color.r = Owner.getColor().r + (region.highlighted ? (255 - Owner.getColor().r) * 0.3f : 0);
+							provinceStripes[it].color.g = Owner.getColor().g + (region.highlighted ? (255 - Owner.getColor().g) * 0.3f : 0);
+							provinceStripes[it].color.b = Owner.getColor().b + (region.highlighted ? (255 - Owner.getColor().b) * 0.3f : 0);
+							provinceStripes[it].color.a = 255;
+						}
+					else for(auto it(regions[regionsNeedingColorUpdate.front()].indexBegin), end(regions[regionsNeedingColorUpdate.front()].indexEnd); it != end; ++it)
+						{
+							landProvinces[it].color.r = Controller.getColor().r + (region.highlighted ? (255 - Controller.getColor().r) * 0.3f : 0);
+							landProvinces[it].color.g = Controller.getColor().g + (region.highlighted ? (255 - Controller.getColor().g) * 0.3f : 0);
+							landProvinces[it].color.b = Controller.getColor().b + (region.highlighted ? (255 - Controller.getColor().b) * 0.3f : 0);
+							provinceStripes[it].color.a = 0;
+						}
 					regionsNeedingColorUpdate.pop();
 				}
 				colorUpdateQueueLock.unlock();
+				vertexArraysVisibilityNeedsUpdate = true;
+				continue;
 			}
 	}
 

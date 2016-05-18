@@ -42,6 +42,31 @@ void utl::cullBorderTriangles(const std::vector<std::vector<sf::Color>>& pixels,
 	}
 }
 
+const bool utl::linesIntersect(const sf::Vector2f& a, const sf::Vector2f& b, const sf::Vector2f& c, const sf::Vector2f& d)
+{
+	return false;
+}
+
+const bool utl::pointIsInsidePolygon(const sf::VertexArray& points, const unsigned int indexBegin, const unsigned int indexEnd, const sf::Vector2f& point)
+{
+	sf::Vector2u min(unsigned short(-1), unsigned short(-1)), max(0, 0);
+	for (auto i(indexBegin); i != indexEnd; ++i)
+	{
+		if (points[i].position.x > max.x) max.x = points[i].position.x;
+		if (points[i].position.y > max.y) max.y = points[i].position.y;
+		if (points[i].position.x < min.x) min.x = points[i].position.x;
+		if (points[i].position.y < min.y) min.y = points[i].position.y;
+	}
+	if (point.x < min.x || point.x > max.x || point.y < min.y || point.y > max.y) return false;
+
+	sf::Vector2f ray(min.x - 1, point.y);
+	unsigned short intersections(0);
+	for (auto i(indexBegin); i != indexEnd; ++i) 
+		if (linesIntersect(points[i].position, points[i + 1].position, ray, point)) intersections++;
+
+	return intersections % 2;
+}
+
 const bool utl::pointIsInsideTriangle(const sf::Vector2s& A1, const sf::Vector2s& B1, const sf::Vector2s& C1, const sf::Vector2s& point1)
 {
 	const sf::Vector2f A(A1.x, A1.y), B(B1.x, B1.y), C(C1.x, C1.y), point(point1.x, point1.y);

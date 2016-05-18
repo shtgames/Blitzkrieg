@@ -80,7 +80,14 @@ namespace fEnd
 
 	const bool Minimap::input(const sf::Event& event)
 	{
-		if (event.type == sf::Event::MouseButtonPressed)
+		if (event.type == sf::Event::MouseMoved && m_map.getGlobalBounds().contains(event.mouseMove.x, event.mouseMove.y))
+		{
+			if (sf::Mouse::isButtonPressed(sf::Mouse::Left))
+				Map::camera.setPosition(((event.mouseMove.x - m_map.getPosition().x) / m_map.getTexture()->getSize().x) * Map::size().x - Map::camera.getSize().x / 2,
+					((event.mouseMove.y - m_map.getPosition().y) / m_map.getTexture()->getSize().y) * Map::size().y - Map::camera.getSize().y / 2);
+			return true;
+		}
+		else if (event.type == sf::Event::MouseButtonPressed)
 		{
 			if (m_map.getGlobalBounds().contains(event.mouseButton.x, event.mouseButton.y))
 			{
@@ -90,12 +97,15 @@ namespace fEnd
 				return true;
 			}
 		}
-		else if (event.type == sf::Event::MouseMoved && m_map.getGlobalBounds().contains(event.mouseMove.x, event.mouseMove.y))
+		else if (event.type == sf::Event::MouseButtonReleased)
 		{
-			if (sf::Mouse::isButtonPressed(sf::Mouse::Left))
-				Map::camera.setPosition(((event.mouseMove.x - m_map.getPosition().x) / m_map.getTexture()->getSize().x) * Map::size().x - Map::camera.getSize().x / 2,
-					((event.mouseMove.y - m_map.getPosition().y) / m_map.getTexture()->getSize().y) * Map::size().y - Map::camera.getSize().y / 2);
-			return true;
+			if (m_map.getGlobalBounds().contains(event.mouseButton.x, event.mouseButton.y))
+			{
+				if (event.mouseButton.button == sf::Mouse::Left)
+					Map::camera.setPosition(((event.mouseButton.x - m_map.getPosition().x) / m_map.getTexture()->getSize().x) * Map::size().x - Map::camera.getSize().x / 2,
+						((event.mouseButton.y - m_map.getPosition().y) / m_map.getTexture()->getSize().y) * Map::size().y - Map::camera.getSize().y / 2);
+				return true;
+			}
 		}
 		return false;
 	}
