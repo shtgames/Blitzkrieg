@@ -90,7 +90,7 @@ namespace fEnd
 	Camera& Camera::setMapSize(const sf::Vector2s& newMapSize)
 	{
 		mapSize = newMapSize;
-		if (mapSize.y * lowerZoomLimitAsMapSizeFraction < view.getSize().y)
+		if (mapSize.y * lowerZoomLimitAsMapSizeFraction < getSize().y)
 			zoom(1.01f, sf::Vector2f(resolution.x / 2, resolution.y / 2));
 		return *this;
 	}
@@ -114,6 +114,7 @@ namespace fEnd
 
 	const sf::Vector2f& Camera::getSize() const
 	{
+		std::lock_guard<std::mutex> guard(viewLock);
 		return view.getSize();
 	}
 
@@ -128,18 +129,15 @@ namespace fEnd
 
 	void Camera::draw(sf::RenderTarget& target, sf::RenderStates states) const 
 	{
+		std::lock_guard<std::mutex> guard(viewLock);
 		scroll();
-		viewLock.lock();
 		target.setView(view);
-		viewLock.unlock();
 	}
 
 	void Camera::scroll()const
 	{
 		if ((scrollDirection.x != 0 || scrollDirection.y != 0) && gui::Duration(gui::Internals::timeSinceStart() - timeOfLastScroll) > gui::Duration(0.04))
-		{
-			viewLock.lock();
-			
+		{			
 			view.move(short(scrollDirection.x * (1 + scrollStep * totalZoom)), short(scrollDirection.y * (1 + scrollStep * totalZoom)));
 
 			if (view.getCenter().x + (view.getSize().x / 2.0f) > mapSize.x)
@@ -154,9 +152,7 @@ namespace fEnd
 
 			position.x = short(view.getCenter().x - (view.getSize().x / 2.0f));
 			position.y = short(view.getCenter().y - (view.getSize().y / 2.0f));
-
-			viewLock.unlock();
-
+			
 			hasChanged = true;
 			timeOfLastScroll = gui::Internals::timeSinceStart();
 		}
@@ -164,18 +160,23 @@ namespace fEnd
 
 	void Camera::zoom(float factor, sf::Vector2f targetPoint)
 	{
-		if ((view.getSize().y == mapSize.y * lowerZoomLimitAsMapSizeFraction && factor > 1.0f) ||
-			(view.getSize().y == mapSize.y * upperZoomLimitAsMapSizeFraction && factor < 1.0f)) return;
-
 		targetPoint.x = position.x + targetPoint.x * totalZoom;
 		targetPoint.y = position.y + targetPoint.y * totalZoom;
 
+		viewLock.lock();
+
+		if ((view.getSize().y == mapSize.y * lowerZoomLimitAsMapSizeFraction && factor > 1.0f) ||
+			(view.getSize().y == mapSize.y * upperZoomLimitAsMapSizeFraction && factor < 1.0f))
+		{
+			viewLock.unlock();
+			return;
+		}
+		
 		if (view.getSize().y * factor > mapSize.y * lowerZoomLimitAsMapSizeFraction)
 			factor = mapSize.y * lowerZoomLimitAsMapSizeFraction / view.getSize().y;
 		else if (view.getSize().y < mapSize.y * upperZoomLimitAsMapSizeFraction)
 			factor = mapSize.y * upperZoomLimitAsMapSizeFraction / view.getSize().y;
 
-		viewLock.lock();
 		view.zoom(factor);
 		view.move(short((targetPoint.x - view.getCenter().x) *  (1 - factor)),
 			short((targetPoint.y - view.getCenter().y) *  (1 - factor)));

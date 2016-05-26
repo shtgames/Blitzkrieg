@@ -64,19 +64,21 @@ namespace fEnd
 		static void loadResources();
 		static void launchRegionUpdateThread();
 		static void stopRegionUpdateThread();
-
-		static Camera camera;
+		static const sf::FloatRect getViewBounds();
+		static void setViewPosition(const float x, const float y);
+		
 		static std::unique_ptr<unsigned short> target;
 
 	private:
 		void draw(sf::RenderTarget& target, sf::RenderStates states)const override;
 
+		static Camera camera;
 		static gui::FadeAnimation animation;
 
 		static std::unordered_map<unsigned short, Region> regions;
 
 		static sf::VertexArray stripesBuffer[2], landBuffer[2], seaBuffer[2];
-		static std::atomic<bool> drawableBufferSet, vertexArraysVisibilityNeedsUpdate, updateThreadLaunched;
+		static volatile std::atomic<bool> drawableBufferSet, vertexArraysVisibilityNeedsUpdate, updateThreadLaunched;
 		static std::queue<unsigned short> regionsNeedingColorUpdate;
 		static std::mutex colorUpdateQueueLock;
 

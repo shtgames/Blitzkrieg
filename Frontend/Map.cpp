@@ -58,7 +58,7 @@ namespace fEnd
 
 	sf::VertexArray Map::oceanGradient, Map::provinceStripes, Map::landProvinces, Map::seaProvinces;
 	sf::VertexArray Map::stripesBuffer[2], Map::landBuffer[2], Map::seaBuffer[2];
-	std::atomic<bool> Map::drawableBufferSet, Map::vertexArraysVisibilityNeedsUpdate = false, Map::updateThreadLaunched = false;
+	volatile std::atomic<bool> Map::drawableBufferSet, Map::vertexArraysVisibilityNeedsUpdate = false, Map::updateThreadLaunched = false;
 	std::queue<unsigned short> Map::regionsNeedingColorUpdate;
 	std::mutex Map::colorUpdateQueueLock;
 
@@ -268,6 +268,16 @@ namespace fEnd
 	void Map::stopRegionUpdateThread()
 	{
 		updateThreadLaunched = false;
+	}
+
+	const sf::FloatRect Map::getViewBounds()
+	{
+		return camera.getGlobalBounds();
+	}
+
+	void Map::setViewPosition(const float x, const float y)
+	{
+		camera.setPosition(x, y);
 	}
 
 	void Map::draw(sf::RenderTarget& target, sf::RenderStates states)const

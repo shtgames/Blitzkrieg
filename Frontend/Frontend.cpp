@@ -34,8 +34,8 @@ namespace fEnd
 		circleTex.loadFromFile("ls/loading.png");
 
 		sf::View view;
-		view.setCenter(1920 / 2, 1080 / 2);
-		view.setSize(1920, 1080);
+		view.setCenter(backgroundTex.getSize().x / 2, backgroundTex.getSize().y / 2);
+		view.setSize(sf::Vector2f(backgroundTex.getSize()));
 		view.setViewport(sf::FloatRect(0, 0, 1, 1));
 
 		sf::Sprite background(backgroundTex);
@@ -74,7 +74,7 @@ namespace fEnd
 		target.setActive(false);
 	}
 
-	void Resources::load(sf::RenderTarget& window)
+	void Resources::load()
 	{
 		{
 			unsigned char index(0);

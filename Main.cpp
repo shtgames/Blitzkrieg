@@ -15,7 +15,7 @@ void main()
 	std::thread loadingScreen([&window, &loading] () { fEnd::drawLoadingScreen(window, loading); });
 	loadingScreen.detach();
 
-	fEnd::Resources::load(window);
+	fEnd::Resources::load();
 
 	fEnd::GameInterface interface(window.getSize());
 	//
@@ -34,9 +34,9 @@ void main()
 	sf::Event event;
 	while (true)
 	{
-		while (window.pollEvent(event))	interface.input(event);
+		while (window.pollEvent(event)) interface.input(event);
 
-		window.clear(sf::Color(117, 121, 126, 255));		
+		window.clear(sf::Color(117, 121, 126, 255));
 		window.draw(interface);
 		window.display();
 	}

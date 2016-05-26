@@ -23,7 +23,7 @@ namespace fEnd
 		static const sf::Texture& texture(const std::string& key);
 		static const bool textureExists(const std::string& key);
 		static const sf::Font& font(const std::string& key);
-		static void load(sf::RenderTarget& window);
+		static void load();
 
 	private:
 		static std::unordered_map<std::string, sf::Texture> textures;
