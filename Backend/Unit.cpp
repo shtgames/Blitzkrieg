@@ -7,6 +7,7 @@
 namespace bEnd
 {
 	std::unordered_map<std::string, Unit> Unit::units;
+	std::unordered_map<Unit::Type, unsigned short> Unit::unitCount;
 
 	const float Unit::getRequiredIC(const Tag& tag)const
 	{
@@ -35,6 +36,7 @@ namespace bEnd
 				else if (it->rStrings.front() == "air") target.type = Air;
 				else if (it->rStrings.front() == "naval") target.type = Naval;
 				else if (it->rStrings.front() == "building") target.type = Building;
+				unitCount[target.type]++;
 			}
 			else if (it->lValue == "can_paradrop" && it->rStrings.front() == "yes")
 				target.canParadrop = true;
@@ -71,6 +73,21 @@ namespace bEnd
 					target.ResourceAdditionAndMultiplier.at(resource).second = std::stof(it1.rStrings.at(1));
 				}
 		return true;
+	}
+
+	std::unordered_map<std::string, Unit>::const_iterator Unit::begin()
+	{
+		return units.begin();
+	}
+
+	std::unordered_map<std::string, Unit>::const_iterator Unit::end()
+	{
+		return units.end();
+	}
+
+	const unsigned short Unit::unitsOfType(const Type type)
+	{
+		return unitCount[type];
 	}
 
 	Unit::Unit(const std::string& name)

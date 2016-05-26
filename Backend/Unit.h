@@ -14,7 +14,6 @@ namespace bEnd
 	class Unit final
 	{
 	public:
-
 		enum Type
 		{
 			Building,
@@ -47,6 +46,9 @@ namespace bEnd
 		static const bool loadFromFile(const FileProcessor::Statement& file);
 		static const bool exists(const std::string& unit) { if (units.count(unit)) return true; return false; }
 		static const Unit& get(const std::string& unit) { return units.at(unit); }
+		static std::unordered_map<std::string, Unit>::const_iterator begin();
+		static std::unordered_map<std::string, Unit>::const_iterator end();
+		static const unsigned short unitsOfType(const Type type);
 
 		static void load();
 
@@ -68,11 +70,13 @@ namespace bEnd
 		float ICAddition = 0.0f, ICMultiplier = 1.0f, LeadershipAddition = 0.0f, LeadershipMultiplier = 1.0f,
 			ManpowerAddition = 0.0f, ManpowerMultiplier = 1.0f;
 		mutable std::unordered_map<Resource, std::pair<float, float>> ResourceAdditionAndMultiplier;
+		unsigned short lineOfSightAddition = 0;
 
 		// Land
 		bool canParadrop = false;
 		
 		static std::unordered_map<std::string, Unit> units;
+		static std::unordered_map<Type, unsigned short> unitCount;
 	};
 }
 

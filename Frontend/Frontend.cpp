@@ -27,6 +27,8 @@ namespace fEnd
 
 	void drawLoadingScreen(sf::RenderWindow& target, volatile const std::atomic<bool>& loading)
 	{
+		target.setActive(true);
+
 		sf::Texture backgroundTex, circleTex;
 		backgroundTex.loadFromFile("ls/background.png");
 		circleTex.loadFromFile("ls/loading.png");
@@ -68,6 +70,8 @@ namespace fEnd
 			target.draw(circle);
 			target.display();
 		}
+
+		target.setActive(false);
 	}
 
 	void Resources::load(sf::RenderTarget& window)
@@ -81,8 +85,19 @@ namespace fEnd
 			}
 			gui::AudioSystem::playRandomSong();
 			gui::AudioSystem::setMusicVolume(100);
-			gui::AudioSystem::setMasterVolume(100);
 		}
+
+		{
+			unsigned char index(0);
+			for (const auto& it : bEnd::getDirectoryContents("sounds/*.wav"))
+			{
+				gui::AudioSystem::loadSoundFile(index, "sounds/" + it);
+				index++;
+			}
+			gui::AudioSystem::setSoundVolume(100);
+		}
+
+		gui::AudioSystem::setMasterVolume(100);
 
 		Nation::loadNations();
 

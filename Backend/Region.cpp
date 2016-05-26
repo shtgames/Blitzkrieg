@@ -260,6 +260,18 @@ namespace bEnd
 		return IC.first * IC.second * modifier;
 	}
 
+	const Region::BuildingLevels Region::getBuildingLevels(const std::string& key)
+	{
+		if (buildings.count(key))
+			return buildings.at(key);
+		else return BuildingLevels(0, 0);
+	}
+
+	const bool Region::isSea() const
+	{
+		return sea;
+	}
+
 	bool Region::hasCore(const Tag& tag)const
 	{
 		std::lock_guard<std::mutex> guard(coresLock);

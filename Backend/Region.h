@@ -27,6 +27,8 @@ namespace bEnd
 	{
 		friend class fEnd::Map;
 	public:
+		typedef pair<float, unsigned char>(BuildingLevels);
+
 		Region(const Region&) = default;
 		Region(Region&&) = default;
 		Region();
@@ -41,6 +43,8 @@ namespace bEnd
 		const float getManpowerGeneration()const;
 		const float getResourceGeneration(const Resource resource)const;
 		const float getIC()const;
+		const BuildingLevels getBuildingLevels(const std::string& key);
+		const bool isSea()const;
 
 		bool hasCore(const Tag&)const;
 		void addCore(const Tag&);
@@ -50,7 +54,6 @@ namespace bEnd
 		static Region& get(const unsigned short regionID) { return regions.at(regionID); }
 
 	private:
-		typedef pair<float, unsigned char>(BuildingLevels);
 		
 		void changeOwner(const Tag&);
 		void changeController(const Tag&);

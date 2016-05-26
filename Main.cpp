@@ -8,12 +8,13 @@
 void main()
 {
 	sf::RenderWindow window(sf::VideoMode::getDesktopMode(), "Blitzkrieg: The Thousand-Year Reich", sf::Style::Fullscreen);
+	fEnd::initializeWindow(window);
 
-	std::atomic<bool> loading(true);
+	std::atomic<bool> loading;
+	window.setActive(!(loading = true));
 	std::thread loadingScreen([&window, &loading] () { fEnd::drawLoadingScreen(window, loading); });
 	loadingScreen.detach();
 
-	fEnd::initializeWindow(window);
 	fEnd::Resources::load(window);
 
 	fEnd::GameInterface interface(window.getSize());
@@ -28,7 +29,7 @@ void main()
 	});
 	updateThread.detach();
 
-	loading = false;
+	window.setActive(!(loading = false));
 
 	sf::Event event;
 	while (true)

@@ -12,12 +12,13 @@ namespace fEnd
 	{
 		Map::updateRegionVisuals(sf::Vector2s(resolution.x, resolution.y));
 
-		cursor.setTexture(Resources::texture("cursor"));
+		m_cursor.setTexture(Resources::texture("cursor"));
 
 		m_windows
 			.emplace("Topbar", Topbar(), true)
 			.emplace("Minimap", Minimap(sf::Vector2f(resolution)), true)
-			.emplace("Map", gui::Window().add("Map", fEnd::Map()), true);
+			.emplace("Map", gui::Window().add("Map", fEnd::Map()), true)
+			.emplace("Reg Panel", RegionPanel(resolution));			
 
 		m_fpsMeter.setFont(Resources::font("arial")).setCharacterSize(17).setColor(sf::Color::White).setPosition(20, 70);
 	}
@@ -32,7 +33,7 @@ namespace fEnd
 		}
 		else if (event.type == sf::Event::MouseMoved)
 		{
-			cursor.setPosition(event.mouseMove.x, event.mouseMove.y);
+			m_cursor.setPosition(event.mouseMove.x, event.mouseMove.y);
 			m_windows.at("Map", true).input(event);
 		}
 
@@ -54,6 +55,6 @@ namespace fEnd
 		target.draw(m_windows);
 		if (m_showFPSMeter) target.draw(m_fpsMeter);
 
-		target.draw(cursor);
+		target.draw(m_cursor);
 	}
 }

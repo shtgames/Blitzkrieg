@@ -5,6 +5,7 @@
 #include "Frontend/GameInterface.h"
 #include "Frontend/Minimap.h"
 #include "Frontend/Topbar.h"
+#include "Frontend/RegionPanel.h"
 
 #include <SFML/Graphics/Texture.hpp>
 #include <SFML/Graphics/Font.hpp>

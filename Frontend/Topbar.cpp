@@ -10,6 +10,7 @@
 #include <GUI/Icon.h>
 #include <GUI/TextArea.h>
 #include <GUI/CheckBox.h>
+#include <GUI/AudioSystem.h>
 
 #include <iomanip>
 
@@ -132,7 +133,7 @@ the longer we will fight before considering surrender."))));
 		addResourceGauge(bEnd::RareMaterials, "rare_mats", sf::Vector2f(250, 2));
 		addResourceGauge(bEnd::CrudeOil, "oil", sf::Vector2f(306, 2));
 
-		add("IC", gui::TextPane(gui::bind("") + []() 
+		add("IC", gui::TextPane([]() 
 		{
 			const float amount(bEnd::ResourceDistributor::get(bEnd::Nation::player).getWastedIC());
 			return gui::bind(std::to_string(unsigned short(amount)), amount > 0 ? sf::Color::Red : sf::Color::Green);
@@ -188,19 +189,19 @@ the longer we will fight before considering surrender."))));
 
 		add("pause", gui::CheckBox(gui::Button(gui::Icon(Resources::texture("pause"), true))
 				.setName(std::move(gui::TextArea("Pause", font, 14).setPosition(-1, -3).setColor(sf::Color(255, 255, 255, 200))))
-				.bindAction(gui::Button::Released, bEnd::TimeSystem::pause), 
+				.bindAction(gui::Released, []() { bEnd::TimeSystem::pause(); gui::AudioSystem::playSound(0); }),
 			gui::Button(gui::Icon(Resources::texture("resume"), true))
 				.setName(gui::TextArea("Resume", font, 14).setPosition(-1, -3).setColor(sf::Color(255, 255, 255, 200)))
-				.bindAction(gui::Button::Released, bEnd::TimeSystem::resume), bEnd::TimeSystem::isPaused())
+			.bindAction(gui::Released, []() { bEnd::TimeSystem::resume(); gui::AudioSystem::playSound(0); }), bEnd::TimeSystem::isPaused())
 			.setPosition(322, 26));
 
 		add("spd_up", gui::Button(gui::Icon(Resources::texture("button_speedup"), true))
 			.setPosition(280, 32)
-			.bindAction(gui::Button::Released, bEnd::TimeSystem::increaseSpeed));
+			.bindAction(gui::Released, []() { bEnd::TimeSystem::increaseSpeed(); gui::AudioSystem::playSound(0); }));
 
 		add("spd_dwn", gui::Button(gui::Icon(Resources::texture("button_speeddown"), true))
 			.setPosition(299, 32)
-			.bindAction(gui::Button::Released, bEnd::TimeSystem::decreaseSpeed));
+			.bindAction(gui::Released, []() { bEnd::TimeSystem::decreaseSpeed(); gui::AudioSystem::playSound(0); }));
 
 		add("spd", GameSpeedIndicator().setPosition(265, 35));
 

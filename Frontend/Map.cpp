@@ -522,11 +522,12 @@ namespace fEnd
 				sf::Vector2s vertex(0, 0);
 				cache.read((char*)&vertex.x, sizeof(short));
 				cache.read((char*)&vertex.y, sizeof(short));
-				target.append(sf::Vertex(sf::Vector2f(vertex), bEnd::Region::regions.at(provID).sea ? sf::Color(56, 60, 65, 230) : sf::Color(200, 200, 200), sf::Vector2f(vertex)));
+				target.append(sf::Vertex(sf::Vector2f(vertex), bEnd::Region::regions.at(provID).sea ? sf::Color(56, 60, 65, 230) : sf::Color(), sf::Vector2f(vertex)));
 			}
 			regions.at(provID).indexEnd = target.getVertexCount();
 		}
-
+		cache.close();
+		
 		provinceStripes = landProvinces;
 	}
 
