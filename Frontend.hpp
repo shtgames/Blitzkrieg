@@ -15,7 +15,7 @@
 namespace fEnd
 {
 	void initializeWindow(sf::RenderWindow& window);
-	void drawLoadingScreen(sf::RenderWindow& target, volatile const std::atomic<bool>& loading);
+	void drawLoadingScreen(sf::RenderWindow& target, std::atomic<bool>& loading);
 
 	class Resources final
 	{

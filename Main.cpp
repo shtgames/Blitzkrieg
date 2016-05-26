@@ -29,7 +29,10 @@ void main()
 	});
 	updateThread.detach();
 
-	window.setActive(!(loading = false));
+	loading = false;
+	while (!loading);
+	window.setActive(true);
+	window.setVerticalSyncEnabled(true);
 
 	sf::Event event;
 	while (true)

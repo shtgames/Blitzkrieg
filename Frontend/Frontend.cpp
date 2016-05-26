@@ -25,13 +25,14 @@ namespace fEnd
 		return textures.count(key);
 	}
 
-	void drawLoadingScreen(sf::RenderWindow& target, volatile const std::atomic<bool>& loading)
+	void drawLoadingScreen(sf::RenderWindow& target, std::atomic<bool>& loading)
 	{
 		target.setActive(true);
 
 		sf::Texture backgroundTex, circleTex;
 		backgroundTex.loadFromFile("ls/background.png");
 		circleTex.loadFromFile("ls/loading.png");
+		circleTex.setSmooth(true);
 
 		sf::View view;
 		view.setCenter(backgroundTex.getSize().x / 2, backgroundTex.getSize().y / 2);
@@ -72,6 +73,7 @@ namespace fEnd
 		}
 
 		target.setActive(false);
+		loading = true;
 	}
 
 	void Resources::load()
