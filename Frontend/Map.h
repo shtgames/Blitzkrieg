@@ -21,6 +21,7 @@
 #include <mutex>
 #include <queue>
 
+#include "../Backend/Region.h"
 #include "Camera.h"
 #include "utilities.h"
 
@@ -33,6 +34,7 @@ namespace fEnd
 		{
 			void traceShape(std::vector<std::vector<sf::Color>>& pixels, const sf::Color& colorCode,
 				std::vector<sf::Vector2s>& borderTrianglesTarget, std::vector<std::vector<sf::Vector2s>>& contourPointsTarget);
+
 			std::string name;
 			unsigned int indexBegin, indexEnd;
 			std::atomic<bool> highlighted = false;

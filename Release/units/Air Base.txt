@@ -1,0 +1,6 @@
+air_base = 
+{
+	type = building
+	build_cost_ic = 5
+	build_time = 60
+}

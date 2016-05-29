@@ -66,6 +66,8 @@ namespace bEnd
 		productionLineLock.lock();
 		if (index < productionLine.size()) 
 		{
+			if (productionLine.at(index)->getUnit().getType() == Unit::Building && productionLine.at(index)->getTarget() != -1)
+				Region::get(productionLine.at(index)->getTarget()).dequeueBuilding(productionLine.at(index)->getUnit().getName());
 			productionLine.erase(productionLine.begin() + index);
 			setIC(totalDedicatedIC); 
 		}
@@ -82,13 +84,15 @@ namespace bEnd
 
 	void Production::addProductionItem(const string& element, const unsigned short targetRegion)
 	{
-		if (Unit::exists(element) && ResourceDistributor::get(tag).getManpowerAmount() <= Unit::get(element).getRequiredManpower())
+		if (Unit::exists(element) && ResourceDistributor::get(tag).getManpowerAmount() >= Unit::get(element).getRequiredManpower())
 		{
 			productionLineLock.lock();
 			productionLine.emplace_back(new ProductionItem(Unit::get(element),
-				Unit::get(element).getProductionDays(tag), 
+				Unit::get(element).getProductionDays(tag),
 				targetRegion));
 			productionLineLock.unlock();
+
+			if (Unit::get(element).getType() == Unit::Building) Region::get(targetRegion).enqueueBuilding(element);
 
 			ResourceDistributor::get(tag).changeManpowerAmount((-1) * Unit::get(element).getRequiredManpower());
 			setIC(totalDedicatedIC);
@@ -114,7 +118,7 @@ namespace bEnd
 	void Production::update()
 	{
 		productionLineLock.lock();
-		for (auto it = productionLine.begin(), end = productionLine.end(); it != end; ++it)
+		for (auto it(productionLine.begin()), end(productionLine.end()); it != end; ++it)
 			if (*it)
 			{
 				(*it)->updateProductionDays(tag);
@@ -128,7 +132,6 @@ namespace bEnd
 					it = productionLine.erase(it);
 				}
 			}
-			else it = productionLine.erase(it);
 		productionLineLock.unlock();
 	}
 	

@@ -1,0 +1,6 @@
+infra = 
+{
+	type = building
+	build_cost_ic = 1.5
+	build_time = 40
+}

@@ -1,0 +1,6 @@
+land_fort = 
+{
+	type = building
+	build_cost_ic = 2.5
+	build_time = 60
+}

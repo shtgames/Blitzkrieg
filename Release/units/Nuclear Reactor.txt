@@ -1,0 +1,6 @@
+nuclear = 
+{
+	type = building
+	build_cost_ic = 10
+	build_time = 90
+}

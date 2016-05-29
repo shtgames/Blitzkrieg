@@ -1,0 +1,6 @@
+rocket_test = 
+{
+	type = building
+	build_cost_ic = 7
+	build_time = 80
+}

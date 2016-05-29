@@ -17,8 +17,8 @@ namespace fEnd
 		m_windows
 			.emplace("Topbar", Topbar(), true)
 			.emplace("Minimap", Minimap(sf::Vector2f(resolution)), true)
-			.emplace("Map", gui::Window().add("Map", fEnd::Map()), true)
-			.emplace("Reg Panel", RegionPanel(resolution));			
+			.emplace("Reg Panel", RegionPanel(resolution), true)
+			.emplace("Map", gui::Window().add("Map", fEnd::Map()), true);
 
 		m_fpsMeter.setFont(Resources::font("arial")).setCharacterSize(17).setColor(sf::Color::White).setPosition(20, 70);
 	}

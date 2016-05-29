@@ -41,7 +41,6 @@ namespace bEnd
 		static Production& get(const Tag& tag) { if (!production.count(tag)) emplace(tag); return *production.at(tag); }
 		
 	private:
-
 		class ProductionItem
 		{
 		public:

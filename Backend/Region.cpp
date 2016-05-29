@@ -137,6 +137,28 @@ namespace bEnd
 		generateResources();
 	}
 
+	void Region::enqueueBuilding(const std::string& key, const unsigned char amount)
+	{
+		std::lock_guard<std::mutex> guard(queueLock);
+		queuedBuildingCount[key] += amount;
+		if (queuedBuildingCount.at(key) > 10)
+			queuedBuildingCount.at(key) = 10;
+	}
+
+	void Region::dequeueBuilding(const std::string& key, unsigned char amount)
+	{
+		std::lock_guard<std::mutex> guard(queueLock);
+		if (queuedBuildingCount[key] < amount)
+			amount = queuedBuildingCount.at(key);
+		queuedBuildingCount.at(key) -= amount;
+	}
+
+	const unsigned char Region::getQueuedCount(const std::string & key)
+	{
+		std::lock_guard<std::mutex> guard(queueLock);
+		return queuedBuildingCount[key];
+	}
+
 	void Region::build(const Unit& building)
 	{
 		if (building.getType() != Unit::Building) return;
@@ -167,6 +189,8 @@ namespace bEnd
 			buffer.first++;
 			buffer.second++;
 		}
+
+		dequeueBuilding(building.getName());
 	}
 
 	void Region::repairAll()

@@ -2,6 +2,8 @@
 
 #include "../Backend/Unit.h"
 #include "../Backend/Region.h"
+#include "../Backend/Production.h"
+#include "../Backend/Nation.h"
 #include "../Frontend.hpp"
 
 #include <GUI/Button.h>
@@ -9,16 +11,96 @@
 
 namespace fEnd
 {
+	const auto updateFunction([](const std::string& key, const bool second) -> const float
+	{
+		if (Map::target)
+			return unsigned char(second ? bEnd::Region::get(*Map::target).getBuildingLevels(key).second : bEnd::Region::get(*Map::target).getBuildingLevels(key).first) / 10.0f;
+		else return 0;
+	});
+
+	class BuildingLevels final : public gui::Interactive
+	{
+	public:
+		BuildingLevels(const BuildingLevels& copy) = default;
+		BuildingLevels(BuildingLevels&& temp) = default;
+		BuildingLevels(const std::string& building)
+			: queued(gui::Icon(Resources::texture("building_bar_bg"), true), gui::Icon(Resources::texture("queued_building_count"), true)),
+			damaged(gui::Icon(Resources::texture("building_bar_bg"), true), gui::Icon(Resources::texture("damaged_building_levels"), true)),
+			built(gui::Icon(Resources::texture("building_bar_bg"), true), gui::Icon(Resources::texture("building_levels"), true)),
+			build(gui::Icon(Resources::texture("prov_build_" + building), true))
+		{
+			queued.setUpdateFunction([building]() -> float
+			{
+				if (Map::target)
+					return (bEnd::Region::get(*Map::target).getBuildingLevels(building).second + bEnd::Region::get(*Map::target).getQueuedCount(building)) / 10.0f;
+				else return 0;
+			});
+			damaged.setUpdateFunction(std::bind(updateFunction, building, 1));
+			built.setUpdateFunction(std::bind(updateFunction, building, 0));
+			build.bindAction(gui::Released, [building]()
+			{
+				if (!Map::target) return;
+				bEnd::Production::get(bEnd::Nation::player).addProductionItem(building, *Map::target);
+			});
+			build.setPredicates(gui::Button::PredicateArray{ [building]()
+			{
+				return Map::target && bEnd::Region::get(*Map::target).getController() == bEnd::Nation::player &&
+					bEnd::Region::get(*Map::target).getBuildingLevels(building).second + bEnd::Region::get(*Map::target).getQueuedCount(building) < 10;
+			} });
+		}
+
+		std::unique_ptr<gui::Interactive> copy()const override
+		{
+			return std::unique_ptr<gui::Interactive>(new auto(*this));
+		}
+		std::unique_ptr<gui::Interactive> move()override
+		{
+			return std::unique_ptr<gui::Interactive>(new auto(std::move(*this)));
+		}
+
+		const sf::FloatRect getGlobalBounds()const override
+		{
+			return damaged.getGlobalBounds();
+		}
+		const sf::Vector2f& getPosition()const override
+		{
+			return damaged.getPosition();
+		}
+		BuildingLevels& setPosition(const float x, const float y)
+		{
+			queued.setPosition(x, y);
+			damaged.setPosition(x, y);
+			built.setPosition(x, y);
+			build.setPosition(x - (4 + build.getGlobalBounds().width), y + (built.getGlobalBounds().height - build.getGlobalBounds().height) / 2);
+			return *this;
+		}
+
+		const bool input(const sf::Event& event)
+		{
+			return build.input(event) || built.input(event) || damaged.input(event) || queued.input(event);
+		}
+
+	private:
+		void draw(sf::RenderTarget& target, sf::RenderStates states)const override
+		{
+			target.draw(queued, states);
+			target.draw(damaged, states);
+			target.draw(built, states);
+			target.draw(build, states);
+		}
+
+		gui::Button build;
+		gui::ProgressBar queued, damaged, built;
+	};
+
 	RegionPanel::RegionPanel(const sf::Vector2u& resolution)
 	{
 		setBackgroundTexture(Resources::texture("bg_province"), true);
 
-		gui::ProgressBar bar1(gui::Icon(Resources::texture("damaged_building_levels"), true), gui::Icon(Resources::texture("damaged_building_levels"), true)),
-			 bar2(gui::Icon(Resources::texture("building_levels"), true), gui::Icon(Resources::texture("building_levels"), true));
-		const auto func([](const std::string& key, const bool second) -> float
+		const auto updateFunction([](const std::string& key, const bool second) -> const float
 		{
 			if (Map::target)
-				return int(second ? bEnd::Region::get(*Map::target).getBuildingLevels(key).second : bEnd::Region::get(*Map::target).getBuildingLevels(key).first) / 10.0f;
+				return unsigned char(second ? bEnd::Region::get(*Map::target).getBuildingLevels(key).second : bEnd::Region::get(*Map::target).getBuildingLevels(key).first) / 10.0f;
 			else return 0;
 		});
 
@@ -29,16 +111,12 @@ namespace fEnd
 			if (it->second.getType() != bEnd::Unit::Building) continue;
 			else
 			{
-				add(it->first + "_btn", gui::Button(gui::Icon(Resources::texture("prov_build_" + it->first), true))
-					.setPosition(35 + translate.x - Resources::texture("prov_build_" + it->first).getSize().x, size.y - 61 + translate.y +
-						(Resources::texture("building_levels").getSize().y - Resources::texture("prov_build_" + it->first).getSize().y) / 2));
-				add(it->first + "_dmgbar", bar1.setUpdateFunction(std::bind(func, it->first, 1)).setPosition(39 + translate.x, size.y - 61 + translate.y));
-				add(it->first + "_bar", bar2.setUpdateFunction(std::bind(func, it->first, 0)).setPosition(39 + translate.x, size.y - 61 + translate.y));
+				add(it->first, BuildingLevels(it->first).setPosition(39 + translate.x, size.y - 61 + translate.y));
 
 				translate.y -= Resources::texture("building_levels").getSize().y + 8;
-				if (count() / 3 == bEnd::Unit::unitsOfType(bEnd::Unit::Building) / 2)
+				if (count() == bEnd::Unit::unitsOfType(bEnd::Unit::Building) / 2)
 				{
-					translate.x += Resources::texture("building_levels").getSize().x + 48;
+					translate.x += Resources::texture("building_levels").getSize().x + 49;
 					translate.y = 0;
 				}
 			}

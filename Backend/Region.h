@@ -49,12 +49,15 @@ namespace bEnd
 		bool hasCore(const Tag&)const;
 		void addCore(const Tag&);
 
+		void enqueueBuilding(const std::string& key, const unsigned char amount = 1);
+		void dequeueBuilding(const std::string& key, unsigned char amount = 1);
+		const unsigned char getQueuedCount(const std::string& key);
+
 		static void loadFromSave(const FileProcessor::Statement& source);
 		static const bool exists(const unsigned short ID) { return regions.count(ID); }
 		static Region& get(const unsigned short regionID) { return regions.at(regionID); }
-
-	private:
 		
+	private:		
 		void changeOwner(const Tag&);
 		void changeController(const Tag&);
 		void generateResources();
@@ -70,8 +73,9 @@ namespace bEnd
 		Tag                                                       owner, controller;
 		set<Tag>                                                  cores;
 		std::atomic<unsigned short>                               provID = 0;
+		std::unordered_map<std::string, unsigned char>            queuedBuildingCount;
 
-		mutable std::mutex coresLock, resourceLock;
+		mutable std::mutex coresLock, resourceLock, queueLock;
 
 		static map<unsigned short, Region> regions;
 		static const float ANNEXED_NON_CORE_PENALTY;

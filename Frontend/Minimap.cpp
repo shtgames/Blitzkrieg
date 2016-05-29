@@ -109,7 +109,7 @@ namespace fEnd
 				return true;
 			}
 		}
-		return false;
+		return Window::input(event);
 	}
 
 	void Minimap::setResolution(const sf::Vector2f& resolution)

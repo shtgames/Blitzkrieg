@@ -1,0 +1,6 @@
+radar_station = 
+{
+	type = building
+	build_cost_ic = 3
+	build_time = 75
+}
