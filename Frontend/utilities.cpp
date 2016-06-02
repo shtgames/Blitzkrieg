@@ -2,6 +2,9 @@
 
 #include <cmath>
 #include <algorithm>
+#include <unordered_map>
+
+#include <iostream>
 
 #define PI 3.1416
 
@@ -41,10 +44,45 @@ void utl::cullBorderTriangles(const std::vector<std::vector<sf::Color>>& pixels,
 		}
 	}
 }
+bool onSegment(const sf::Vector2f& p, const sf::Vector2f& q, const sf::Vector2f& r)
+{
+	if (q.x <= std::max(p.x, r.x) && q.x >= std::min(p.x, r.x) &&
+		q.y <= std::max(p.y, r.y) && q.y >= std::min(p.y, r.y))
+			return true;
+	return false;
+}
+
+int orientation(const sf::Vector2f& p, const sf::Vector2f& q, const sf::Vector2f& r)
+{
+	int val = (q.y - p.y) * (r.x - q.x) -
+		(q.x - p.x) * (r.y - q.y);
+
+	if (val == 0) return 0;
+
+	return (val > 0) ? 1 : 2;
+}
+
+bool doIntersect(const sf::Vector2f& p1, const sf::Vector2f& q1, const sf::Vector2f& p2, const sf::Vector2f& q2)
+{
+	int o1 = orientation(p1, q1, p2);
+	int o2 = orientation(p1, q1, q2);
+	int o3 = orientation(p2, q2, p1);
+	int o4 = orientation(p2, q2, q1);
+
+	if (o1 != o2 && o3 != o4)
+		return true;
+
+	if (o1 == 0 && onSegment(p1, p2, q1)) return true;
+	if (o2 == 0 && onSegment(p1, q2, q1)) return true;
+	if (o3 == 0 && onSegment(p2, p1, q2)) return true;
+	if (o4 == 0 && onSegment(p2, q1, q2)) return true;
+
+	return false;
+}
 
 const bool utl::linesIntersect(const sf::Vector2f& a, const sf::Vector2f& b, const sf::Vector2f& c, const sf::Vector2f& d)
 {
-	return false;
+	return doIntersect(a, b, c, d);
 }
 
 const bool utl::pointIsInsidePolygon(const sf::VertexArray& points, const unsigned int indexBegin, const unsigned int indexEnd, const sf::Vector2f& point)
@@ -59,9 +97,9 @@ const bool utl::pointIsInsidePolygon(const sf::VertexArray& points, const unsign
 	}
 	if (point.x < min.x || point.x > max.x || point.y < min.y || point.y > max.y) return false;
 
-	sf::Vector2f ray(min.x - 1, point.y);
+	sf::Vector2f ray(-1, point.y);
 	unsigned short intersections(0);
-	for (auto i(indexBegin); i != indexEnd; ++i) 
+	for (auto i(indexBegin); i != indexEnd; ++i)
 		if (linesIntersect(points[i].position, points[i + 1].position, ray, point)) intersections++;
 
 	return intersections % 2;
@@ -165,6 +203,7 @@ const std::vector<std::vector<sf::Vector2s>> utl::marchingSquares(std::vector<st
 			else if (!AValue && BValue && CValue && !DValue) setPosition(getPosition().x - 1, getPosition().y);
 			return getPosition();
 		}
+
 	private:
 		const std::vector<std::vector<sf::Color>>& map;
 		sf::Vector2s A, B, C, D;
@@ -192,6 +231,7 @@ const std::vector<std::vector<sf::Vector2s>> utl::marchingSquares(std::vector<st
 				break;
 			}
 		}
+
 		floodFillColorChange(pixels, points.front().x, points.front().y, color, sf::Color(0, 0, 0, 0));
 		previousPointColors.emplace_back(points.front());
 

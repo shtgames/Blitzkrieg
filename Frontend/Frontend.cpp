@@ -63,6 +63,8 @@ namespace fEnd
 			}
 		} circle(circleTex, target);
 
+		target.setFramerateLimit(30);
+
 		while (loading)
 		{
 			target.setView(view);
@@ -72,6 +74,7 @@ namespace fEnd
 			target.display();
 		}
 
+		target.setFramerateLimit(0);
 		target.setActive(false);
 		loading = true;
 	}

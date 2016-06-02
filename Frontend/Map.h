@@ -29,15 +29,19 @@ namespace fEnd
 {
 	class Map final : public gui::Interactive
 	{
+		friend class Region;
 	public:
-		struct Region
+		class Region
 		{
+			friend class Map;
+		public:
+			std::string name;
+			std::atomic<bool> sea = false, highlighted = false, visible = false;
+		private:
 			void traceShape(std::vector<std::vector<sf::Color>>& pixels, const sf::Color& colorCode,
 				std::vector<sf::Vector2s>& borderTrianglesTarget, std::vector<std::vector<sf::Vector2s>>& contourPointsTarget);
 
-			std::string name;
-			unsigned int indexBegin, indexEnd;
-			std::atomic<bool> highlighted = false;
+			std::pair<std::pair<size_t, size_t>, std::pair<size_t, size_t>> indexRange;
 		};
 
 		Map(const Map& copy) = default;
@@ -79,21 +83,21 @@ namespace fEnd
 
 		static std::unordered_map<unsigned short, Region> regions;
 
-		static sf::VertexArray stripesBuffer[2], landBuffer[2], seaBuffer[2];
+		static sf::VertexArray stripesBuffer[2], fillBuffer[2], contourBuffer[2];
 		static volatile std::atomic<bool> drawableBufferSet, vertexArraysVisibilityNeedsUpdate, updateThreadLaunched;
 		static std::queue<unsigned short> regionsNeedingColorUpdate;
 		static std::mutex colorUpdateQueueLock;
 
 		static sf::Vector2s mapSize;
 		static sf::RenderTexture land;
-		static sf::VertexArray oceanGradient, provinceStripes, landProvinces, seaProvinces;
+		static sf::VertexArray oceanGradient, provinceStripes, provinceFill, provinceContours;
 
-		static sf::Texture mapTile, stripes;
+		static sf::Texture mapTile, terrain, stripes;
 		static std::pair<sf::Shader, sf::Vector2f> border;
-		static sf::Shader stripesShader;
 		
 		static const unsigned short clickCheck(sf::Vector2s point);
 		static void updateVertexArrays();
+		static void processUpdateQueue();
 
 		static void assignBorderTriangles(std::vector<sf::Vector2s>& unassignedTriangles,
 			std::map<unsigned short, std::vector<std::vector<sf::Vector2s>>>& provinceContours);

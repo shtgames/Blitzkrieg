@@ -55,7 +55,7 @@ namespace bEnd
 
 		static void loadFromSave(const FileProcessor::Statement& source);
 		static const bool exists(const unsigned short ID) { return regions.count(ID); }
-		static Region& get(const unsigned short regionID) { return regions.at(regionID); }
+		static Region& get(const unsigned short regionID) { return regions[regionID]; }
 		
 	private:		
 		void changeOwner(const Tag&);
