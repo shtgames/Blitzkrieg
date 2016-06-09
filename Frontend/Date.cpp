@@ -75,8 +75,8 @@ namespace fEnd
 	{
 		std::string returnValue;
 
-		returnValue += (lVal.getHour() < 10 ? "0" : "") + std::to_string(unsigned short(lVal.getHour())) +
-			":00, " + std::to_string(unsigned short(lVal.getDay())) + " ";
+		returnValue += (lVal.getHour() < 10 ? "0" : "") + std::to_string(sf::Uint16(lVal.getHour())) +
+			":00, " + std::to_string(sf::Uint16(lVal.getDay())) + " ";
 
 		switch (lVal.getMonth())
 		{

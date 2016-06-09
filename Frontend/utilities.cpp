@@ -87,7 +87,7 @@ const bool utl::linesIntersect(const sf::Vector2f& a, const sf::Vector2f& b, con
 
 const bool utl::pointIsInsidePolygon(const sf::VertexArray& points, const unsigned int indexBegin, const unsigned int indexEnd, const sf::Vector2f& point)
 {
-	sf::Vector2u min(unsigned short(-1), unsigned short(-1)), max(0, 0);
+	sf::Vector2u min(sf::Uint16(-1), sf::Uint16(-1)), max(0, 0);
 	for (auto i(indexBegin); i != indexEnd; ++i)
 	{
 		if (points[i].position.x > max.x) max.x = points[i].position.x;
@@ -98,7 +98,7 @@ const bool utl::pointIsInsidePolygon(const sf::VertexArray& points, const unsign
 	if (point.x < min.x || point.x > max.x || point.y < min.y || point.y > max.y) return false;
 
 	sf::Vector2f ray(-1, point.y);
-	unsigned short intersections(0);
+	sf::Uint16 intersections(0);
 	for (auto i(indexBegin); i != indexEnd; ++i)
 		if (linesIntersect(points[i].position, points[i + 1].position, ray, point)) intersections++;
 
@@ -119,10 +119,10 @@ std::vector<std::vector<sf::Color>> utl::imageToPixelArray(const sf::Image& sour
 	auto pixels(source.getPixelsPtr());
 	std::vector<std::vector<sf::Color>> returnValue;
 
-	for (unsigned short i = 0, end = source.getSize().x; i != end; i++)
+	for (sf::Uint16 i = 0, end = source.getSize().x; i != end; i++)
 	{
 		returnValue.emplace_back();
-		for (unsigned short i1 = 0, end1 = source.getSize().y; i1 != end1; i1++)
+		for (sf::Uint16 i1 = 0, end1 = source.getSize().y; i1 != end1; i1++)
 		{
 			const unsigned int index((i + i1 * end) * 4);
 			returnValue.back().push_back(sf::Color(pixels[index], pixels[index + 1], pixels[index + 2], pixels[index + 3]));
@@ -132,7 +132,7 @@ std::vector<std::vector<sf::Color>> utl::imageToPixelArray(const sf::Image& sour
 	return std::move(returnValue);
 }
 
-void utl::floodFillColorChange(std::vector<std::vector<sf::Color>>& pixels, unsigned short x, unsigned short y, const sf::Color& previousColor, 
+void utl::floodFillColorChange(std::vector<std::vector<sf::Color>>& pixels, sf::Uint16 x, sf::Uint16 y, const sf::Color& previousColor, 
 	const sf::Color& newColor)
 {
 	std::vector<sf::Vector2s> pointVector;
@@ -174,7 +174,7 @@ const std::vector<std::vector<sf::Vector2s>> utl::marchingSquares(std::vector<st
 		Cell(const std::vector<std::vector<sf::Color>>& pixels, const sf::Color& color) : map(pixels), criteria(color) {}
 		~Cell() = default;
 		const sf::Vector2s getPosition(){ return D; }
-		void setPosition(unsigned short x, unsigned short y) {
+		void setPosition(sf::Uint16 x, sf::Uint16 y) {
 			A = sf::Vector2s(x - 1, y - 1);
 			B = sf::Vector2s(x, y - 1);
 			C = sf::Vector2s(x - 1, y);

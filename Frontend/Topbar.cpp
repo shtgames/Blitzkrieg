@@ -136,16 +136,16 @@ the longer we will fight before considering surrender."))));
 		add("IC", gui::TextPane([]() 
 		{
 			const float amount(bEnd::ResourceDistributor::get(bEnd::Nation::player).getWastedIC());
-			return gui::bind(std::to_string(unsigned short(amount)), amount > 0 ? sf::Color::Red : sf::Color::Green);
+			return gui::bind(std::to_string(sf::Uint16(amount)), amount > 0 ? sf::Color::Red : sf::Color::Green);
 		} + gui::bind("-", sf::Color(188, 183, 169)) + []()
 		{
 			const auto& source(bEnd::ResourceDistributor::get(bEnd::Nation::player));
-			return gui::bind(std::to_string(unsigned short(source.getBaseIC())),
+			return gui::bind(std::to_string(sf::Uint16(source.getBaseIC())),
 				source.getICResourceBottleneck() == 1 ? sf::Color::Green : sf::Color::Red);
 		} + gui::bind("-", sf::Color(188, 183, 169)) + []()
 		{
 			const auto& source(bEnd::ResourceDistributor::get(bEnd::Nation::player));
-			return gui::bind(std::to_string(unsigned short(source.getAvailableIC() * source.getICResourceBottleneck())),
+			return gui::bind(std::to_string(sf::Uint16(source.getAvailableIC() * source.getICResourceBottleneck())),
 				source.getICResourceBottleneck() == 1 ? sf::Color::Green : sf::Color::Red);
 		}, font, 13).setPosition(383, 3));
 

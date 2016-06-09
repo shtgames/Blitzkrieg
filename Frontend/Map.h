@@ -61,9 +61,9 @@ namespace fEnd
 
 		static const sf::Vector2s& size();
 
-		static Region& get(const unsigned short regionID);
+		static Region& get(const sf::Uint16 regionID);
 		static void initialize();
-		static void addRegionNeedingColorUpdate(const unsigned short regionID);
+		static void addRegionNeedingColorUpdate(const sf::Uint16 regionID);
 		static void updateAllRegionColors();
 		static void loadRegions();
 		static void updateRegionVisuals(const sf::Vector2s& resolution);
@@ -73,7 +73,7 @@ namespace fEnd
 		static const sf::FloatRect getViewBounds();
 		static void setViewPosition(const float x, const float y);
 		
-		static std::unique_ptr<unsigned short> target;
+		static std::unique_ptr<sf::Uint16> target;
 
 	private:
 		void draw(sf::RenderTarget& target, sf::RenderStates states)const override;
@@ -81,26 +81,24 @@ namespace fEnd
 		static Camera camera;
 		static gui::FadeAnimation animation;
 
-		static std::unordered_map<unsigned short, Region> regions;
+		static std::unordered_map<sf::Uint16, Region> regions;
 
 		static sf::VertexArray stripesBuffer[2], fillBuffer[2], contourBuffer[2];
 		static volatile std::atomic<bool> drawableBufferSet, vertexArraysVisibilityNeedsUpdate, updateThreadLaunched;
-		static std::queue<unsigned short> regionsNeedingColorUpdate;
+		static std::queue<sf::Uint16> regionsNeedingColorUpdate;
 		static std::mutex colorUpdateQueueLock;
 
 		static sf::Vector2s mapSize;
-		static sf::RenderTexture land;
 		static sf::VertexArray oceanGradient, provinceStripes, provinceFill, provinceContours;
 
-		static sf::Texture mapTile, terrain, stripes;
-		static std::pair<sf::Shader, sf::Vector2f> border;
+		static sf::Texture mapTile, terrain, sea, stripes;
 		
-		static const unsigned short clickCheck(sf::Vector2s point);
+		static const sf::Uint16 clickCheck(sf::Vector2s point);
 		static void updateVertexArrays();
 		static void processUpdateQueue();
 
 		static void assignBorderTriangles(std::vector<sf::Vector2s>& unassignedTriangles,
-			std::map<unsigned short, std::vector<std::vector<sf::Vector2s>>>& provinceContours);
+			std::map<sf::Uint16, std::vector<std::vector<sf::Vector2s>>>& provinceContours);
 		static void createStripesTexture(sf::Texture& targetTexture, const float size = 64.0f, const float stripeWidth = 0.4f);
 		static void createProvinceCache();
 		static void loadProvinceCache();
