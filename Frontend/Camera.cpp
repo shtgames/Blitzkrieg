@@ -62,9 +62,9 @@ namespace fEnd
 		if (y + view.getSize().y / 2 < 0) y += mapSize.y;
 		if (y + view.getSize().y / 2 > mapSize.y) y -= mapSize.y;
 
-		view.setCenter(short(x + view.getSize().x / 2.0f), short(y + view.getSize().y / 2.0f));
-		position.x = short(x);
-		position.y = short(y);
+		view.setCenter(int(x + view.getSize().x / 2.0f), int(y + view.getSize().y / 2.0f));
+		position.x = int(x);
+		position.y = int(y);
 		viewLock.unlock();
 		hasChanged = true;
 
@@ -138,20 +138,20 @@ namespace fEnd
 	{
 		if ((scrollDirection.x != 0 || scrollDirection.y != 0) && gui::Duration(gui::Internals::timeSinceStart() - timeOfLastScroll) > gui::Duration(0.04))
 		{			
-			view.move(short(scrollDirection.x * (1 + scrollStep * totalZoom)), short(scrollDirection.y * (1 + scrollStep * totalZoom)));
+			view.move(int(scrollDirection.x * (1 + scrollStep * totalZoom)), int(scrollDirection.y * (1 + scrollStep * totalZoom)));
 
 			if (view.getCenter().x + (view.getSize().x / 2.0f) > mapSize.x)
-				view.move(-mapSize.x, 0);
+				view.move(int(-mapSize.x), 0);
 			else if (view.getCenter().x + (view.getSize().x / 2.0f) < 0)
-				view.move(mapSize.x, 0);
+				view.move(int(mapSize.x), 0);
 
 			if (view.getCenter().y < 0)
 				view.setCenter(view.getCenter().x, 0);
 			else if (view.getCenter().y > mapSize.y)
 				view.setCenter(view.getCenter().x, mapSize.y);
 
-			position.x = short(view.getCenter().x - (view.getSize().x / 2.0f));
-			position.y = short(view.getCenter().y - (view.getSize().y / 2.0f));
+			position.x = int(view.getCenter().x - (view.getSize().x / 2.0f));
+			position.y = int(view.getCenter().y - (view.getSize().y / 2.0f));
 			
 			hasChanged = true;
 			timeOfLastScroll = gui::Internals::timeSinceStart();
@@ -178,8 +178,8 @@ namespace fEnd
 			factor = mapSize.y * upperZoomLimitAsMapSizeFraction / view.getSize().y;
 
 		view.zoom(factor);
-		view.move(short((targetPoint.x - view.getCenter().x) *  (1 - factor)),
-			short((targetPoint.y - view.getCenter().y) *  (1 - factor)));
+		view.move(int((targetPoint.x - view.getCenter().x) *  (1 - factor)),
+			int((targetPoint.y - view.getCenter().y) *  (1 - factor)));
 
 		if (view.getCenter().x + (view.getSize().x / 2.0f) > mapSize.x)
 			view.move(-mapSize.x, 0);

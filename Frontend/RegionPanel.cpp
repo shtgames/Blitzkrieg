@@ -11,12 +11,35 @@
 
 namespace fEnd
 {
+	const std::string textureTransitionShader =
+		"uniform sampler2D tex1, tex2, shadow;\
+		uniform float state;\
+		uniform bool active;\
+		\
+		void main()\
+		{\
+			vec4 color = mix(mix(texture2D(tex1, gl_TexCoord[0].xy), texture2D(tex2, gl_TexCoord[0].xy), gl_TexCoord[0].x), texture2D(shadow, gl_TexCoord[0].xy), texture2D(shadow, gl_TexCoord[0].xy).a) * gl_Color;\
+			if (active)\
+				gl_FragColor = vec4(color.rgb * (1.0f - (state * 0.15f)), color.a);\
+			else\
+			{\
+				float greyValue = color.r * 0.29 + color.g * 0.58 + color.b * 0.13;\
+				gl_FragColor = vec4(greyValue, greyValue, greyValue, color.a);\
+			}\
+		}";
+
 	const auto updateFunction([](const std::string& key, const bool second) -> const float
 	{
 		if (Map::target)
 			return unsigned char(second ? bEnd::Region::get(*Map::target).getBuildingLevels(key).second : bEnd::Region::get(*Map::target).getBuildingLevels(key).first) / 10.0f;
 		else return 0;
 	});
+
+	gui::HoverMessage default(gui::HoverMessage(gui::bind(""), sf::Font())
+		.setBackgroundFill(sf::Color(30, 30, 35, 240))
+		.setBorderThickness(2)
+		.setBorderFill(sf::Color(45, 45, 50, 245)));
+	const sf::Color color(231, 194, 18);
 
 	class BuildingLevels final : public gui::Interactive
 	{
@@ -35,15 +58,15 @@ namespace fEnd
 					return (bEnd::Region::get(*Map::target).getBuildingLevels(building).second + bEnd::Region::get(*Map::target).getQueuedCount(building)) / 10.0f;
 				else return 0;
 			})
-				.setFillMessage(gui::HoverMessage(gui::bind("") + [building]()
+				.setFillMessage(default.setText(gui::bind("") + [building]()
 					{
 						if (!Map::target) return gui::bind("");
 						const auto levels(bEnd::Region::get(*Map::target).getBuildingLevels(building));
-						return levels.first < levels.second ? gui::bind("This building has been damaged and is currently at ") + gui::bind(std::to_string(levels.first), sf::Color::Yellow) +
-							gui::bind(".\nIt is built up to level ") + gui::bind(std::to_string(levels.second), sf::Color::Yellow) + gui::bind(" but will take time to repair.\nFurther combat may damage it even more.")
-							: (levels.second ? gui::bind("This building is built up to level ") + gui::bind(std::to_string(levels.second), sf::Color::Yellow) + gui::bind(".") : gui::bind("")) +
+						return levels.first < levels.second ? gui::bind("This building has been damaged and is currently at ") + gui::bind(std::to_string(levels.first), color) +
+							gui::bind(".\nIt is built up to level ") + gui::bind(std::to_string(levels.second), color) + gui::bind(" but will take time to repair.\nFurther combat may damage it even more.")
+							: (levels.second ? gui::bind("This building is built up to level ") + gui::bind(std::to_string(levels.second), color) + gui::bind(".") : gui::bind("")) +
 							(bEnd::Region::get(*Map::target).getQueuedCount(building) ? gui::bind(" Currently building more.") : gui::bind(""));
-					}, Resources::font("arial"), 13));
+					}));
 			damaged.setUpdateFunction(std::bind(updateFunction, building, 1));
 			built.setUpdateFunction(std::bind(updateFunction, building, 0));
 			build.bindAction(gui::Released, [building]()
@@ -56,7 +79,7 @@ namespace fEnd
 				return Map::target && bEnd::Region::get(*Map::target).getController() == bEnd::Nation::player &&
 					bEnd::Region::get(*Map::target).getBuildingLevels(building).second + bEnd::Region::get(*Map::target).getQueuedCount(building) < 10;
 			} })
-				.setMessage(gui::HoverMessage(gui::bind(building), Resources::font("arial"), 13));
+				.setMessage(default.setText(gui::bind(building)));
 		}
 
 		std::unique_ptr<gui::Interactive> copy()const override
@@ -106,6 +129,9 @@ namespace fEnd
 	RegionPanel::RegionPanel(const sf::Vector2u& resolution)
 	{
 		setBackgroundTexture(Resources::texture("bg_province"), true);
+		
+		default.setFont(Resources::font("arial"))
+			.setCharacterSize(13);
 
 		const auto updateFunction([](const std::string& key, const bool second) -> const float
 		{
@@ -131,6 +157,14 @@ namespace fEnd
 				}
 			}
 
+		add("owner_flag", gui::Button(gui::Icon(Resources::texture("topbarflag_shadow"))).setPosition(10 + Resources::texture("topbarflag_shadow").getSize().y, 39)
+			.resetShader(textureTransitionShader).setShaderParameter("shadow", sf::Shader::CurrentTexture)
+			.setRotation(90));
+		add("name", gui::TextArea().setPosition(6, 11).setFont(Resources::font("arial")).setCharacterSize(13).setUpdateFunction([]()
+		{
+			return gui::bind(std::to_string(*Map::target), sf::Color(203, 200, 201));
+		}));
+
 		setPosition(0, resolution.y - size.y);
 	}
 
@@ -147,12 +181,19 @@ namespace fEnd
 	const bool RegionPanel::input(const sf::Event& event)
 	{
 		if (!Map::target || bEnd::Region::get(*Map::target).isSea()) return false;
+		if (event.type == sf::Event::KeyReleased && event.key.code == sf::Keyboard::Escape)
+		{
+			Map::target.reset();
+			return true;
+		}
 		return Window::input(event);
 	}
 
 	void RegionPanel::draw(sf::RenderTarget& target, sf::RenderStates states) const
 	{
 		if (!Map::target || bEnd::Region::get(*Map::target).isSea()) return;
+		((gui::Button&)((RegionPanel&)*this).at("owner_flag")).setShaderParameter("tex1", Nation::get(bEnd::Region::get(*Map::target).getOwner()).getFlag())
+			.setShaderParameter("tex2", Nation::get(bEnd::Region::get(*Map::target).getController()).getFlag());
 		Window::draw(target, states);
 	}
 }

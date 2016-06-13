@@ -10,27 +10,22 @@ void main()
 	sf::RenderWindow window(sf::VideoMode::getDesktopMode(), "Blitzkrieg: The Thousand-Year Reich", sf::Style::Fullscreen);
 	fEnd::initializeWindow(window);
 
-	std::atomic<bool> loading;
-	window.setActive(!(loading = true));
+	std::atomic<bool> loading(true);
+	window.setActive(false);
 	std::thread loadingScreen([&window, &loading] () { fEnd::drawLoadingScreen(window, loading); });
-	loadingScreen.detach();
 
 	fEnd::Resources::load();
 
 	fEnd::GameInterface gameInterface(window.getSize());
-	//
-	bEnd::loadSavedGame("save game/The Road to War.bk");
-	fEnd::Map::updateAllRegionColors();
-	gameInterface.updatePlayer();
-	//
-	std::thread updateThread([]()
-	{
-		while (true) bEnd::TimeSystem::update();
-	});
-	updateThread.detach();
+
+	bEnd::loadSavedGame("save game/War in the West.bk"); // Here for testing purposes only.
+	fEnd::Map::updateAllRegionColors(); //
+	gameInterface.updatePlayer(); //
+
+	std::thread updateThread([]() { while (true) bEnd::TimeSystem::update(); });
 
 	loading = false;
-	while (!loading);
+	loadingScreen.join();
 	window.setActive(true);
 
 	sf::Event event;
