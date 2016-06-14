@@ -14,8 +14,15 @@
 
 namespace fEnd
 {
+	enum Screen
+	{
+		Menu,
+		Game
+	};
+	extern volatile Screen currentScreen;
 	void initializeWindow(sf::RenderWindow& window);
 	void drawLoadingScreen(sf::RenderWindow& target, std::atomic<bool>& loading);
+	void run();
 
 	class Resources final
 	{

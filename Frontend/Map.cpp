@@ -4,6 +4,7 @@
 #include "../Backend/Region.h"
 
 #include "Nation.h"
+#include "../Frontend.hpp"
 #include "utilities.h"
 
 #include <fstream>
@@ -43,13 +44,16 @@ namespace fEnd
 
 	sf::VertexArray Map::oceanGradient, Map::provinceStripes, Map::provinceFill, Map::provinceContours;
 	sf::VertexArray Map::stripesBuffer[2], Map::fillBuffer[2], Map::contourBuffer[2];
-	volatile std::atomic<bool> Map::drawableBufferSet, Map::vertexArraysVisibilityNeedsUpdate = false, Map::updateThreadLaunched = false;
+	volatile std::atomic<bool> Map::drawableBufferSet, Map::vertexArraysVisibilityNeedsUpdate = false;
 	std::queue<sf::Uint16> Map::regionsNeedingColorUpdate;
 	std::mutex Map::colorUpdateQueueLock;
 
 	sf::Texture Map::mapTile, Map::terrain, Map::sea, Map::stripes;
 	Camera Map::camera;
-	std::unique_ptr<sf::Uint16> Map::target;
+	std::unique_ptr<sf::Uint16> Map::m_target;
+	const std::unique_ptr<sf::Uint16>& Map::target = Map::m_target;
+	std::unique_ptr<std::thread> Map::updateThread = nullptr;
+	std::atomic<bool> Map::m_terminate = false;
 
 	struct TexTransitionAnimation : public gui::Animation
 	{
@@ -279,21 +283,6 @@ namespace fEnd
 		fillTransitionAnimation.setTextures(mapTile, terrain);
 	}
 
-	void Map::launchRegionUpdateThread()
-	{
-		if (updateThreadLaunched) return;
-
-		updateThreadLaunched = true;
-
-		std::thread updateThread(updateVertexArrays);
-		updateThread.detach();
-	}
-
-	void Map::stopRegionUpdateThread()
-	{
-		updateThreadLaunched = false;
-	}
-
 	const sf::FloatRect Map::getViewBounds()
 	{
 		return camera.getGlobalBounds();
@@ -302,6 +291,28 @@ namespace fEnd
 	void Map::setViewPosition(const float x, const float y)
 	{
 		camera.setPosition(x, y);
+	}
+
+	void Map::select(const sf::Uint16 id)
+	{
+		deselect();
+		m_target.reset(new auto(id));
+		regions[id].highlighted = true;
+		addRegionNeedingColorUpdate(id);
+	}
+
+	void Map::deselect()
+	{
+		if (!m_target) return;
+		regions[*m_target].highlighted = false;
+		addRegionNeedingColorUpdate(*m_target);
+		m_target.reset();
+	}
+
+	void Map::terminate()
+	{
+		m_terminate = true;
+		if (updateThread) updateThread->join();
 	}
 
 	void Map::draw(sf::RenderTarget& target, sf::RenderStates states)const
@@ -354,19 +365,25 @@ namespace fEnd
 			return ret;
 		}
 		case sf::Event::MouseButtonReleased:
-			if (target)
+			if (m_target)
 			{
-				regions[*target].highlighted = false;
-				addRegionNeedingColorUpdate(*target);
+				regions[*m_target].highlighted = false;
+				addRegionNeedingColorUpdate(*m_target);
 			}
-			target.reset(new auto(clickCheck(sf::Vector2s(event.mouseButton.x, event.mouseButton.y))));
-			if (*target == sf::Uint16(-2)) target.reset();
+			m_target.reset(new auto(clickCheck(sf::Vector2s(event.mouseButton.x, event.mouseButton.y))));
+			if (*m_target == sf::Uint16(-2)) m_target.reset();
 			else
 			{
-				regions[*target].highlighted = true;
-				addRegionNeedingColorUpdate(*target);
+				regions[*m_target].highlighted = true;
+				addRegionNeedingColorUpdate(*m_target);
 			}
 			return true;
+		case sf::Event::KeyReleased:
+			if (event.key.code == sf::Keyboard::F4 && event.key.alt)
+			{
+				terminate();
+				std::exit(0);
+			}
 		default:
 			return false;
 		}
@@ -577,7 +594,7 @@ namespace fEnd
 	{
 		fEnd::Map::loadRegions();
 		fEnd::Map::loadResources();
-		fEnd::Map::launchRegionUpdateThread();
+		updateThread.reset(new std::thread(updateVertexArrays));
 	}
 
 	const sf::Uint16 Map::clickCheck(sf::Vector2s point)
@@ -587,13 +604,15 @@ namespace fEnd
 			if (it.second.sea) continue;
 			else for (size_t i(it.second.indexRange.first.first); i != it.second.indexRange.first.second; i += 3)
 				if (utl::pointIsInsideTriangle(sf::Vector2s(provinceFill[i].position), sf::Vector2s(provinceFill[i + 1].position),
-					sf::Vector2s(provinceFill[i + 2].position), point))
+					sf::Vector2s(provinceFill[i + 2].position), point) || utl::pointIsInsideTriangle(sf::Vector2s(provinceFill[i].position), sf::Vector2s(provinceFill[i + 1].position),
+						sf::Vector2s(provinceFill[i + 2].position), sf::Vector2s(point.x + mapSize.x, point.y)))
 						return it.first;
 		for (const auto& it : regions)
 			if (!it.second.sea) continue;
 			else for (size_t i(it.second.indexRange.first.first); i != it.second.indexRange.first.second; i += 3)
 				if (utl::pointIsInsideTriangle(sf::Vector2s(provinceFill[i].position), sf::Vector2s(provinceFill[i + 1].position),
-					sf::Vector2s(provinceFill[i + 2].position), point))
+					sf::Vector2s(provinceFill[i + 2].position), point) || utl::pointIsInsideTriangle(sf::Vector2s(provinceFill[i].position), sf::Vector2s(provinceFill[i + 1].position),
+						sf::Vector2s(provinceFill[i + 2].position), sf::Vector2s(point.x + mapSize.x, point.y)))
 					return it.first;
 		return sf::Uint16(-2);
 	}
@@ -602,7 +621,7 @@ namespace fEnd
 	{
 		gui::TimePoint timeOfLastUpdate(gui::Internals::timeSinceStart());
 
-		while (true)
+		while (!m_terminate)
 		{
 			if (gui::Duration(gui::Internals::timeSinceStart() - timeOfLastUpdate) < gui::Duration(0.015f)) continue;
 			else if (camera.hasChanged || vertexArraysVisibilityNeedsUpdate)
@@ -733,6 +752,7 @@ namespace fEnd
 				drawableBufferSet = !drawableBufferSet;
 				camera.hasChanged = false;
 				vertexArraysVisibilityNeedsUpdate = false;
+				timeOfLastUpdate = gui::Internals::timeSinceStart();
 			}
 			else processUpdateQueue();
 		}

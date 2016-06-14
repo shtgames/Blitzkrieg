@@ -35,7 +35,8 @@ namespace fEnd
 		else return 0;
 	});
 
-	gui::HoverMessage default(gui::HoverMessage(gui::bind(""), sf::Font())
+	gui::HoverMessage default(gui::HoverMessage()
+		.setCharacterSize(13)
 		.setBackgroundFill(sf::Color(30, 30, 35, 240))
 		.setBorderThickness(2)
 		.setBorderFill(sf::Color(45, 45, 50, 245)));
@@ -53,11 +54,11 @@ namespace fEnd
 			build(gui::Icon(Resources::texture("prov_build_" + building), true))
 		{
 			queued.setUpdateFunction([building]() -> float
-			{
-				if (Map::target)
-					return (bEnd::Region::get(*Map::target).getBuildingLevels(building).second + bEnd::Region::get(*Map::target).getQueuedCount(building)) / 10.0f;
-				else return 0;
-			})
+					{
+						if (Map::target)
+							return (bEnd::Region::get(*Map::target).getBuildingLevels(building).second + bEnd::Region::get(*Map::target).getQueuedCount(building)) / 10.0f;
+						else return 0;
+					})
 				.setFillMessage(default.setText(gui::bind("") + [building]()
 					{
 						if (!Map::target) return gui::bind("");
@@ -70,15 +71,15 @@ namespace fEnd
 			damaged.setUpdateFunction(std::bind(updateFunction, building, 1));
 			built.setUpdateFunction(std::bind(updateFunction, building, 0));
 			build.bindAction(gui::Released, [building]()
-			{
-				if (!Map::target) return;
-				bEnd::Production::get(bEnd::Nation::player).addProductionItem(building, *Map::target);
-			})
+					{
+						if (!Map::target) return;
+						bEnd::Production::get(bEnd::Nation::player).addProductionItem(building, *Map::target);
+					})
 				.setPredicates(gui::Button::PredicateArray{ [building]()
-			{
-				return Map::target && bEnd::Region::get(*Map::target).getController() == bEnd::Nation::player &&
-					bEnd::Region::get(*Map::target).getBuildingLevels(building).second + bEnd::Region::get(*Map::target).getQueuedCount(building) < 10;
-			} })
+					{
+						return Map::target && bEnd::Region::get(*Map::target).getController() == bEnd::Nation::player &&
+							bEnd::Region::get(*Map::target).getBuildingLevels(building).second + bEnd::Region::get(*Map::target).getQueuedCount(building) < 10;
+					} })
 				.setMessage(default.setText(gui::bind(building)));
 		}
 
@@ -121,19 +122,27 @@ namespace fEnd
 			target.draw(built, states);
 			target.draw(build, states);
 		}
+		void setParent(const gui::Window* const parent)override
+		{
+			Interactive::setParent(parent);
+			build.setParentToSame(*this);
+			queued.setParentToSame(*this);
+			damaged.setParentToSame(*this);
+			built.setParentToSame(*this);
+		}
 
 		gui::Button build;
 		gui::ProgressBar queued, damaged, built;
 	};
 
 	RegionPanel::RegionPanel(const sf::Vector2u& resolution)
+		: Window()
 	{
+		default.setFont(Resources::font("arial"));
 		setBackgroundTexture(Resources::texture("bg_province"), true);
-		
-		default.setFont(Resources::font("arial"))
-			.setCharacterSize(13);
+		const auto size(Resources::texture("bg_province").getSize());
 
-		const auto updateFunction([](const std::string& key, const bool second) -> const float
+		{const auto updateFunction([](const std::string& key, const bool second) -> const float
 		{
 			if (Map::target)
 				return unsigned char(second ? bEnd::Region::get(*Map::target).getBuildingLevels(key).second : bEnd::Region::get(*Map::target).getBuildingLevels(key).first) / 10.0f;
@@ -141,7 +150,6 @@ namespace fEnd
 		});
 
 		sf::Vector2f translate(0, 0);
-		const auto size(Resources::texture("bg_province").getSize());
 
 		for (auto it(bEnd::Unit::begin()), end(bEnd::Unit::end()); it != end; ++it)
 			if (it->second.getType() != bEnd::Unit::Building) continue;
@@ -155,15 +163,27 @@ namespace fEnd
 					translate.x += Resources::texture("building_levels").getSize().x + 49;
 					translate.y = 0;
 				}
-			}
+			}}
 
 		add("owner_flag", gui::Button(gui::Icon(Resources::texture("topbarflag_shadow"))).setPosition(10 + Resources::texture("topbarflag_shadow").getSize().y, 39)
-			.resetShader(textureTransitionShader).setShaderParameter("shadow", sf::Shader::CurrentTexture)
-			.setRotation(90));
-		add("name", gui::TextArea().setPosition(6, 11).setFont(Resources::font("arial")).setCharacterSize(13).setUpdateFunction([]()
-		{
-			return gui::bind(std::to_string(*Map::target), sf::Color(203, 200, 201));
-		}));
+				.resetShader(textureTransitionShader).setShaderParameter("shadow", sf::Shader::CurrentTexture)
+				.setRotation(90)
+				.setMessage(default.setText(gui::bind("This region is owned by ") + []()
+					{
+						if (!Map::target) return gui::bind("N/A");
+						return gui::bind(Nation::get(bEnd::Region::get(*Map::target).getOwner()).getName(), color) +
+							(bEnd::Region::get(*Map::target).getOwner() == bEnd::Region::get(*Map::target).getController() ? gui::bind("") :
+								gui::bind(" but has been occupied by ") + gui::bind(Nation::get(bEnd::Region::get(*Map::target).getController()).getName(), color));
+					} + gui::bind("."))))
+			.add("name", gui::TextArea().setPosition(6, 11).setFont(Resources::font("arial")).setCharacterSize(13).setUpdateFunction([]()
+				{
+					return gui::bind(std::to_string(*Map::target), sf::Color(203, 200, 201));
+				}))
+			.add("contested", gui::TextArea().setPosition(180, 160).setFont(Resources::font("arial")).setCharacterSize(13).setStyle(sf::Text::Bold | sf::Text::Italic).setUpdateFunction([]()
+				{
+					if (!Map::target) return gui::bind("");
+					return bEnd::Region::get(*Map::target).getController() != bEnd::Region::get(*Map::target).getOwner() ? gui::bind("Contested", sf::Color(191, 80, 73)) : gui::bind("");
+				}));
 
 		setPosition(0, resolution.y - size.y);
 	}
@@ -183,7 +203,7 @@ namespace fEnd
 		if (!Map::target || bEnd::Region::get(*Map::target).isSea()) return false;
 		if (event.type == sf::Event::KeyReleased && event.key.code == sf::Keyboard::Escape)
 		{
-			Map::target.reset();
+			Map::deselect();
 			return true;
 		}
 		return Window::input(event);
@@ -192,8 +212,10 @@ namespace fEnd
 	void RegionPanel::draw(sf::RenderTarget& target, sf::RenderStates states) const
 	{
 		if (!Map::target || bEnd::Region::get(*Map::target).isSea()) return;
-		((gui::Button&)((RegionPanel&)*this).at("owner_flag")).setShaderParameter("tex1", Nation::get(bEnd::Region::get(*Map::target).getOwner()).getFlag())
+		((gui::Button&)at("owner_flag")).setShaderParameter("tex1", Nation::get(bEnd::Region::get(*Map::target).getOwner()).getFlag())
 			.setShaderParameter("tex2", Nation::get(bEnd::Region::get(*Map::target).getController()).getFlag());
 		Window::draw(target, states);
 	}
+
+	void RegionPanel::setParent(const gui::WindowManager* const parent) {}
 }

@@ -18,5 +18,6 @@ namespace fEnd
 
 	private:
 		void draw(sf::RenderTarget& target, sf::RenderStates states)const override;
+		void setParent(const gui::WindowManager* const parent)override;
 	};
 }

@@ -25,7 +25,11 @@ namespace fEnd
 
 	void GameInterface::input(const sf::Event& event)
 	{
-		if (event.type == sf::Event::Closed) std::exit(0);
+		if (event.type == sf::Event::Closed)
+		{
+			Map::terminate();
+			std::exit(0);
+		}
 		if (event.type == sf::Event::KeyReleased && event.key.code == sf::Keyboard::R && event.key.control)
 		{
 			m_showFPSMeter = !m_showFPSMeter;
@@ -50,11 +54,16 @@ namespace fEnd
 		((Topbar&)m_windows.at("Topbar", true)).setTarget(bEnd::Nation::player);
 	}
 
+	void GameInterface::setCursorPos(const sf::Vector2i& pos)
+	{
+		m_cursor.setPosition(pos.x, pos.y);
+	}
+
 	void GameInterface::draw(sf::RenderTarget& target, sf::RenderStates states) const
 	{
-		target.draw(m_windows);
-		if (m_showFPSMeter) target.draw(m_fpsMeter);
+		target.draw(m_windows, states);
+		if (m_showFPSMeter) target.draw(m_fpsMeter, states);
 
-		target.draw(m_cursor);
+		target.draw(m_cursor, states);
 	}
 }

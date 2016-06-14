@@ -68,23 +68,26 @@ namespace fEnd
 		static void loadRegions();
 		static void updateRegionVisuals(const sf::Vector2s& resolution);
 		static void loadResources();
-		static void launchRegionUpdateThread();
-		static void stopRegionUpdateThread();
 		static const sf::FloatRect getViewBounds();
 		static void setViewPosition(const float x, const float y);
 		
-		static std::unique_ptr<sf::Uint16> target;
+		static void select(const sf::Uint16 id);
+		static void deselect();
+		static void terminate();
+
+		static const std::unique_ptr<sf::Uint16>& target;
 
 	private:
 		void draw(sf::RenderTarget& target, sf::RenderStates states)const override;
 
+		static std::unique_ptr<sf::Uint16> m_target;
 		static Camera camera;
 		static gui::FadeAnimation animation;
 
 		static std::unordered_map<sf::Uint16, Region> regions;
 
 		static sf::VertexArray stripesBuffer[2], fillBuffer[2], contourBuffer[2];
-		static volatile std::atomic<bool> drawableBufferSet, vertexArraysVisibilityNeedsUpdate, updateThreadLaunched;
+		static volatile std::atomic<bool> drawableBufferSet, vertexArraysVisibilityNeedsUpdate;
 		static std::queue<sf::Uint16> regionsNeedingColorUpdate;
 		static std::mutex colorUpdateQueueLock;
 
@@ -92,6 +95,9 @@ namespace fEnd
 		static sf::VertexArray oceanGradient, provinceStripes, provinceFill, provinceContours;
 
 		static sf::Texture mapTile, terrain, sea, stripes;
+
+		static std::unique_ptr<std::thread> updateThread;
+		static std::atomic<bool> m_terminate;
 		
 		static const sf::Uint16 clickCheck(sf::Vector2s point);
 		static void updateVertexArrays();
