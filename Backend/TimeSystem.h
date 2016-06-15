@@ -39,14 +39,14 @@ namespace bEnd
 	class TimeSystem final
 	{
 	public:
-		static void        update();
-		static void        pause();
-		static void        resume();
-		static void        increaseSpeed();
-		static void        decreaseSpeed();
-		static void        addEvent(const Event& event);
-		static void        addEvent(Event&& event);
-		static void        reset(const Date& date);
+		static void update();
+		static void pause();
+		static void resume();
+		static void increaseSpeed();
+		static void decreaseSpeed();
+		static void addEvent(const Event& event);
+		static void addEvent(Event&& event);
+		static void reset(const Date& date);
 
 		static const bool isPaused();
 		static const unsigned char getSpeed();

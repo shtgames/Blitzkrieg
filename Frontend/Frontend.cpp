@@ -9,7 +9,10 @@
 
 namespace fEnd
 {
+	constexpr auto version = "BkTYR: Version 2.2.1 (Alpha)";
+
 	volatile Screen fEnd::currentScreen = Menu;
+	sf::Sprite fEnd::cursor;
 	std::unordered_map<std::string, sf::Texture> Resources::textures;
 	std::unordered_map<std::string, sf::Font> Resources::fonts;
 
@@ -126,7 +129,7 @@ namespace fEnd
 		icon.loadFromFile("Icon.png");
 		window.setIcon(icon.getSize().x, icon.getSize().y, icon.getPixelsPtr());
 	}
-	
+
 	void run()
 	{
 		sf::RenderWindow window(sf::VideoMode::getDesktopMode(), "Blitzkrieg: The Thousand-Year Reich", sf::Style::Fullscreen);
@@ -138,46 +141,32 @@ namespace fEnd
 
 		fEnd::Resources::load();
 
+		fEnd::cursor.setTexture(Resources::texture("cursor"));
 		fEnd::GameInterface gameInterface(window.getSize());
+		fEnd::NationSelectScreen nationSelect(window.getSize());
 		
-		bEnd::loadSavedGame("save game/" + bEnd::getDirectoryContents("save game/*.bk").at(0)); // Here for testing purposes only.
-		fEnd::Map::updateAllRegionColors(); //
-		gameInterface.updatePlayer(); //
+		sf::Sprite bg(Resources::texture("main_menu_bg"));
+		sf::View backgroundView;
+		backgroundView.setCenter(Resources::texture("main_menu_bg").getSize().x / 2, Resources::texture("main_menu_bg").getSize().y / 2);
+		backgroundView.setSize(sf::Vector2f(Resources::texture("main_menu_bg").getSize()));
+		backgroundView.setViewport(sf::FloatRect(0, 0, 1, 1));
 
-		sf::Sprite bg(Resources::texture("main_menu_bg")), cursor(Resources::texture("cursor"));
-		sf::View view;
-		view.setCenter(Resources::texture("main_menu_bg").getSize().x / 2, Resources::texture("main_menu_bg").getSize().y / 2);
-		view.setSize(sf::Vector2f(Resources::texture("main_menu_bg").getSize()));
-		view.setViewport(sf::FloatRect(0, 0, 1, 1));
-
-		gui::Button singlePlayer(gui::Icon(Resources::texture("button_wide"), true)), exit(gui::Icon(Resources::texture("button_wide"), true));
-		singlePlayer.setPosition((window.getSize().x - Resources::texture("button_wide").getSize().x) / 2,
-				(window.getSize().y - Resources::texture("button_wide").getSize().y) / 2)
-			.setName(gui::TextArea("Single Player", Resources::font("arial"), 15).setPosition(0, -5).setColor(sf::Color(200, 200, 200)))
-			.bindAction(gui::Released, [&window, &gameInterface, &cursor]()
-				{
-					currentScreen = Game;
-					gameInterface.setCursorPos(sf::Mouse::getPosition());
-					std::atomic<bool> running(true);
-					std::thread updateThread([&running]() { while (running) bEnd::TimeSystem::update(); });
-					sf::Event event;
-					while (currentScreen == Game)
+		gui::Window menu;
+		menu.add("singleplayer", gui::Button(gui::Icon(Resources::texture("button_wide"), true))
+				.setPosition((window.getSize().x - Resources::texture("button_wide").getSize().x) / 2,
+					(window.getSize().y - Resources::texture("button_wide").getSize().y) / 2)
+				.setName(gui::TextArea("Single Player", Resources::font("arial"), 15).setPosition(0, -3).setColor(sf::Color(200, 200, 200)))
+				.bindAction(gui::Released, [&window, &nationSelect, &gameInterface]() 
 					{
-						while (window.pollEvent(event))
-							if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::End) currentScreen = Menu; // temporary
-							else gameInterface.input(event);
-
-						window.clear(sf::Color(117, 121, 126, 255));
-						window.draw(gameInterface);
-						window.display();
-					}
-					running = false;
-					updateThread.join();
-					cursor.setPosition(sf::Vector2f(sf::Mouse::getPosition()));
-				});
-		exit.setPosition((window.getSize().x - Resources::texture("button_wide").getSize().x) / 2, window.getSize().y / 2 + Resources::texture("button_wide").getSize().y + 10)
-			.setName(gui::TextArea("Exit", Resources::font("arial"), 14).setPosition(0, -5).setColor(sf::Color(200, 200, 200)))
-			.bindAction(gui::Released, []() {std::exit(0); });
+						nationSelect.run(window, gameInterface);
+					}))
+			.add("exit", gui::Button(gui::Icon(Resources::texture("button_wide"), true))
+				.setPosition((window.getSize().x - Resources::texture("button_wide").getSize().x) / 2, (window.getSize().y + Resources::texture("button_wide").getSize().y) / 2)
+				.setName(gui::TextArea("Exit", Resources::font("arial"), 14).setPosition(0, -3).setColor(sf::Color(200, 200, 200)))
+				.bindAction(gui::Released, []() { Map::terminate(); std::exit(0); }))
+			.add("ver", gui::TextArea(version, Resources::font("arial"), 15).setStyle(sf::Text::Bold).setColor(sf::Color(200, 200, 200)));
+		
+		menu.at("ver").setPosition(window.getSize().x - menu.at("ver").getGlobalBounds().width - 10, window.getSize().y - menu.at("ver").getGlobalBounds().height - 10);
 
 		loading = false;
 		loadingScreen.join();
@@ -188,17 +177,19 @@ namespace fEnd
 		{
 			while (window.pollEvent(event))
 			{
-				if (event.type == sf::Event::Closed) std::exit(0);
-				if (event.type == sf::Event::MouseMoved) cursor.setPosition(event.mouseMove.x, event.mouseMove.y);
-				if (singlePlayer.input(event));
-				else exit.input(event);
+				if (event.type == sf::Event::Closed)
+				{
+					Map::terminate();
+					std::exit(0);
+				}
+				if (event.type == sf::Event::MouseMoved) fEnd::cursor.setPosition(event.mouseMove.x, event.mouseMove.y);
+				menu.input(event);
 			}
-			window.setView(view);
+			window.setView(backgroundView);
 			window.draw(bg);
 			window.setView(window.getDefaultView());
-			window.draw(exit);
-			window.draw(singlePlayer);
-			window.draw(cursor);
+			window.draw(menu);
+			window.draw(fEnd::cursor);
 			window.display();
 		}
 	}

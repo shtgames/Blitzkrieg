@@ -12,8 +12,6 @@ namespace fEnd
 	{
 		Map::updateRegionVisuals(sf::Vector2s(resolution.x, resolution.y));
 
-		m_cursor.setTexture(Resources::texture("cursor"));
-
 		m_windows
 			.emplace("Topbar", Topbar(), true)
 			.emplace("Minimap", Minimap(sf::Vector2f(resolution)), true)
@@ -37,7 +35,7 @@ namespace fEnd
 		}
 		else if (event.type == sf::Event::MouseMoved)
 		{
-			m_cursor.setPosition(event.mouseMove.x, event.mouseMove.y);
+			fEnd::cursor.setPosition(event.mouseMove.x, event.mouseMove.y);
 			m_windows.at("Map", true).input(event);
 		}
 
@@ -54,16 +52,11 @@ namespace fEnd
 		((Topbar&)m_windows.at("Topbar", true)).setTarget(bEnd::Nation::player);
 	}
 
-	void GameInterface::setCursorPos(const sf::Vector2i& pos)
-	{
-		m_cursor.setPosition(pos.x, pos.y);
-	}
-
 	void GameInterface::draw(sf::RenderTarget& target, sf::RenderStates states) const
 	{
 		target.draw(m_windows, states);
 		if (m_showFPSMeter) target.draw(m_fpsMeter, states);
 
-		target.draw(m_cursor, states);
+		target.draw(fEnd::cursor, states);
 	}
 }

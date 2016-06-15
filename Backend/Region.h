@@ -62,6 +62,7 @@ namespace bEnd
 		void changeController(const Tag&);
 		void generateResources();
 		void stopGeneratingResources();
+		void reset();
 
 		void repair(const Unit& building, float levels);
 		

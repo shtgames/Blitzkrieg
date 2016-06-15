@@ -40,6 +40,7 @@ namespace bEnd
 		void changeLeadershipAmount(const float amount) { leadership.first + amount >= 0.0f ? leadership.first + amount : leadership.first = 0.0f; }
 
 		void update();
+		void reset();
 
 		static const bool exists(const Tag& tag) { if (leadershipDistributor.count(tag) && leadershipDistributor.at(tag)) return true; return false; }
 		static void emplace(const Tag& tag) { leadershipDistributor[tag].reset(new LeadershipDistributor(tag)); }

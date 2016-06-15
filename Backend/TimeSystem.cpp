@@ -78,6 +78,11 @@ namespace bEnd
 	void TimeSystem::reset(const Date& date)
 	{
 		currentDate = date;
+		paused = true;
+		gameSpeed = 0;
+		eventQueueMutex.lock();
+		while (!events.empty()) events.pop();
+		eventQueueMutex.unlock();
 	}
 
 	void TimeSystem::eventCheck()

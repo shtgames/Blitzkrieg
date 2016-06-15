@@ -2,6 +2,7 @@
 
 #include "ResourceDistributor.h"
 
+#include "LeadershipDistributor.h"
 #include "Production.h"
 
 namespace bEnd
@@ -66,6 +67,27 @@ namespace bEnd
 		Production::get(tag).update();
 		// Upgrades::...
 		// ...
+	}
+
+	void ResourceDistributor::reset()
+	{
+		for (auto& it : resourceDistributors)
+		{
+			Production::get(it.first).reset();
+			LeadershipDistributor::get(it.first).reset();
+
+			it.second->wastedIC = 0.0f;
+			it.second->ICResourceBottleneck = 1.0f;
+			it.second->IC = make_pair(BASE_IC, 1.0f);
+			it.second->manpower.first = 0;
+			it.second->manpower.second = std::make_pair(0.0f, 1.0f);
+
+			it.second->ICDistributionLock.lock();
+			for (auto it1(0); it1 <= ICDistributionCategory::ToLendLease; it1++)
+				it.second->ICDistribution[(ICDistributionCategory)it1] = std::make_pair(0.0f, false);
+			it.second->ICDistribution[ToProductionLine] = std::make_pair(1.0f, false);
+			it.second->ICDistributionLock.unlock();
+		}
 	}
 
 	void ResourceDistributor::setICDistributionValue(const ICDistributionCategory category, const double factor)

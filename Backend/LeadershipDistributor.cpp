@@ -15,7 +15,9 @@ namespace bEnd
 	LeadershipDistributor::LeadershipDistributor(const Tag& tag)
 		: tag(tag)
 	{
-		leadershipDistribution[ToResearch].first = 1.0f;
+		for (auto it(0); it <= LeadershipDistributionCategory::ToOfficers; it++)
+			leadershipDistribution[(LeadershipDistributionCategory)it] = std::make_pair(0.0f, false);
+		leadershipDistribution[ToResearch] = std::make_pair(1.0f, false);
 	}
 
 	void LeadershipDistributor::loadFromSave(const FileProcessor::Statement& source)
@@ -38,9 +40,23 @@ namespace bEnd
 	{
 		distributeLeadership();
 
-		bEnd::Research::get(tag).update();
+		Research::get(tag).update();
 		//bEnd::Espionage::
 		//bEnd::...
+	}
+
+	void LeadershipDistributor::reset()
+	{
+		Research::get(tag).reset();
+
+		leadershipDistributionLock.lock();
+		for (auto it(0); it <= LeadershipDistributionCategory::ToOfficers; it++)
+			leadershipDistribution[(LeadershipDistributionCategory)it] = std::make_pair(0.0f, false);
+		leadershipDistribution[ToResearch] = std::make_pair(1.0f, false);
+		leadershipDistributionLock.unlock();
+
+		wastedLeadership = 0;
+		leadership = make_pair(BASE_LEADERSHIP, 1.0f);
 	}
 
 	void LeadershipDistributor::setLeadershipDistributionValue(const LeadershipDistributionCategory category, const double factor)

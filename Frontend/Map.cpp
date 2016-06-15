@@ -3,6 +3,7 @@
 #include "../Backend/FileProcessor.h"
 #include "../Backend/Region.h"
 
+#include "../Backend/Nation.h"
 #include "Nation.h"
 #include "../Frontend.hpp"
 #include "utilities.h"
@@ -293,26 +294,63 @@ namespace fEnd
 		camera.setPosition(x, y);
 	}
 
+	volatile std::atomic<bool> updatingColors = false;
+
 	void Map::select(const sf::Uint16 id)
 	{
 		deselect();
+		if (!regions.count(id) || id == -2 || regions.at(id).sea) return;
 		m_target.reset(new auto(id));
-		regions[id].highlighted = true;
-		addRegionNeedingColorUpdate(id);
+
+		if (fEnd::currentScreen == Game)
+		{
+			regions[*m_target].highlighted = true;
+			addRegionNeedingColorUpdate(*m_target);
+		}
+		else
+		{
+			const auto controller(bEnd::Region::get(*m_target).getController());
+			for (auto& it : regions)
+				if (bEnd::Region::get(it.first).getController() == controller)
+				{
+					it.second.highlighted = true;
+					addRegionNeedingColorUpdate(it.first);
+				}
+			updatingColors = true;
+			while (updatingColors);
+			bEnd::Nation::player = bEnd::Region::get(*m_target).getController();
+		}
 	}
 
 	void Map::deselect()
 	{
 		if (!m_target) return;
-		regions[*m_target].highlighted = false;
-		addRegionNeedingColorUpdate(*m_target);
+		if (fEnd::currentScreen == Game)
+		{
+			regions[*m_target].highlighted = false;
+			addRegionNeedingColorUpdate(*m_target);
+		}
+		else
+		{
+			const auto controller(bEnd::Region::get(*m_target).getController());
+			for (auto& it : regions)
+				if (bEnd::Region::get(it.first).getController() == controller)
+				{
+					it.second.highlighted = false;
+					addRegionNeedingColorUpdate(it.first);
+				}
+		}
 		m_target.reset();
 	}
 
 	void Map::terminate()
 	{
-		m_terminate = true;
-		if (updateThread) updateThread->join();
+		if (updateThread)
+		{
+			m_terminate = true;
+			updateThread->join();
+			updateThread.reset();
+		}
 	}
 
 	void Map::draw(sf::RenderTarget& target, sf::RenderStates states)const
@@ -365,18 +403,7 @@ namespace fEnd
 			return ret;
 		}
 		case sf::Event::MouseButtonReleased:
-			if (m_target)
-			{
-				regions[*m_target].highlighted = false;
-				addRegionNeedingColorUpdate(*m_target);
-			}
-			m_target.reset(new auto(clickCheck(sf::Vector2s(event.mouseButton.x, event.mouseButton.y))));
-			if (*m_target == sf::Uint16(-2)) m_target.reset();
-			else
-			{
-				regions[*m_target].highlighted = true;
-				addRegionNeedingColorUpdate(*m_target);
-			}
+			select(clickCheck(sf::Vector2s(event.mouseButton.x, event.mouseButton.y)));
 			return true;
 		case sf::Event::KeyReleased:
 			if (event.key.code == sf::Keyboard::F4 && event.key.alt)
@@ -794,6 +821,7 @@ namespace fEnd
 			regionsNeedingColorUpdate.pop();
 		}
 		colorUpdateQueueLock.unlock();
+		updatingColors = false;
 		vertexArraysVisibilityNeedsUpdate = true;
 	}
 

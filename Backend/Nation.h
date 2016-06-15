@@ -9,6 +9,7 @@ namespace bEnd
 	{
 	public:
 		static void loadFromSave(const FileProcessor::Statement& source);
+		static void reset();
 		static Tag player;
 	};
 }

@@ -21,7 +21,7 @@ namespace bEnd
 	const float Region::ANNEXED_NON_CORE_PENALTY = 0.7f;
 
 	Region::Region()
-		: IC(std::make_pair(0.0f, 1.0f)), leadership(std::make_pair(0.0f, 1.0f)), manpowerGeneration(std::make_pair(0.0f, 1.0f)), generatingResources(false)
+		: IC(std::make_pair(0.0f, 1.0f)), leadership(std::make_pair(0.0f, 1.0f)), manpowerGeneration(std::make_pair(0.0f, 1.0f))
 	{
 		for (unsigned char it(0); it < Resource::Last; it++)
 			resourceGeneration[(Resource)it] = make_pair(0.0f, 1.0f);
@@ -83,6 +83,29 @@ namespace bEnd
 		LeadershipDistributor::get(controller).changeLeadershipAmount((-1) * getLeadership());
 
 		generatingResources = false;
+	}
+
+	void Region::reset()
+	{
+		victoryPoints = 0;
+		capital = false;
+		generatingResources = false;
+		IC = std::make_pair(0.0f, 1.0f);
+		leadership = std::make_pair(0.0f, 1.0f);
+		manpowerGeneration = std::make_pair(0.0f, 1.0f);
+
+		for (auto& it : buildings) it.second = std::make_pair(0, 0);
+
+		resourceLock.lock();
+		for (unsigned char it(0); it < Resource::Last; it++)
+			resourceGeneration[(Resource)it] = make_pair(0.0f, 1.0f);
+		resourceLock.unlock();
+
+		coresLock.lock();
+		cores.clear();
+		coresLock.unlock();
+
+		queuedBuildingCount.clear();
 	}
 
 	void Region::repair(const Unit& building, float levels)
@@ -200,7 +223,10 @@ namespace bEnd
 
 	void Region::loadFromSave(const FileProcessor::Statement& source)
 	{
-		Region& target(regions[std::stoi(source.lValue)]);
+		const auto ID(std::stoi(source.lValue));
+		if (regions.count(ID)) regions.at(ID).reset();
+		else regions[ID];
+		Region& target(regions.at(ID));
 
 		for (const auto& it : source.rStatements)
 		{

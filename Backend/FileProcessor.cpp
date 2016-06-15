@@ -60,12 +60,14 @@ namespace bEnd
 		FileProcessor source(path);
 		if (!source.isOpen()) return;
 
+		Nation::reset();
+
 		for (auto& it : source.getStatements())
 			if (it.lValue == "date") TimeSystem::reset(readDate(it.rStrings.front()));
 			else if (it.lValue == "player")
 				Nation::player = it.rStrings.front();
 			else if (!it.lValue.empty() && std::find_if(it.lValue.begin(),
-				it.lValue.end(), [](const char c) { return !std::isdigit(c); }) == it.lValue.end())
+					it.lValue.end(), [](const char c) { return !std::isdigit(c); }) == it.lValue.end())
 				Region::loadFromSave(it);
 			else if (Tag::isTag(it.lValue))
 				Nation::loadFromSave(it);

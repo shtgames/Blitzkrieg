@@ -6,6 +6,7 @@
 #include "Frontend/Minimap.h"
 #include "Frontend/Topbar.h"
 #include "Frontend/RegionPanel.h"
+#include "Frontend/NationSelect.h"
 
 #include <SFML/Graphics/Texture.hpp>
 #include <SFML/Graphics/Font.hpp>
@@ -17,9 +18,11 @@ namespace fEnd
 	enum Screen
 	{
 		Menu,
+		NationSelect,
 		Game
 	};
 	extern volatile Screen currentScreen;
+	extern sf::Sprite cursor;
 	void initializeWindow(sf::RenderWindow& window);
 	void drawLoadingScreen(sf::RenderWindow& target, std::atomic<bool>& loading);
 	void run();

@@ -145,6 +145,7 @@ namespace bEnd
 		const bool contains(const map<Resource, float>& resources)const;
 		void update();
 
+		static void reset();
 		static const bool exists(const Tag& tag) { if (resourceDistributors.count(tag) && resourceDistributors.at(tag)) return true; return false; }
 		static void emplace(const Tag& tag) { resourceDistributors[tag].reset(new ResourceDistributor(tag)); }
 		static ResourceDistributor& get(const Tag& tag) { if (!resourceDistributors.count(tag)) emplace(tag); return *resourceDistributors.at(tag); }

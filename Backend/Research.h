@@ -38,6 +38,7 @@ namespace bEnd
 		void addExperienceRewards(const std::string& target, const float amount);
 		const float setLeadership(const float leadership);
 		void update();
+		void reset();
 
 		const float getTechLevel(const std::string& tech)const { std::lock_guard<std::mutex> guard(techLevelsLock); return techLevels.count(tech) ? float(techLevels.at(tech)) : techLevels[tech] = 0.0f; }
 		const float getExperience(const std::string& name)const { std::lock_guard<std::mutex> guard(experienceLock); return experience.count(name) ? float(experience.at(name)) : experience[name] = 0.0f; }

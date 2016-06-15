@@ -24,13 +24,10 @@ namespace fEnd
 		void resetResolution(const sf::Vector2u& resolution);
 		void updatePlayer();
 
-		void setCursorPos(const sf::Vector2i& pos);
-
 	private:
 		void draw(sf::RenderTarget& target, sf::RenderStates states)const override;
 
 		gui::WindowManager m_windows;
-		sf::Sprite m_cursor;
 		gui::FPSMeter m_fpsMeter;
 		bool m_showFPSMeter = false;
 	};

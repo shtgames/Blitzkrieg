@@ -150,6 +150,24 @@ namespace bEnd
 			else it->second = it->second * ( 1.0f - EXPERIENCE_DECAY_PERCENTAGE);
 		experienceLock.unlock();
 	}
+
+	void Research::reset()
+	{
+		techLevelsLock.lock();
+		techLevels.clear();
+		techLevelsLock.unlock();
+
+		experienceLock.lock();
+		experience.clear();
+		experienceHasBeenAdded.clear();
+		experienceLock.unlock();
+
+		researchQueueLock.lock();
+		researchQueue.clear();
+		researchQueueLock.unlock();
+
+		totalDedicatedLeadership = 0;
+	}
 	
 	void Research::loadTechLevels(const FileProcessor::Statement& source)
 	{

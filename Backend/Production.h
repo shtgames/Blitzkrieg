@@ -35,6 +35,7 @@ namespace bEnd
 		void deployUnit(const unsigned short index, const unsigned short targetRegion);		
 		const float setIC(float IC);
 		void update();
+		void reset();
 		
 		static const bool exists(const Tag& tag) { if (production.count(tag) && production.at(tag)) return true; return false; }
 		static void emplace(const Tag& tag) { production[tag].reset(new Production(tag)); }

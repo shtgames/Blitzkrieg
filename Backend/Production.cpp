@@ -134,6 +134,19 @@ namespace bEnd
 			}
 		productionLineLock.unlock();
 	}
+
+	void Production::reset()
+	{
+		productionLineLock.lock();
+		productionLine.clear();
+		productionLineLock.unlock();
+
+		deploymentQueueLock.lock();
+		deploymentQueue.clear();
+		deploymentQueueLock.unlock();
+
+		totalDedicatedIC = 0;
+	}
 	
 	const bool Production::deploy(const ProductionItem& item, const unsigned short targetRegion)
 	{
