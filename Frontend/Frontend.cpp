@@ -13,6 +13,7 @@ namespace fEnd
 
 	volatile Screen fEnd::currentScreen = Menu;
 	sf::Sprite fEnd::cursor;
+	Console fEnd::console;
 	std::unordered_map<std::string, sf::Texture> Resources::textures;
 	std::unordered_map<std::string, sf::Font> Resources::fonts;
 
@@ -141,6 +142,8 @@ namespace fEnd
 
 		fEnd::Resources::load();
 
+		console.init();
+
 		fEnd::cursor.setTexture(Resources::texture("cursor"));
 		fEnd::GameInterface gameInterface(window.getSize());
 		fEnd::NationSelectScreen nationSelect(window.getSize());
@@ -183,12 +186,14 @@ namespace fEnd
 					std::exit(0);
 				}
 				if (event.type == sf::Event::MouseMoved) fEnd::cursor.setPosition(event.mouseMove.x, event.mouseMove.y);
+				console.input(event);
 				menu.input(event);
 			}
 			window.setView(backgroundView);
 			window.draw(bg);
 			window.setView(window.getDefaultView());
 			window.draw(menu);
+			window.draw(console);
 			window.draw(fEnd::cursor);
 			window.display();
 		}

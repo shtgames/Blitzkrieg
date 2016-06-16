@@ -1,6 +1,6 @@
 coastal_fort = 
 {
 	type = building
-	build_cost_ic = 3
-	build_time = 90
+	build_cost_ic = 2
+	build_time = 30
 }

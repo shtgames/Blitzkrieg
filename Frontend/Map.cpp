@@ -22,7 +22,7 @@ namespace fEnd
 		\
 		void main()\
 		{\
-			gl_FragColor.rgb = (gl_Color * mix( texture2D(first, gl_TexCoord[0].xy / zoomFactor), texture2D(second, gl_TexCoord[0].xy * zoomFactor), amount )).rgb;\
+			gl_FragColor.rgb = (gl_Color * mix( texture2D(first, gl_TexCoord[0].xy / (2 * zoomFactor)), texture2D(second, gl_TexCoord[0].xy ), amount )).rgb;\
 			gl_FragColor.a = texture2D(mask, gl_TexCoord[0].xy).a;\
 		}";
 
@@ -71,12 +71,12 @@ namespace fEnd
 			fill.setParameter("amount", amount);
 			stripes.setParameter("amount", amount);
 		}
-		void setTextures(const sf::Texture& first, const sf::Texture& second)
+		void setTextures(const sf::Texture& first)
 		{
 			fill.setParameter("first", first);
 			fill.setParameter("second", sf::Shader::CurrentTexture);
 			stripes.setParameter("first", first);
-			stripes.setParameter("second", second);
+			stripes.setParameter("second", sf::Shader::CurrentTexture);
 		}
 		void setMask(const sf::Texture& mask)
 		{
@@ -196,7 +196,7 @@ namespace fEnd
 	{
 		const float maxZoomFactor(newResolution.y / (mapSize.y * Camera::upperZoomLimitAsMapSizeFraction));
 
-		createStripesTexture(stripes, 64 * maxZoomFactor, 0.75f * maxZoomFactor);
+		createStripesTexture(stripes, 64 * maxZoomFactor, 1 * maxZoomFactor);
 		stripes.setRepeated(true);
 
 		fillTransitionAnimation.setFactor(maxZoomFactor);
@@ -241,7 +241,7 @@ namespace fEnd
 		while (translate.transformRect(stripe.getBounds()).left <= size)
 		{
 			buffer.draw(stripe, translate);
-			translate.translate(size / 15.0f, 0);
+			translate.translate(size / 4, 0);
 		}
 
 		buffer.display();
@@ -281,7 +281,7 @@ namespace fEnd
 		animation.setDuration(1.0f);
 		animation.setFadeDirection(0);
 		fillTransitionAnimation.setDuration(1.0f);
-		fillTransitionAnimation.setTextures(mapTile, terrain);
+		fillTransitionAnimation.setTextures(mapTile);
 	}
 
 	const sf::FloatRect Map::getViewBounds()
@@ -295,6 +295,13 @@ namespace fEnd
 	}
 
 	volatile std::atomic<bool> updatingColors = false;
+
+	void Map::waitForColorUpdate()
+	{
+		if (regionsNeedingColorUpdate.empty()) return;
+		updatingColors = true;
+		while (updatingColors);
+	}
 
 	void Map::select(const sf::Uint16 id)
 	{
@@ -316,8 +323,7 @@ namespace fEnd
 					it.second.highlighted = true;
 					addRegionNeedingColorUpdate(it.first);
 				}
-			updatingColors = true;
-			while (updatingColors);
+			waitForColorUpdate();
 			bEnd::Nation::player = bEnd::Region::get(*m_target).getController();
 		}
 	}

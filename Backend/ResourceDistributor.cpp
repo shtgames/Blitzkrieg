@@ -20,25 +20,6 @@ namespace bEnd
 		ICDistribution[ToProductionLine] = std::make_pair(1.0f, false);
 	}
 
-	void ResourceDistributor::loadFromSave(const FileProcessor::Statement& source)
-	{
-		if (source.lValue != "distribution") return;
-
-		setICDistributionValue(ToUpgrades, std::stof(source.rStrings.at(0)));
-		setICDistributionValueLock(ToUpgrades, true);
-		setICDistributionValue(ToReinforcement, std::stof(source.rStrings.at(1)));
-		setICDistributionValueLock(ToReinforcement, true);
-		setICDistributionValue(ToSupplyProduction, std::stof(source.rStrings.at(2)));
-		setICDistributionValueLock(ToSupplyProduction, true);
-		setICDistributionValue(ToProductionLine, std::stof(source.rStrings.at(3)));
-		setICDistributionValueLock(ToProductionLine, true);
-
-		setICDistributionValueLock(ToUpgrades);
-		setICDistributionValueLock(ToReinforcement);
-		setICDistributionValueLock(ToSupplyProduction);
-		setICDistributionValueLock(ToProductionLine);
-	}
-
 	const bool ResourceDistributor::contains(const std::map<Resource, float>& _rVal)const
 	{
 		std::lock_guard<std::mutex> guard(resourcesLock);

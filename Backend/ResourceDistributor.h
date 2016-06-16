@@ -104,8 +104,6 @@ namespace bEnd
 
 		~ResourceDistributor() = default;
 
-		void loadFromSave(const FileProcessor::Statement&);
-
 		const float getDistributedICAmount(const ICDistributionCategory category)const 
 		{
 			lock_guard<mutex> guard(ICDistributionLock); 

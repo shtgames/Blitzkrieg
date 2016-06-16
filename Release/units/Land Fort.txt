@@ -1,6 +1,6 @@
 land_fort = 
 {
 	type = building
-	build_cost_ic = 2.5
-	build_time = 60
+	build_cost_ic = 2
+	build_time = 35
 }

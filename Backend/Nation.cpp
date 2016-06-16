@@ -16,8 +16,6 @@ namespace bEnd
 				Research::get(source.lValue).loadTechLevels(*it);
 			else if (it->lValue == "research")
 				Research::get(source.lValue).loadResearchItem(*it);
-			else if (it->lValue == "distribution")
-				ResourceDistributor::get(source.lValue).loadFromSave(*it);
 			else if (it->lValue == "leadership")
 				LeadershipDistributor::get(source.lValue).loadFromSave(*it);
 			else if (it->lValue == "military_construction" || it->lValue == "building_construction")

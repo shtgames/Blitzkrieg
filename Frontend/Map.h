@@ -71,6 +71,7 @@ namespace fEnd
 		static const sf::FloatRect getViewBounds();
 		static void setViewPosition(const float x, const float y);
 		
+		static void waitForColorUpdate();
 		static void select(const sf::Uint16 id);
 		static void deselect();
 		static void terminate();

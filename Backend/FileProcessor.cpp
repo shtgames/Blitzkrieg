@@ -14,6 +14,7 @@
 
 namespace bEnd 
 {
+	std::string currentSave;
 	const long long FileProcessor::unlimitedStreamsize(std::numeric_limits<std::streamsize>::max());
 
 	void bEnd::load()
@@ -38,6 +39,11 @@ namespace bEnd
 		}
 	}
 
+	const std::string& currentlyLoadedFile()
+	{
+		return currentSave;
+	}
+
 	const Date readDate(std::string source)
 	{
 		Date returnValue;
@@ -57,8 +63,12 @@ namespace bEnd
 
 	void bEnd::loadSavedGame(const std::string& path)
 	{
-		FileProcessor source(path);
+		FileProcessor source("save game/" + path);
 		if (!source.isOpen()) return;
+
+		currentSave.clear();
+		for (size_t i(0), end(path.size()); i != end, path[i] != '.'; ++i)
+			currentSave.push_back(path[i]);
 
 		Nation::reset();
 

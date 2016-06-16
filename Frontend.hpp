@@ -7,6 +7,7 @@
 #include "Frontend/Topbar.h"
 #include "Frontend/RegionPanel.h"
 #include "Frontend/NationSelect.h"
+#include "Frontend/Console.h"
 
 #include <SFML/Graphics/Texture.hpp>
 #include <SFML/Graphics/Font.hpp>
@@ -23,6 +24,7 @@ namespace fEnd
 	};
 	extern volatile Screen currentScreen;
 	extern sf::Sprite cursor;
+	extern Console console;
 	void initializeWindow(sf::RenderWindow& window);
 	void drawLoadingScreen(sf::RenderWindow& target, std::atomic<bool>& loading);
 	void run();

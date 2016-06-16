@@ -10,6 +10,7 @@
 namespace bEnd
 {
 	void load();
+	const std::string& currentlyLoadedFile();
 	void loadSavedGame(const std::string& source);
 	const std::vector<std::string> getDirectoryContents(const std::string& path);
 

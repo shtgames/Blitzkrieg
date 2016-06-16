@@ -1,6 +1,6 @@
 naval_base = 
 {
 	type = building
-	build_cost_ic = 4
-	build_time = 95
+	build_cost_ic = 2.5
+	build_time = 35
 }

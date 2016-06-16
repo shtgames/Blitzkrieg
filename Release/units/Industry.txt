@@ -2,7 +2,7 @@ industry=
 {
 	type = building
 	build_cost_ic = 1
-	build_time = 100
+	build_time = 35
 
 	ic_add = 0.8
 }
