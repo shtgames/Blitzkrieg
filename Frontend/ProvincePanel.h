@@ -4,12 +4,12 @@
 
 namespace fEnd
 {
-	class RegionPanel final : public gui::Window
+	class ProvincePanel final : public gui::Window
 	{
 	public:
-		RegionPanel(const sf::Vector2u& resolution);
-		RegionPanel(const RegionPanel& copy) = default;
-		RegionPanel(RegionPanel&& copy) = default;
+		ProvincePanel(const sf::Vector2u& resolution);
+		ProvincePanel(const ProvincePanel& copy) = default;
+		ProvincePanel(ProvincePanel&& copy) = default;
 
 		std::unique_ptr<gui::Window> copy()const override;
 		std::unique_ptr<gui::Window> move()override;

@@ -10,6 +10,7 @@ namespace fEnd
 
 	void Console::draw(sf::RenderTarget& target, sf::RenderStates states) const
 	{
+		if (!initialised) return;
 		std::lock_guard<std::mutex> guard(m_outputLock);
 		Window::draw(target, states);
 	}
@@ -17,6 +18,7 @@ namespace fEnd
 	void Console::inputProcessor(const sf::String& output)
 	{
 		print(output);
+		// insert actual processing of the command here
 	}
 
 	const sf::Texture Console::createTexture()
@@ -39,24 +41,34 @@ namespace fEnd
 	{
 		setActive(false);
 		setBackgroundTexture(m_background);
+		print("Connected.");
 	}
 	
 	const bool Console::input(const sf::Event& event)
 	{
+		if (!initialised) return false;
+
 		if (event.type == sf::Event::KeyReleased && event.key.code == sf::Keyboard::Tilde)
 		{
 			setActive(!isActive());
 			((gui::TextField&)at("input field")).setActive(isActive());
 			return true;
 		}
+		if (event.type == sf::Event::TextEntered && event.text.unicode == '`' || event.text.unicode == '~') return true;
 		return Window::input(event);
 	}
 
 	void Console::print(sf::String output)
 	{
+		std::lock_guard<std::mutex> guard(m_outputLock);
+
 		if (output.isEmpty()) return;
 
-		std::lock_guard<std::mutex> guard(m_outputLock);
+		if (!initialised)
+		{
+			m_history.push_back(output);
+			return;
+		}
 
 		if (output.getSize() * ((gui::TextField&)at("input field")).getHeight() > width)
 		{
@@ -77,7 +89,13 @@ namespace fEnd
 		if (!visual.isEmpty()) visual.erase(visual.getSize() - 1);
 
 		((gui::TextArea&)at("output field")).setText(visual);
-		((gui::TextArea&)at("output field")).setPosition(5, height - ((gui::TextArea&)at("output field")).getGlobalBounds().height - ((gui::TextField&)at("input field")).getHeight() - 8);
+		((gui::TextArea&)at("output field")).setPosition(5, height - ((gui::TextArea&)at("output field")).getGlobalBounds().height - ((gui::TextField&)at("input field")).getHeight());
+	}
+
+	void Console::eraseLastLine()
+	{
+		std::lock_guard<std::mutex> guard(m_outputLock);
+		if (!m_history.empty()) m_history.pop_back();
 	}
 
 	void Console::init()
@@ -94,5 +112,8 @@ namespace fEnd
 			.setColor(sf::Color(170, 170, 170)));
 
 		setBackgroundTextureRect(sf::IntRect(0, 0, width, height + ((gui::TextField&)at("input field")).getHeight() + 5));
+
+		initialised = true;
+		print("Initialised.");
 	}
 }

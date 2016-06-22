@@ -1,7 +1,7 @@
 #include "Unit.h"
 #include "FileProcessor.h"
 
-#include "Region.h"
+#include "Province.h"
 
 #include "Politics.h"
 #include "ResourceDistributor.h"
@@ -17,17 +17,17 @@ using namespace std;
 
 namespace bEnd
 {
-	map<unsigned short, Region> Region::regions;
-	const float Region::ANNEXED_NON_CORE_PENALTY = 0.7f;
+	map<unsigned short, Province> Province::provinces;
+	const float Province::ANNEXED_NON_CORE_PENALTY = 0.7f;
 
-	Region::Region()
+	Province::Province()
 		: IC(std::make_pair(0.0f, 1.0f)), leadership(std::make_pair(0.0f, 1.0f)), manpowerGeneration(std::make_pair(0.0f, 1.0f))
 	{
 		for (unsigned char it(0); it < Resource::Last; it++)
 			resourceGeneration[(Resource)it] = make_pair(0.0f, 1.0f);
 	}
 
-	void Region::changeOwner(const Tag& tag)
+	void Province::changeOwner(const Tag& tag)
 	{
 		if (tag == owner) return;
 		if ((tag != controller && owner == controller) ||
@@ -40,7 +40,7 @@ namespace bEnd
 		else owner = tag;
 	}
 
-	void Region::changeController(const Tag& tag)
+	void Province::changeController(const Tag& tag)
 	{
 		if (tag == controller) return;
 
@@ -49,7 +49,7 @@ namespace bEnd
 		generateResources();
 	}
 
-	void Region::generateResources()
+	void Province::generateResources()
 	{
 		if (generatingResources) return;
 
@@ -67,7 +67,7 @@ namespace bEnd
 		generatingResources = true;
 	}
 
-	void Region::stopGeneratingResources()
+	void Province::stopGeneratingResources()
 	{
 		if (!generatingResources) return;
 
@@ -85,7 +85,7 @@ namespace bEnd
 		generatingResources = false;
 	}
 
-	void Region::reset()
+	void Province::reset()
 	{
 		victoryPoints = 0;
 		capital = false;
@@ -108,7 +108,7 @@ namespace bEnd
 		queuedBuildingCount.clear();
 	}
 
-	void Region::repair(const Unit& building, float levels)
+	void Province::repair(const Unit& building, float levels)
 	{
 		if (building.getType() != Unit::Building) return;
 
@@ -145,7 +145,7 @@ namespace bEnd
 		buffer.first += levels;
 	}
 
-	void Region::addCore(const Tag& tag)
+	void Province::addCore(const Tag& tag)
 	{
 		coresLock.lock();
 		if (cores.count(tag))
@@ -160,7 +160,7 @@ namespace bEnd
 		generateResources();
 	}
 
-	void Region::enqueueBuilding(const std::string& key, const unsigned char amount)
+	void Province::enqueueBuilding(const std::string& key, const unsigned char amount)
 	{
 		std::lock_guard<std::mutex> guard(queueLock);
 		queuedBuildingCount[key] += amount;
@@ -168,7 +168,7 @@ namespace bEnd
 			queuedBuildingCount.at(key) = 10;
 	}
 
-	void Region::dequeueBuilding(const std::string& key, unsigned char amount)
+	void Province::dequeueBuilding(const std::string& key, unsigned char amount)
 	{
 		std::lock_guard<std::mutex> guard(queueLock);
 		if (queuedBuildingCount[key] < amount)
@@ -176,13 +176,13 @@ namespace bEnd
 		queuedBuildingCount.at(key) -= amount;
 	}
 
-	const unsigned char Region::getQueuedCount(const std::string & key)
+	const unsigned char Province::getQueuedCount(const std::string & key)
 	{
 		std::lock_guard<std::mutex> guard(queueLock);
 		return queuedBuildingCount[key];
 	}
 
-	void Region::build(const Unit& building)
+	void Province::build(const Unit& building)
 	{
 		if (building.getType() != Unit::Building) return;
 
@@ -216,17 +216,29 @@ namespace bEnd
 		dequeueBuilding(building.getName());
 	}
 
-	void Region::repairAll()
+	void Province::repairAll()
 	{
 		///
 	}
 
-	void Region::loadFromSave(const FileProcessor::Statement& source)
+	const std::unordered_map<unsigned short, unsigned short>& Province::getNeighbours() const
+	{
+		return neighbours;
+	}
+	
+	const std::set<unsigned short> Province::getPath(const unsigned short target) const
+	{
+		std::set<unsigned short> returnValue;
+		if (!provinces.count(target)) return returnValue;
+		return returnValue;
+	}
+
+	void Province::loadFromSave(const FileProcessor::Statement& source)
 	{
 		const auto ID(std::stoi(source.lValue));
-		if (regions.count(ID)) regions.at(ID).reset();
-		else regions[ID];
-		Region& target(regions.at(ID));
+		if (provinces.count(ID)) provinces.at(ID).reset();
+		else provinces[ID];
+		Province& target(provinces.at(ID));
 
 		for (const auto& it : source.rStatements)
 		{
@@ -266,7 +278,7 @@ namespace bEnd
 		target.generateResources();
 	}
 	
-	const float Region::getLeadership() const
+	const float Province::getLeadership() const
 	{
 		float modifier = 1.0f;
 		if (controller != owner)
@@ -277,7 +289,7 @@ namespace bEnd
 		return leadership.first * leadership.second * modifier;
 	}
 
-	const float Region::getManpowerGeneration() const
+	const float Province::getManpowerGeneration() const
 	{
 		float modifier = 1.0f;
 		if (controller != owner)
@@ -288,7 +300,7 @@ namespace bEnd
 		return manpowerGeneration.first * manpowerGeneration.second * modifier;
 	}
 
-	const float Region::getResourceGeneration(const Resource resourceType) const
+	const float Province::getResourceGeneration(const Resource resourceType) const
 	{
 		float modifier = 1.0f;
 		if (controller != owner)
@@ -299,7 +311,7 @@ namespace bEnd
 		return resourceGeneration.at(resourceType).first * resourceGeneration.at(resourceType).second * modifier;
 	}
 
-	const float Region::getIC() const
+	const float Province::getIC() const
 	{
 		float modifier = 1.0f;
 		if (controller != owner)
@@ -310,19 +322,19 @@ namespace bEnd
 		return IC.first * IC.second * modifier;
 	}
 
-	const Region::BuildingLevels Region::getBuildingLevels(const std::string& key)
+	const Province::BuildingLevels Province::getBuildingLevels(const std::string& key)
 	{
 		if (buildings.count(key))
 			return buildings.at(key);
 		else return BuildingLevels(0, 0);
 	}
 
-	const bool Region::isSea() const
+	const bool Province::isSea() const
 	{
 		return sea;
 	}
 
-	bool Region::hasCore(const Tag& tag)const
+	bool Province::hasCore(const Tag& tag)const
 	{
 		std::lock_guard<std::mutex> guard(coresLock);
 		return cores.count(tag);

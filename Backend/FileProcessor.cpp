@@ -5,7 +5,7 @@
 #include "Tech.h"
 #include "TimeSystem.h"
 #include "Nation.h"
-#include "Region.h"
+#include "Province.h"
 
 #include <algorithm>
 #include <stack>
@@ -78,7 +78,7 @@ namespace bEnd
 				Nation::player = it.rStrings.front();
 			else if (!it.lValue.empty() && std::find_if(it.lValue.begin(),
 					it.lValue.end(), [](const char c) { return !std::isdigit(c); }) == it.lValue.end())
-				Region::loadFromSave(it);
+				Province::loadFromSave(it);
 			else if (Tag::isTag(it.lValue))
 				Nation::loadFromSave(it);
 	}

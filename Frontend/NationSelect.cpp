@@ -61,7 +61,7 @@ namespace fEnd
 		void draw(sf::RenderTarget& target, sf::RenderStates states) const override
 		{
 			if (!Map::target) return;
-			m_flag.setTexture(Nation::get(bEnd::Region::get(*Map::target).getController()).getFlag());
+			m_flag.setTexture(Nation::get(bEnd::Province::get(*Map::target).getController()).getFlag());
 			m_name.setPosition(getPosition().x + (getGlobalBounds().width - m_name.getGlobalBounds().width) / 2, 14);
 
 			Icon::draw(target, states);
@@ -89,7 +89,7 @@ namespace fEnd
 			m_name.setUpdateFunction([]()
 				{
 					if (!Map::target) return gui::bind("");
-					return gui::bind(Nation::get(bEnd::Region::get(*Map::target).getController()).getName(), sf::Color(220, 220, 220));
+					return gui::bind(Nation::get(bEnd::Province::get(*Map::target).getController()).getName(), sf::Color(220, 220, 220));
 				});
 			m_flagShadow.setScale(0.71, 0.71);
 			m_flag.setScale(0.71, 0.71);
@@ -127,8 +127,11 @@ namespace fEnd
 
 	NationSelectScreen::NationSelectScreen(const sf::Vector2u& resolution)
 	{
+		console.print("Loading History...");
 		bEnd::loadSavedGame(bEnd::getDirectoryContents("save game/*.bk").at(0));
-		fEnd::Map::updateAllRegionColors();
+		fEnd::Map::updateAllProvinceColors();
+		console.print("Done.");
+
 		main.emplace("HUD", gui::Window()
 				.add("Play", gui::Button(gui::Icon(Resources::texture("play_button"), true))
 					.setName(gui::TextArea("Start", Resources::font("arial"), 15).setPosition(0, -5).setColor(sf::Color(200, 200, 200)))
@@ -140,7 +143,7 @@ namespace fEnd
 					.setMessage(gui::HoverMessage(gui::bind("") + []()
 						{
 							if (!Map::target) return gui::bind("");
-							return gui::bind("Play as ") + gui::bind(Nation::get(bEnd::Region::get(*Map::target).getController()).getName(), sf::Color(231, 194, 18)) + gui::bind(".");
+							return gui::bind("Play as ") + gui::bind(Nation::get(bEnd::Province::get(*Map::target).getController()).getName(), sf::Color(231, 194, 18)) + gui::bind(".");
 						}, Resources::font("arial"), 13)
 							.setBackgroundFill(sf::Color(30, 30, 35, 240))
 							.setBorderThickness(2)

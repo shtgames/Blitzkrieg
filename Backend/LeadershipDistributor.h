@@ -15,7 +15,7 @@ using namespace std;
 
 namespace bEnd
 {
-	class Region;
+	class Province;
 	class LeadershipDistributor final
 	{
 	public:

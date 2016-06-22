@@ -17,7 +17,7 @@ using namespace std;
 
 namespace bEnd
 {
-	class Region;
+	class Province;
 	class Production final
 	{
 	public:
@@ -30,9 +30,9 @@ namespace bEnd
 		void setProductionItemAtMaxPriority(const unsigned short index);
 		void setProductionItemAtMinPriority(const unsigned short index);
 		void removeProductionItem(const unsigned short index);
-		void addProductionItem(const string& element, const unsigned short targetRegion = -1);
+		void addProductionItem(const string& element, const unsigned short targetProvince = -1);
 
-		void deployUnit(const unsigned short index, const unsigned short targetRegion);		
+		void deployUnit(const unsigned short index, const unsigned short targetProvince);		
 		const float setIC(float IC);
 		void update();
 		void reset();
@@ -45,7 +45,7 @@ namespace bEnd
 		class ProductionItem
 		{
 		public:
-			ProductionItem(const Unit& tech, const unsigned short days, const unsigned short region);
+			ProductionItem(const Unit& tech, const unsigned short days, const unsigned short Province);
 			ProductionItem(const ProductionItem&) = default;
 			ProductionItem(ProductionItem&&) = default;
 			ProductionItem() = delete;
@@ -54,7 +54,7 @@ namespace bEnd
 			const Unit& getUnit()const { return unit; }
 			const double getCompletionPercentage()const { return completionPercentage; }
 			const Date getComlpetionDate()const;
-			const unsigned short getTarget()const { return targetRegion; }
+			const unsigned short getTarget()const { return targetProvince; }
 
 			ProductionItem& setIC(const float IC) { if (IC >= 0.0f) dedicatedICPercentage = (IC <= 1.0f ? IC : 1.0f); return *this; }
 			ProductionItem& updateProductionDays(const Tag& tag);
@@ -63,7 +63,7 @@ namespace bEnd
 		private:
 			const Unit& unit;
 
-			atomic<unsigned short> productionDays = 0, targetRegion = -1;
+			atomic<unsigned short> productionDays = 0, targetProvince = -1;
 			atomic<float> completionPercentage = 0.0f;
 			atomic<float> dedicatedICPercentage = 0.0f;
 		};
@@ -73,7 +73,7 @@ namespace bEnd
 		Production(Production&&) = default;
 		Production() = delete;
 
-		const bool deploy(const ProductionItem& item, const unsigned short targetRegion);
+		const bool deploy(const ProductionItem& item, const unsigned short targetProvince);
 		
 		vector<unique_ptr<ProductionItem>> productionLine;
 		vector<unique_ptr<ProductionItem>> deploymentQueue;

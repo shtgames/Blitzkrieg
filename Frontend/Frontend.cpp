@@ -6,6 +6,7 @@
 
 #include <GUI/Button.h>
 #include <GUI/AudioSystem.h>
+#include <GUI/Background.h>
 
 namespace fEnd
 {
@@ -34,19 +35,12 @@ namespace fEnd
 
 	void drawLoadingScreen(sf::RenderWindow& target, std::atomic<bool>& loading)
 	{
-		target.setActive(true);
-
 		sf::Texture backgroundTex, circleTex;
 		backgroundTex.loadFromFile("ls/background.png");
 		circleTex.loadFromFile("ls/loading.png");
 		circleTex.setSmooth(true);
-
-		sf::View view;
-		view.setCenter(backgroundTex.getSize().x / 2, backgroundTex.getSize().y / 2);
-		view.setSize(sf::Vector2f(backgroundTex.getSize()));
-		view.setViewport(sf::FloatRect(0, 0, 1, 1));
-
-		sf::Sprite background(backgroundTex);
+		
+		gui::Background background(backgroundTex);
 		class RotateAnimation final : public gui::Animation
 		{
 			mutable sf::Sprite spr;
@@ -70,22 +64,36 @@ namespace fEnd
 			}
 		} circle(circleTex, target);
 
-		target.setFramerateLimit(30);
+		target.setFramerateLimit(60);
 
+		sf::Event event;
 		while (loading)
 		{
-			target.setView(view);
+			while (target.pollEvent(event))
+			{
+				if (event.type == sf::Event::Closed) std::exit(0);
+				else if (event.type == sf::Event::MouseMoved)
+					cursor.setPosition(event.mouseMove.x, event.mouseMove.y);
+				console.input(event);
+			}
+
 			target.draw(background);
-			target.setView(target.getDefaultView());
 			target.draw(circle);
+			target.draw(console);
+			target.draw(cursor);
+
 			target.display();
 		}
 
 		target.setFramerateLimit(0);
-		target.setActive(false);
 	}
 
-	void Resources::load()
+	std::unique_ptr<GameInterface> gameInterface;
+	std::unique_ptr<NationSelectScreen> nationSelect;
+	gui::Window menu;
+	std::atomic<bool> loading(true);
+
+	void Resources::load(const sf::Vector2u& resolution)
 	{
 		{
 			unsigned char index(0);
@@ -110,16 +118,35 @@ namespace fEnd
 
 		gui::AudioSystem::setMasterVolume(100);
 
-		Nation::loadNations();
-
 		for (const auto& it : bEnd::getDirectoryContents("resources/fonts/*.ttf"))
 			fonts[it.substr(0, it.size() - 4)].loadFromFile("resources/fonts/" + it);
+
+		console.init();
 
 		for (const auto& it : bEnd::getDirectoryContents("resources/textures/*.png"))
 			textures[it.substr(0, it.size() - 4)].loadFromFile("resources/textures/" + it);
 
-		fEnd::Map::initialize();
+		Nation::loadNations();
+		Map::initialise();
 		bEnd::Unit::load();
+
+		console.print("Loading Interface...");
+		gameInterface.reset(new GameInterface(resolution));
+		nationSelect.reset(new NationSelectScreen(resolution));
+
+		menu.add("singleplayer", gui::Button(gui::Icon(Resources::texture("button_wide"), true))
+			.setPosition((resolution.x - Resources::texture("button_wide").getSize().x) / 2,
+				(resolution.y - Resources::texture("button_wide").getSize().y) / 2)
+			.setName(gui::TextArea("Single Player", Resources::font("arial"), 15).setPosition(0, -3).setColor(sf::Color(200, 200, 200))))
+			.add("exit", gui::Button(gui::Icon(Resources::texture("button_wide"), true))
+				.setPosition((resolution.x - Resources::texture("button_wide").getSize().x) / 2, (resolution.y + Resources::texture("button_wide").getSize().y) / 2)
+				.setName(gui::TextArea("Exit", Resources::font("arial"), 14).setPosition(0, -3).setColor(sf::Color(200, 200, 200)))
+				.bindAction(gui::Released, []() { Map::terminate(); std::exit(0); }))
+			.add("ver", gui::TextArea(version, Resources::font("arial"), 15).setStyle(sf::Text::Bold).setColor(sf::Color(200, 200, 200)));
+
+		menu.at("ver").setPosition(resolution.x - menu.at("ver").getGlobalBounds().width - 10, resolution.y - menu.at("ver").getGlobalBounds().height - 10);
+
+		loading = false;
 	}
 
 	void initializeWindow(sf::RenderWindow& window)
@@ -136,45 +163,23 @@ namespace fEnd
 		sf::RenderWindow window(sf::VideoMode::getDesktopMode(), "Blitzkrieg: The Thousand-Year Reich", sf::Style::Fullscreen);
 		fEnd::initializeWindow(window);
 		
-		std::atomic<bool> loading(true);
-		window.setActive(false);
-		std::thread loadingScreen([&window, &loading]() { fEnd::drawLoadingScreen(window, loading); });
+		std::thread loadingThread([&window]() { fEnd::Resources::load(window.getSize()); });
 
-		fEnd::Resources::load();
+		{
+			sf::Texture* cursorTex(new sf::Texture());
+			cursorTex->loadFromFile("resources/cursor.png");
+			fEnd::cursor.setTexture(*cursorTex);
+		}
 
-		console.init();
+		fEnd::drawLoadingScreen(window, loading);				
 
-		fEnd::cursor.setTexture(Resources::texture("cursor"));
-		fEnd::GameInterface gameInterface(window.getSize());
-		fEnd::NationSelectScreen nationSelect(window.getSize());
-		
-		sf::Sprite bg(Resources::texture("main_menu_bg"));
-		sf::View backgroundView;
-		backgroundView.setCenter(Resources::texture("main_menu_bg").getSize().x / 2, Resources::texture("main_menu_bg").getSize().y / 2);
-		backgroundView.setSize(sf::Vector2f(Resources::texture("main_menu_bg").getSize()));
-		backgroundView.setViewport(sf::FloatRect(0, 0, 1, 1));
+		((gui::Button&)menu.at("singleplayer")).bindAction(gui::Released, [&window]()
+			{
+				if (!nationSelect || !gameInterface) return;
+				nationSelect->run(window, *gameInterface);
+			});
 
-		gui::Window menu;
-		menu.add("singleplayer", gui::Button(gui::Icon(Resources::texture("button_wide"), true))
-				.setPosition((window.getSize().x - Resources::texture("button_wide").getSize().x) / 2,
-					(window.getSize().y - Resources::texture("button_wide").getSize().y) / 2)
-				.setName(gui::TextArea("Single Player", Resources::font("arial"), 15).setPosition(0, -3).setColor(sf::Color(200, 200, 200)))
-				.bindAction(gui::Released, [&window, &nationSelect, &gameInterface]() 
-					{
-						nationSelect.run(window, gameInterface);
-					}))
-			.add("exit", gui::Button(gui::Icon(Resources::texture("button_wide"), true))
-				.setPosition((window.getSize().x - Resources::texture("button_wide").getSize().x) / 2, (window.getSize().y + Resources::texture("button_wide").getSize().y) / 2)
-				.setName(gui::TextArea("Exit", Resources::font("arial"), 14).setPosition(0, -3).setColor(sf::Color(200, 200, 200)))
-				.bindAction(gui::Released, []() { Map::terminate(); std::exit(0); }))
-			.add("ver", gui::TextArea(version, Resources::font("arial"), 15).setStyle(sf::Text::Bold).setColor(sf::Color(200, 200, 200)));
-		
-		menu.at("ver").setPosition(window.getSize().x - menu.at("ver").getGlobalBounds().width - 10, window.getSize().y - menu.at("ver").getGlobalBounds().height - 10);
-
-		loading = false;
-		loadingScreen.join();
-		window.setActive(true);
-
+		gui::Background menuBackground(Resources::texture("main_menu_bg"));
 		sf::Event event;
 		while (true)
 		{
@@ -189,9 +194,8 @@ namespace fEnd
 				console.input(event);
 				menu.input(event);
 			}
-			window.setView(backgroundView);
-			window.draw(bg);
-			window.setView(window.getDefaultView());
+
+			window.draw(menuBackground);
 			window.draw(menu);
 			window.draw(console);
 			window.draw(fEnd::cursor);

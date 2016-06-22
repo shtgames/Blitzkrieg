@@ -46,7 +46,7 @@ namespace fEnd
 for production, including\nnatural products like rubber and less-common metals such as chrome\nand uranium.") +
 				gui::bind(" Necessary for ") + gui::bind("Industrial Capacity", color) + fullstop)));
 		add("oil_icon", gui::Icon(Resources::texture("icon_oil"), true).setPosition(288, -2)
-			.setMessage(default.setText(gui::bind("Crude Oil\n", color) + gui::bind("Procured from drilling in oil-rich provinces or through trade and \
+			.setMessage(default.setText(gui::bind("Crude Oil\n", color) + gui::bind("Procured from drilling in oil-rich Provinces or through trade and \
 essential\nfor any modern army to operate. Must first be refined into ") + gui::bind("Fuel", color) + fullstop)));
 		add("ic_icon", gui::Icon(Resources::texture("icon_ic"), true).setPosition(362, 4)
 			.setMessage(default.setText(gui::bind("Industrial Capacity\n", color) + gui::bind("This represents the combined production \
@@ -136,16 +136,16 @@ the longer we will fight before considering surrender."))));
 		add("IC", gui::TextPane([]() 
 		{
 			const float amount(bEnd::ResourceDistributor::get(bEnd::Nation::player).getWastedIC());
-			return gui::bind(std::to_string(sf::Uint16(amount)), amount > 0 ? sf::Color::Red : sf::Color::Green);
+			return gui::bind(std::to_string(unsigned short(amount)), amount > 0 ? sf::Color::Red : sf::Color::Green);
 		} + gui::bind("-", sf::Color(188, 183, 169)) + []()
 		{
 			const auto& source(bEnd::ResourceDistributor::get(bEnd::Nation::player));
-			return gui::bind(std::to_string(sf::Uint16(source.getBaseIC())),
+			return gui::bind(std::to_string(unsigned short(source.getBaseIC())),
 				source.getICResourceBottleneck() == 1 ? sf::Color::Green : sf::Color::Red);
 		} + gui::bind("-", sf::Color(188, 183, 169)) + []()
 		{
 			const auto& source(bEnd::ResourceDistributor::get(bEnd::Nation::player));
-			return gui::bind(std::to_string(sf::Uint16(source.getAvailableIC() * source.getICResourceBottleneck())),
+			return gui::bind(std::to_string(unsigned short(source.getAvailableIC() * source.getICResourceBottleneck())),
 				source.getICResourceBottleneck() == 1 ? sf::Color::Green : sf::Color::Red);
 		}, font, 13).setPosition(383, 3));
 

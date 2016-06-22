@@ -1,10 +1,10 @@
-#include "Region.h"
+#include "Province.h"
 
 #include "Production.h"
 
 #include "Unit.h"
 #include "Research.h"
-#include "Region.h"
+#include "Province.h"
 #include "ResourceDistributor.h"
 #include "TimeSystem.h"
 
@@ -67,32 +67,32 @@ namespace bEnd
 		if (index < productionLine.size()) 
 		{
 			if (productionLine.at(index)->getUnit().getType() == Unit::Building && productionLine.at(index)->getTarget() != -1)
-				Region::get(productionLine.at(index)->getTarget()).dequeueBuilding(productionLine.at(index)->getUnit().getName());
+				Province::get(productionLine.at(index)->getTarget()).dequeueBuilding(productionLine.at(index)->getUnit().getName());
 			productionLine.erase(productionLine.begin() + index);
 			setIC(totalDedicatedIC); 
 		}
 		productionLineLock.unlock();
 	}
 
-	void Production::deployUnit(const unsigned short index, const unsigned short targetRegion)
+	void Production::deployUnit(const unsigned short index, const unsigned short targetProvince)
 	{
 		deploymentQueueLock.lock();
-		if (index < deploymentQueue.size() - 1 && deploymentQueue.at(index) && deploy(*deploymentQueue.at(index), targetRegion))
+		if (index < deploymentQueue.size() - 1 && deploymentQueue.at(index) && deploy(*deploymentQueue.at(index), targetProvince))
 			deploymentQueue.erase(deploymentQueue.begin() + index);
 		deploymentQueueLock.unlock();
 	}
 
-	void Production::addProductionItem(const string& element, const unsigned short targetRegion)
+	void Production::addProductionItem(const string& element, const unsigned short targetProvince)
 	{
 		if (Unit::exists(element) && ResourceDistributor::get(tag).getManpowerAmount() >= Unit::get(element).getRequiredManpower())
 		{
 			productionLineLock.lock();
 			productionLine.emplace_back(new ProductionItem(Unit::get(element),
 				Unit::get(element).getProductionDays(tag),
-				targetRegion));
+				targetProvince));
 			productionLineLock.unlock();
 
-			if (Unit::get(element).getType() == Unit::Building) Region::get(targetRegion).enqueueBuilding(element);
+			if (Unit::get(element).getType() == Unit::Building) Province::get(targetProvince).enqueueBuilding(element);
 
 			ResourceDistributor::get(tag).changeManpowerAmount((-1) * Unit::get(element).getRequiredManpower());
 			setIC(totalDedicatedIC);
@@ -148,14 +148,14 @@ namespace bEnd
 		totalDedicatedIC = 0;
 	}
 	
-	const bool Production::deploy(const ProductionItem& item, const unsigned short targetRegion)
+	const bool Production::deploy(const ProductionItem& item, const unsigned short targetProvince)
 	{
-		if (Region::exists(targetRegion) && Region::get(targetRegion).getController() == tag)
+		if (Province::exists(targetProvince) && Province::get(targetProvince).getController() == tag)
 		{
 			switch (item.getUnit().getType())
 			{
 			case Unit::Building:
-				Region::get(targetRegion).build(item.getUnit());
+				Province::get(targetProvince).build(item.getUnit());
 			case Unit::Land:
 				///
 			case Unit::Air:
@@ -169,8 +169,8 @@ namespace bEnd
 		return false;
 	}
 
-	Production::ProductionItem::ProductionItem(const Unit& tech, const unsigned short days, const unsigned short region)
-		: unit(tech), productionDays(days), targetRegion(Region::exists(region) ? region : -1) {}
+	Production::ProductionItem::ProductionItem(const Unit& tech, const unsigned short days, const unsigned short Province)
+		: unit(tech), productionDays(days), targetProvince(Province::exists(Province) ? Province : -1) {}
 
 	const Date Production::ProductionItem::getComlpetionDate() const
 	{

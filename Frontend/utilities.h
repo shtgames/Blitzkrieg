@@ -20,11 +20,13 @@ namespace utl
 	const bool pointsAreOnOneLine(const sf::Vector2s&, const sf::Vector2s&, const sf::Vector2s&);
 	const char angleType(const sf::Vector2s&, const sf::Vector2s&, const sf::Vector2s&);
 	void cullBorderTriangles(const std::vector<std::vector<sf::Color>>&, const sf::Color&, std::vector<sf::Vector2s>&, std::vector<sf::Vector2s>&);
-	void floodFillColorChange(std::vector<std::vector<sf::Color>>&, sf::Uint16, sf::Uint16, const sf::Color&, const sf::Color&);
+	void floodFillColorChange(std::vector<std::vector<sf::Color>>&, unsigned short, unsigned short, const sf::Color&, const sf::Color&);
 	const sf::Vector2s findStartingPixel(const std::vector<std::vector<sf::Color>>&, const sf::Color&);
 	const std::vector<std::vector<sf::Vector2s>> marchingSquares(std::vector<std::vector<sf::Color>>&, const sf::Color&);
 	const std::vector<sf::Vector2s> simplifyShape(const std::vector<sf::Vector2s>&);
 	void tesselateShape(const std::vector<sf::Vector2s>&, std::vector<sf::Vector2s>&);
+	const bool haveCommonSegment(const sf::Vector2f& a, const sf::Vector2f& b, const sf::Vector2f& c, const sf::Vector2f& d);
+	unsigned short distanceBetweenPoints(const sf::Vector2f& a, const sf::Vector2f& b);
 };
 
 #endif

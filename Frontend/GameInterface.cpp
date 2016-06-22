@@ -10,12 +10,12 @@ namespace fEnd
 {
 	GameInterface::GameInterface(const sf::Vector2u& resolution)
 	{
-		Map::updateRegionVisuals(sf::Vector2s(resolution.x, resolution.y));
+		Map::updateProvinceVisuals(sf::Vector2s(resolution.x, resolution.y));
 
 		m_windows
 			.emplace("Topbar", Topbar(), true)
 			.emplace("Minimap", Minimap(sf::Vector2f(resolution)), true)
-			.emplace("Reg Panel", RegionPanel(resolution), true)
+			.emplace("Reg Panel", ProvincePanel(resolution), true)
 			.emplace("Map", gui::Window().add("Map", fEnd::Map()), true);
 
 		m_fpsMeter.setFont(Resources::font("arial")).setCharacterSize(17).setColor(sf::Color::White).setPosition(20, 70);
@@ -44,7 +44,7 @@ namespace fEnd
 
 	void GameInterface::resetResolution(const sf::Vector2u& resolution)
 	{
-		Map::updateRegionVisuals(sf::Vector2s(resolution.x, resolution.y));
+		Map::updateProvinceVisuals(sf::Vector2s(resolution.x, resolution.y));
 	}
 
 	void GameInterface::updatePlayer()

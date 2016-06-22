@@ -1,5 +1,5 @@
-#ifndef REGION_BACKEND
-#define REGION_BACKEND
+#ifndef Province_BACKEND
+#define Province_BACKEND
 
 #include "Resources.h"
 #include "Tag.h"
@@ -23,16 +23,16 @@ namespace fEnd
 namespace bEnd
 {
 	class Unit;
-	class Region final
+	class Province final
 	{
 		friend class fEnd::Map;
 	public:
 		typedef pair<float, unsigned char>(BuildingLevels);
 
-		Region(const Region&) = default;
-		Region(Region&&) = default;
-		Region();
-		~Region() = default;
+		Province(const Province&) = default;
+		Province(Province&&) = default;
+		Province();
+		~Province() = default;
 
 		void build(const Unit& building);
 		void repairAll();
@@ -53,9 +53,12 @@ namespace bEnd
 		void dequeueBuilding(const std::string& key, unsigned char amount = 1);
 		const unsigned char getQueuedCount(const std::string& key);
 
+		const std::unordered_map<unsigned short, unsigned short>& getNeighbours()const;
+		const std::set<unsigned short> getPath(const unsigned short target)const;
+
 		static void loadFromSave(const FileProcessor::Statement& source);
-		static const bool exists(const unsigned short ID) { return regions.count(ID); }
-		static Region& get(const unsigned short regionID) { return regions[regionID]; }
+		static const bool exists(const unsigned short ID) { return provinces.count(ID); }
+		static Province& get(const unsigned short ProvinceID) { return provinces[ProvinceID]; }
 		
 	private:		
 		void changeOwner(const Tag&);
@@ -75,10 +78,11 @@ namespace bEnd
 		set<Tag>                                                  cores;
 		std::atomic<unsigned short>                               provID = 0;
 		std::unordered_map<std::string, unsigned char>            queuedBuildingCount;
+		std::unordered_map<unsigned short, unsigned short>        neighbours; // Key is province index, value is distance to province.
 
 		mutable std::mutex coresLock, resourceLock, queueLock;
 
-		static map<unsigned short, Region> regions;
+		static map<unsigned short, Province> provinces;
 		static const float ANNEXED_NON_CORE_PENALTY;
 	};
 }

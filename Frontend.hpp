@@ -5,7 +5,7 @@
 #include "Frontend/GameInterface.h"
 #include "Frontend/Minimap.h"
 #include "Frontend/Topbar.h"
-#include "Frontend/RegionPanel.h"
+#include "Frontend/ProvincePanel.h"
 #include "Frontend/NationSelect.h"
 #include "Frontend/Console.h"
 
@@ -35,7 +35,7 @@ namespace fEnd
 		static const sf::Texture& texture(const std::string& key);
 		static const bool textureExists(const std::string& key);
 		static const sf::Font& font(const std::string& key);
-		static void load();
+		static void load(const sf::Vector2u& resolution);
 
 	private:
 		static std::unordered_map<std::string, sf::Texture> textures;
