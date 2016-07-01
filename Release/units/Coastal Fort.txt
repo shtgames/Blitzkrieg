@@ -3,4 +3,5 @@ coastal_fort =
 	type = building
 	build_cost_ic = 2
 	build_time = 30
+	coastal = yes
 }

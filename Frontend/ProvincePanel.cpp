@@ -78,7 +78,8 @@ namespace fEnd
 				.setPredicates(gui::Button::PredicateArray{ [building]()
 					{
 						return Map::target && bEnd::Province::get(*Map::target).getController() == bEnd::Nation::player &&
-							bEnd::Province::get(*Map::target).getBuildingLevels(building).second + bEnd::Province::get(*Map::target).getQueuedCount(building) < 10;
+							bEnd::Province::get(*Map::target).getBuildingLevels(building).second + bEnd::Province::get(*Map::target).getQueuedCount(building) < 10 &&
+							!(bEnd::Unit::get(building).isCoastal() && !bEnd::Province::get(*Map::target).isCoastal());
 					} })
 				.setMessage(default.setText(gui::bind(building)));
 		}

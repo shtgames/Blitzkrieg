@@ -113,6 +113,8 @@ namespace fEnd
 		static void loadProvinceCache();
 		static void loadProvinceNames();
 		static void generateWorldGraph();
+
+		static void connectProvinces(const unsigned short a, const unsigned short b);
 	};
 }
 

@@ -42,6 +42,7 @@ namespace bEnd
 		const float getResourceMultiplier(const Resource resource)const { return ResourceAdditionAndMultiplier[resource].second; }
 		const float getManpowerAddition()const { return ManpowerAddition; }
 		const float getManpowerMultiplier()const { return ManpowerMultiplier; }
+		const bool isCoastal()const { return coastal; }
 
 		static const bool loadFromFile(const FileProcessor::Statement& file);
 		static const bool exists(const std::string& unit) { if (units.count(unit)) return true; return false; }
@@ -71,6 +72,7 @@ namespace bEnd
 			ManpowerAddition = 0.0f, ManpowerMultiplier = 1.0f;
 		mutable std::unordered_map<Resource, std::pair<float, float>> ResourceAdditionAndMultiplier;
 		unsigned short lineOfSightAddition = 0;
+		bool coastal = false;
 
 		// Land
 		bool canParadrop = false;

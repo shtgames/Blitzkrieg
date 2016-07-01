@@ -45,6 +45,7 @@ namespace bEnd
 		const float getIC()const;
 		const BuildingLevels getBuildingLevels(const std::string& key);
 		const bool isSea()const;
+		const bool isCoastal()const;
 
 		bool hasCore(const Tag&)const;
 		void addCore(const Tag&);
@@ -70,7 +71,7 @@ namespace bEnd
 		void repair(const Unit& building, float levels);
 		
 		std::atomic<unsigned char>                                victoryPoints = 0;
-		std::atomic<bool>                                         sea = false, initialized = false, capital = false, generatingResources = false;
+		std::atomic<bool>                                         sea = false, coastal = false, initialized = false, capital = false, generatingResources = false;
 		mutable map<string, BuildingLevels>                       buildings;
 		mutable map<Resource, pair<atomic<float>, atomic<float>>> resourceGeneration;
 		pair<atomic<float>, atomic<float>>                        leadership = std::make_pair(0.0f, 1.0f), IC = std::make_pair(0.0f, 1.0f), manpowerGeneration = std::make_pair(0.0f, 1.0f);

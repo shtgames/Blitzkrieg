@@ -38,7 +38,7 @@ namespace bEnd
 				else if (it->rStrings.front() == "building") target.type = Building;
 				unitCount[target.type]++;
 			}
-			else if (it->lValue == "can_paradrop" && it->rStrings.front() == "yes")
+			else if (it->lValue == "can_paradrop" && (it->rStrings.front() == "1" || it->rStrings.front() == "yes" || it->rStrings.front() == "true"))
 				target.canParadrop = true;
 			else if (it->lValue == "build_cost_ic")
 				target.baseRequiredIC = std::stof(it->rStrings.front());
@@ -72,6 +72,8 @@ namespace bEnd
 					target.ResourceAdditionAndMultiplier[resource].first = std::stof(it1.rStrings.at(0));
 					target.ResourceAdditionAndMultiplier.at(resource).second = std::stof(it1.rStrings.at(1));
 				}
+			else if (it->lValue == "coastal" && (it->rStrings.front() == "1" || it->rStrings.front() == "yes" || it->rStrings.front() == "true"))
+				target.coastal = true;
 		return true;
 	}
 

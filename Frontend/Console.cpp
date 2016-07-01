@@ -47,14 +47,16 @@ namespace fEnd
 	const bool Console::input(const sf::Event& event)
 	{
 		if (!initialised) return false;
-
+		
 		if (event.type == sf::Event::KeyReleased && event.key.code == sf::Keyboard::Tilde)
 		{
 			setActive(!isActive());
-			((gui::TextField&)at("input field")).setActive(isActive());
+			if (allowingInput)
+				((gui::TextField&)at("input field")).setActive(isActive());
 			return true;
 		}
 		if (event.type == sf::Event::TextEntered && event.text.unicode == '`' || event.text.unicode == '~') return true;
+		if (event.type == sf::Event::MouseButtonReleased && !allowingInput) return false;
 		return Window::input(event);
 	}
 
@@ -96,6 +98,11 @@ namespace fEnd
 	{
 		std::lock_guard<std::mutex> guard(m_outputLock);
 		if (!m_history.empty()) m_history.pop_back();
+	}
+
+	void Console::allowInput(const bool input)
+	{
+		allowingInput = input;
 	}
 
 	void Console::init()

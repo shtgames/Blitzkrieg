@@ -14,7 +14,7 @@ namespace fEnd
 		
 		mutable std::mutex m_outputLock;
 		std::vector<sf::String> m_history;
-		bool initialised = false;
+		bool initialised = false, allowingInput = false;
 
 		static const sf::Texture createTexture();
 
@@ -27,6 +27,7 @@ namespace fEnd
 
 		void print(sf::String string);
 		void eraseLastLine();
+		void allowInput(const bool input);
 		void init();
 	};
 }

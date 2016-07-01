@@ -10,7 +10,7 @@
 
 namespace fEnd
 {
-	constexpr auto version = "BkTYR: Version 2.2.1 (Alpha)";
+	constexpr auto version = "BkTYR: Version 2.3.2 (Alpha), 1st July 2016";
 
 	volatile Screen fEnd::currentScreen = Menu;
 	sf::Sprite fEnd::cursor;
@@ -178,6 +178,8 @@ namespace fEnd
 				if (!nationSelect || !gameInterface) return;
 				nationSelect->run(window, *gameInterface);
 			});
+
+		console.allowInput(true);
 
 		gui::Background menuBackground(Resources::texture("main_menu_bg"));
 		sf::Event event;

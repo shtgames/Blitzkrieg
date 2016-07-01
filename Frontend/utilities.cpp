@@ -105,7 +105,15 @@ namespace utl
 
 	const bool pointIsInsideTriangle(const sf::Vector2s& A1, const sf::Vector2s& B1, const sf::Vector2s& C1, const sf::Vector2s& point1)
 	{
-		const sf::Vector2f A(A1.x, A1.y), B(B1.x, B1.y), C(C1.x, C1.y), point(point1.x, point1.y);
+		const sf::Vector2f A(A1), B(B1), C(C1), point(point1);
+		const float alpha = ((B.y - C.y) * (point.x - C.x) + (C.x - B.x) * (point.y - C.y)) / ((B.y - C.y) * (A.x - C.x) + (C.x - B.x) * (A.y - C.y)),
+			beta = ((C.y - A.y) * (point.x - C.x) + (A.x - C.x) * (point.y - C.y)) / ((B.y - C.y) * (A.x - C.x) + (C.x - B.x) * (A.y - C.y)),
+			gamma = 1.0f - alpha - beta;
+		return alpha >= 0.0f && beta >= 0.0f && gamma >= 0.0f;
+	}
+
+	const bool pointIsInsideTriangle(const sf::Vector2f& A, const sf::Vector2f& B, const sf::Vector2f& C, const sf::Vector2f& point)
+	{
 		const float alpha = ((B.y - C.y) * (point.x - C.x) + (C.x - B.x) * (point.y - C.y)) / ((B.y - C.y) * (A.x - C.x) + (C.x - B.x) * (A.y - C.y)),
 			beta = ((C.y - A.y) * (point.x - C.x) + (A.x - C.x) * (point.y - C.y)) / ((B.y - C.y) * (A.x - C.x) + (C.x - B.x) * (A.y - C.y)),
 			gamma = 1.0f - alpha - beta;
@@ -327,10 +335,30 @@ namespace utl
 			}
 		}
 	}
-	
+
+	unsigned int length(const sf::Vector2f& a, const sf::Vector2f& b)
+	{
+		return (a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y);
+	}
+
+	std::pair<float, float> getFunc(const sf::Vector2f& A, const sf::Vector2f& B)
+	{
+		const auto first((B.y - A.y) / (B.x - A.x));
+		return std::make_pair(first, A.y - A.x * first);
+	}
+
 	const bool haveCommonSegment(const sf::Vector2f& a, const sf::Vector2f& b, const sf::Vector2f& c, const sf::Vector2f& d)
 	{
-		return linesIntersect(a, b, c, d) && !(a.x * (b.y - c.y) + b.x * (c.y - a.y) + c.x * ((a.y - b.y))) && !(a.x * (b.y - d.y) + b.x * (d.y - a.y) + d.x * ((a.y - b.y)));
+		if ((a == c && b == d) || (a == d && b == c)) return true;
+
+		if (a.x == b.x && c.x == d.x && a.x == c.x)
+			return (b.y < c.y && b.y > d.y) || (b.y > c.y && b.y < d.y)
+				|| (a.y < c.y && a.y > d.y) || (a.y > c.y && a.y < d.y);
+		else if (a.x != b.x && c.x != d.x && getFunc(a, b) == getFunc(c, d))
+			return (b.x < c.x && b.x > d.x) || (b.x > c.x && b.x < d.x)
+				|| (a.x < c.x && a.x > d.x) || (a.x > c.x && a.x < d.x);
+
+		return false;
 	}
 
 	unsigned short distanceBetweenPoints(const sf::Vector2f& a, const sf::Vector2f& b)

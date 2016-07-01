@@ -11,6 +11,7 @@
 #include <fstream>
 #include <sstream>
 #include <set>
+#include <limits>
 
 namespace fEnd
 {
@@ -590,7 +591,7 @@ namespace fEnd
 
 	const sf::FloatRect getBounds(const sf::VertexArray& array, size_t begin, size_t end)
 	{
-		sf::FloatRect returnValue;
+		sf::FloatRect returnValue(std::numeric_limits<float>::max(), std::numeric_limits<float>::max(), std::numeric_limits<float>::min(), std::numeric_limits<float>::min());
 		for (;begin != end; ++begin)
 		{
 			if (array[begin].position.x < returnValue.left) returnValue.left = array[begin].position.x;
@@ -675,28 +676,42 @@ namespace fEnd
 			console.print(std::to_string(count) + "/" + std::to_string(provinces.size()));
 			for (const auto& it : provinces)
 			{
+				if (it.first == unsigned short(-1)) continue;
+
 				++count;
 				console.eraseLastLine();
 				console.print(std::to_string(count) + "/" + std::to_string(provinces.size()));
 
 				for (const auto& it1 : provinces)
-					if (it.first == it1.first) continue;
-					else for (size_t i(it.second.indexRange.second.first), end(it.second.indexRange.second.second); i < end; i += 2)
-					{
-						bool found(false);
-						for (size_t i1(it1.second.indexRange.second.first), end1(it1.second.indexRange.second.second); i1 < end1; i1 += 2)
-							if (utl::haveCommonSegment(provinceContours[i].position, provinceContours[i + 1].position,
-								provinceContours[i1].position, provinceContours[i1 + 1].position))
-							{
-								const auto distance(utl::distanceBetweenPoints(sf::Vector2f(it.second.bounds.left + it.second.bounds.width / 2, it.second.bounds.top + it.second.bounds.height / 2),
-									sf::Vector2f(it1.second.bounds.left + it1.second.bounds.width / 2, it1.second.bounds.top + it1.second.bounds.height / 2)));
-								bEnd::Province::get(it.first).neighbours.emplace(std::make_pair(it1.first, distance * (40075.0f / mapSize.x)));
-								bEnd::Province::get(it1.first).neighbours.emplace(std::make_pair(it.first, distance* (40075.0f / mapSize.y)));
-								found = true;
-								break;
-							}
-						if (found) break;
-					}
+					if (it.first == it1.first || it1.first == unsigned short(-1)) continue;
+					else if (it1.second.bounds.contains(it.second.bounds.left, it.second.bounds.top) &&
+						it1.second.bounds.contains(it.second.bounds.left + it.second.bounds.width, it.second.bounds.top + it.second.bounds.top + it.second.bounds.height))
+						for (size_t i(it.second.indexRange.first.first), end(it.second.indexRange.first.second); i < end; ++i)
+						{
+							bool found(false);
+							for (size_t i1(it1.second.indexRange.first.first), end1(it1.second.indexRange.first.second); i1 < end1; i1 += 3)
+								if (utl::pointIsInsideTriangle(provinceFill[i1].position, provinceFill[i1 + 1].position, provinceFill[i1 + 2].position, provinceFill[i].position))
+								{
+									connectProvinces(it.first, it1.first);
+									found = true;
+									break;
+								}
+							if (found) break;
+						}
+					else if (it1.second.bounds.intersects(it.second.bounds))
+						for (size_t i(it.second.indexRange.second.first), end(it.second.indexRange.second.second); i < end; i += 2)
+						{
+							bool found(false);
+							for (size_t i1(it1.second.indexRange.second.first), end1(it1.second.indexRange.second.second); i1 < end1; i1 += 2)
+								if (utl::haveCommonSegment(provinceContours[i].position, provinceContours[i + 1].position,
+									provinceContours[i1].position, provinceContours[i1 + 1].position))
+								{
+									connectProvinces(it.first, it1.first);
+									found = true;
+									break;
+								}
+							if (found) break;
+						}
 			}
 
 			std::ofstream cache("map/cache/adjacencies.bin", std::ios::out | std::ios::binary);
@@ -727,9 +742,25 @@ namespace fEnd
 					cache.read((char*)&neighbour, sizeof(neighbour));
 					cache.read((char*)&distance, sizeof(distance));
 					bEnd::Province::get(provID).neighbours.emplace(std::make_pair(neighbour, distance));
+					if (!bEnd::Province::get(provID).sea && bEnd::Province::get(neighbour).sea)
+						bEnd::Province::get(provID).coastal = true;
 				}
 			}
 		}
+	}
+
+	void Map::connectProvinces(const unsigned short a, const unsigned short b)
+	{
+		auto& it(provinces.at(a)), &it1(provinces.at(b));
+		const auto distance(utl::distanceBetweenPoints(sf::Vector2f(it.bounds.left + it.bounds.width / 2, it.bounds.top + it.bounds.height / 2),
+			sf::Vector2f(it1.bounds.left + it1.bounds.width / 2, it1.bounds.top + it1.bounds.height / 2)) * (40075 / mapSize.x));
+		bEnd::Province::get(a).neighbours.emplace(std::make_pair(b, distance));
+		bEnd::Province::get(b).neighbours.emplace(std::make_pair(a, distance));
+
+		if (bEnd::Province::get(a).sea && !bEnd::Province::get(b).sea)
+			bEnd::Province::get(b).coastal = true;
+		else if (!bEnd::Province::get(a).sea && bEnd::Province::get(b).sea)
+			bEnd::Province::get(a).coastal = true;
 	}
 
 	Map::Province& Map::get(const unsigned short ProvinceID)
@@ -750,24 +781,32 @@ namespace fEnd
 		console.print("Done.");
 	}
 
-	const unsigned short Map::clickCheck(sf::Vector2s point)
+	const unsigned short Map::clickCheck(sf::Vector2s point1)
 	{
-		point = sf::Vector2s(camera.mapPixelToCoords(sf::Vector2f(point)));
+		sf::Vector2f point = camera.mapPixelToCoords(sf::Vector2f(point1));
 		for (const auto& it : provinces)
 			if (it.second.sea) continue;
-			else for (size_t i(it.second.indexRange.first.first); i != it.second.indexRange.first.second; i += 3)
-				if (utl::pointIsInsideTriangle(sf::Vector2s(provinceFill[i].position), sf::Vector2s(provinceFill[i + 1].position),
-					sf::Vector2s(provinceFill[i + 2].position), point) || utl::pointIsInsideTriangle(sf::Vector2s(provinceFill[i].position), sf::Vector2s(provinceFill[i + 1].position),
-						sf::Vector2s(provinceFill[i + 2].position), sf::Vector2s(point.x + mapSize.x, point.y)))
-						return it.first;
+			else if (it.second.bounds.contains(point))
+				for (size_t i(it.second.indexRange.first.first); i != it.second.indexRange.first.second; i += 3)
+				if (utl::pointIsInsideTriangle(provinceFill[i].position, provinceFill[i + 1].position,
+					provinceFill[i + 2].position, point) || utl::pointIsInsideTriangle(provinceFill[i].position, provinceFill[i + 1].position,
+						provinceFill[i + 2].position, sf::Vector2f(point.x + mapSize.x, point.y)))
+					return it.first;
 		for (const auto& it : provinces)
 			if (!it.second.sea) continue;
-			else for (size_t i(it.second.indexRange.first.first); i != it.second.indexRange.first.second; i += 3)
-				if (utl::pointIsInsideTriangle(sf::Vector2s(provinceFill[i].position), sf::Vector2s(provinceFill[i + 1].position),
-					sf::Vector2s(provinceFill[i + 2].position), point) || utl::pointIsInsideTriangle(sf::Vector2s(provinceFill[i].position), sf::Vector2s(provinceFill[i + 1].position),
-						sf::Vector2s(provinceFill[i + 2].position), sf::Vector2s(point.x + mapSize.x, point.y)))
+			else if (it.second.bounds.contains(point))
+				for (size_t i(it.second.indexRange.first.first); i != it.second.indexRange.first.second; i += 3)
+				if (utl::pointIsInsideTriangle(provinceFill[i].position, provinceFill[i + 1].position,
+					provinceFill[i + 2].position, point) || utl::pointIsInsideTriangle(provinceFill[i].position, provinceFill[i + 1].position,
+						provinceFill[i + 2].position, sf::Vector2f(point.x + mapSize.x, point.y)))
 					return it.first;
 		return unsigned short(-2);
+	}
+
+	inline const sf::FloatRect translateRect(sf::FloatRect rect, const float amount)
+	{
+		rect.left += amount;
+		return rect;
 	}
 
 	void Map::updateVertexArrays()
@@ -828,20 +867,16 @@ namespace fEnd
 					if (it.second.sea || bEnd::Province::get(it.first).sea)
 					{
 						if (!it.second.visible) continue;
-						for (size_t i(it.second.indexRange.first.first), end(it.second.indexRange.first.second); i < end; i += 3)
-							if ((bounds.contains(provinceFill[i].position) ||
-								bounds.contains(provinceFill[i + 1].position) ||
-								bounds.contains(provinceFill[i + 2].position)))
+						if (bounds.intersects(it.second.bounds))
+							for (size_t i(it.second.indexRange.first.first), end(it.second.indexRange.first.second); i < end; i += 3)
 							{
 								fillBuffer[targetSet].append(provinceFill[i]);
 								fillBuffer[targetSet].append(provinceFill[i + 1]);
 								fillBuffer[targetSet].append(provinceFill[i + 2]);
 							}
 					}
-					else for (size_t i(it.second.indexRange.first.first), end(it.second.indexRange.first.second); i < end; i += 3)
-						if (bounds.contains(provinceFill[i].position) ||
-							bounds.contains(provinceFill[i + 1].position) ||
-							bounds.contains(provinceFill[i + 2].position))
+					else if (bounds.intersects(it.second.bounds))
+						for (size_t i(it.second.indexRange.first.first), end(it.second.indexRange.first.second); i < end; i += 3)
 						{
 							fillBuffer[targetSet].append(provinceFill[i]);
 							fillBuffer[targetSet].append(provinceFill[i + 1]);
@@ -861,10 +896,8 @@ namespace fEnd
 						if (it.second.sea)
 						{
 							if (!it.second.visible) continue;
-							for (size_t i(it.second.indexRange.first.first), end(it.second.indexRange.first.second); i < end; i += 3)
-								if ((bounds.contains(provinceFill[i].position) ||
-									bounds.contains(provinceFill[i + 1].position) ||
-									bounds.contains(provinceFill[i + 2].position)))
+							if (bounds.intersects(translateRect(it.second.bounds, -mapSize.x)))
+								for (size_t i(it.second.indexRange.first.first), end(it.second.indexRange.first.second); i < end; i += 3)
 								{
 									vertex = &provinceFill[i];
 									fillBuffer[targetSet].append(sf::Vertex(sf::Vector2f(vertex->position.x - mapSize.x, vertex->position.y),
@@ -875,10 +908,8 @@ namespace fEnd
 										vertex->color, vertex->texCoords));
 								}
 						}
-						else for (size_t i(it.second.indexRange.first.first), end(it.second.indexRange.first.second); i < end; i += 3)
-							if (bounds.contains(provinceFill[i].position.x - mapSize.x, provinceFill[i].position.y) ||
-								bounds.contains(provinceFill[i + 1].position.x - mapSize.x, provinceFill[i + 1].position.y) ||
-								bounds.contains(provinceFill[i + 2].position.x - mapSize.x, provinceFill[i + 2].position.y))
+						else if (bounds.intersects(translateRect(it.second.bounds, -mapSize.x)))
+							for (size_t i(it.second.indexRange.first.first), end(it.second.indexRange.first.second); i < end; i += 3)
 							{
 								vertex = &provinceFill[i];
 								fillBuffer[targetSet].append(sf::Vertex(sf::Vector2f(vertex->position.x - mapSize.x, vertex->position.y),

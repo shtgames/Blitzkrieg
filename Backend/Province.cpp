@@ -334,6 +334,11 @@ namespace bEnd
 		return sea;
 	}
 
+	const bool Province::isCoastal() const
+	{
+		return coastal;
+	}
+
 	bool Province::hasCore(const Tag& tag)const
 	{
 		std::lock_guard<std::mutex> guard(coresLock);
