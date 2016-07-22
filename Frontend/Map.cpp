@@ -19,19 +19,40 @@ namespace fEnd
 		"uniform sampler2D mask, first, second;\
 		uniform float zoomFactor, amount;\
 		\
+		vec4 highlight(vec4 color)\
+		{\
+			color.r += 0.15f * (1.0f - color.r);\
+			color.g += 0.15f * (1.0f - color.g);\
+			color.b += 0.15f * (1.0f - color.b);\
+			\
+			return color;\
+		}\
+		\
 		void main()\
 		{\
-			gl_FragColor.rgb = (gl_Color * mix( texture2D(first, gl_TexCoord[0].xy / (2 * zoomFactor)), texture2D(second, gl_TexCoord[0].xy ), amount )).rgb;\
+			gl_FragColor.rgb = (gl_Color *\
+				mix( texture2D(first, gl_TexCoord[0].xy / (2 * zoomFactor)), texture2D(second, gl_TexCoord[0].xy ), amount )).rgb;\
 			gl_FragColor.a = texture2D(mask, gl_TexCoord[0].xy).a;\
 		}";
 
 	const std::string ProvinceFillTextureTransition =
 		"uniform sampler2D first, second;\
 		uniform float zoomFactor, amount;\
+		uniform vec4 highlightColor;\
+		\
+		vec4 highlight(vec4 color)\
+		{\
+			color.r += 0.15f * (1.0f - color.r);\
+			color.g += 0.15f * (1.0f - color.g);\
+			color.b += 0.15f * (1.0f - color.b);\
+			\
+			return color;\
+		}\
 		\
 		void main()\
 		{\
-			gl_FragColor = gl_Color * mix( texture2D(first, gl_TexCoord[0].xy / (2 * zoomFactor)), texture2D(second, gl_TexCoord[0].xy ), amount );\
+			gl_FragColor = (gl_Color == highlightColor ? highlight(gl_Color) : gl_Color) *\
+				mix( texture2D(first, gl_TexCoord[0].xy / (2 * zoomFactor)), texture2D(second, gl_TexCoord[0].xy ), amount );\
 		}";
 
 	const sf::Color borderColor = sf::Color(21, 28, 25, 248);
@@ -59,8 +80,12 @@ namespace fEnd
 	{
 		TexTransitionAnimation()
 		{
-			fill.loadFromMemory(ProvinceFillTextureTransition, sf::Shader::Fragment);
-			stripes.loadFromMemory(stripeShaderCode, sf::Shader::Fragment);
+			if (!sf::Shader::isAvailable())
+				console.print("Unable to load shaders. Reason: System does not support Shader Model 3.0. Some elements may be rendered incorrectly.");
+			else if (!fill.loadFromMemory(ProvinceFillTextureTransition, sf::Shader::Fragment) ||
+				!stripes.loadFromMemory(stripeShaderCode, sf::Shader::Fragment))
+				console.print("Failed to load shaders: Some elements may be rendered incorrectly.");
+			else console.print("Shaders loaded successfully.");
 		}
 		void step()const override
 		{
@@ -85,6 +110,10 @@ namespace fEnd
 		{
 			fill.setParameter("zoomFactor", factor);
 			stripes.setParameter("zoomFactor", factor);
+		}
+		void setHighlightedColor(const sf::Color& color)
+		{
+			fill.setParameter("highlightColor", color);
 		}
 		const sf::Shader& getFillShader()const
 		{
@@ -321,18 +350,7 @@ namespace fEnd
 			provinces[*m_target].highlighted = true;
 			addProvinceNeedingColorUpdate(*m_target);
 		}
-		else
-		{
-			const auto controller(bEnd::Province::get(*m_target).getController());
-			for (auto& it : provinces)
-				if (bEnd::Province::get(it.first).getController() == controller)
-				{
-					it.second.highlighted = true;
-					addProvinceNeedingColorUpdate(it.first);
-				}
-			waitForColorUpdate();
-			bEnd::Nation::player = bEnd::Province::get(*m_target).getController();
-		}
+		else fillTransitionAnimation.setHighlightedColor(Nation::get(bEnd::Nation::player = bEnd::Province::get(*m_target).getController()).getColor());
 	}
 
 	void Map::deselect()
@@ -343,16 +361,7 @@ namespace fEnd
 			provinces[*m_target].highlighted = false;
 			addProvinceNeedingColorUpdate(*m_target);
 		}
-		else
-		{
-			const auto controller(bEnd::Province::get(*m_target).getController());
-			for (auto& it : provinces)
-				if (bEnd::Province::get(it.first).getController() == controller)
-				{
-					it.second.highlighted = false;
-					addProvinceNeedingColorUpdate(it.first);
-				}
-		}
+		else fillTransitionAnimation.setHighlightedColor(sf::Color(0, 0, 0, 0));
 		m_target.reset();
 	}
 

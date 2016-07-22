@@ -10,13 +10,14 @@
 
 namespace fEnd
 {
-	constexpr auto version = "BkTYR: Version 2.3.2 (Alpha), 1st July 2016";
+	constexpr auto version = "BkTYR: Version 2.3.3 (Alpha), 22 July 2016";
 
 	volatile Screen fEnd::currentScreen = Menu;
 	sf::Sprite fEnd::cursor;
 	Console fEnd::console;
 	std::unordered_map<std::string, sf::Texture> Resources::textures;
 	std::unordered_map<std::string, sf::Font> Resources::fonts;
+	const unsigned short fEnd::menuFramerateCap = 60, fEnd::ingameFramerateCap = 0;
 
 	const sf::Font& Resources::font(const std::string& key)
 	{
@@ -64,7 +65,7 @@ namespace fEnd
 			}
 		} circle(circleTex, target);
 
-		target.setFramerateLimit(60);
+		target.setFramerateLimit(menuFramerateCap);
 
 		sf::Event event;
 		while (loading)
@@ -85,7 +86,7 @@ namespace fEnd
 			target.display();
 		}
 
-		target.setFramerateLimit(0);
+		target.setFramerateLimit(ingameFramerateCap);
 	}
 
 	std::unique_ptr<GameInterface> gameInterface;
@@ -176,12 +177,15 @@ namespace fEnd
 		((gui::Button&)menu.at("singleplayer")).bindAction(gui::Released, [&window]()
 			{
 				if (!nationSelect || !gameInterface) return;
+				window.setFramerateLimit(ingameFramerateCap);
 				nationSelect->run(window, *gameInterface);
+				window.setFramerateLimit(menuFramerateCap);
 			});
 
 		console.allowInput(true);
 
 		gui::Background menuBackground(Resources::texture("main_menu_bg"));
+		window.setFramerateLimit(menuFramerateCap);
 		sf::Event event;
 		while (true)
 		{

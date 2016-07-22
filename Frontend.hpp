@@ -25,6 +25,7 @@ namespace fEnd
 	extern volatile Screen currentScreen;
 	extern sf::Sprite cursor;
 	extern Console console;
+	extern const unsigned short menuFramerateCap, ingameFramerateCap;
 	void initializeWindow(sf::RenderWindow& window);
 	void drawLoadingScreen(sf::RenderWindow& target, std::atomic<bool>& loading);
 	void run();
