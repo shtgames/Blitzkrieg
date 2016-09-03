@@ -92,28 +92,28 @@ namespace fEnd
 			amount += (direction ? 1 : -1) / (getAnimationFPS() * getAnimationDuration());
 			if (amount > 1.0f) amount = 1.0f;
 			else if (amount < 0.0f) amount = 0.0f;
-			fill.setParameter("amount", amount);
-			stripes.setParameter("amount", amount);
+			fill.setUniform("amount", amount);
+			stripes.setUniform("amount", amount);
 		}
 		void setTextures(const sf::Texture& first)
 		{
-			fill.setParameter("first", first);
-			fill.setParameter("second", sf::Shader::CurrentTexture);
-			stripes.setParameter("first", first);
-			stripes.setParameter("second", sf::Shader::CurrentTexture);
+			fill.setUniform("first", first);
+			fill.setUniform("second", sf::Shader::CurrentTexture);
+			stripes.setUniform("first", first);
+			stripes.setUniform("second", sf::Shader::CurrentTexture);
 		}
 		void setMask(const sf::Texture& mask)
 		{
-			stripes.setParameter("mask", mask);
+			stripes.setUniform("mask", mask);
 		}
 		void setFactor(const float factor)
 		{
-			fill.setParameter("zoomFactor", factor);
-			stripes.setParameter("zoomFactor", factor);
+			fill.setUniform("zoomFactor", factor);
+			stripes.setUniform("zoomFactor", factor);
 		}
 		void setHighlightedColor(const sf::Color& color)
 		{
-			fill.setParameter("highlightColor", color);
+			fill.setUniform("highlightColor", sf::Glsl::Vec4(color));
 		}
 		const sf::Shader& getFillShader()const
 		{

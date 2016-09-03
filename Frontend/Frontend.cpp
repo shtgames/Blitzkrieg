@@ -8,6 +8,9 @@
 #include <GUI/AudioSystem.h>
 #include <GUI/Background.h>
 
+#include <iostream>
+#include <windows.h>
+
 namespace fEnd
 {
 	constexpr auto version = "BkTYR: Version 2.3.3 (Alpha), 22 July 2016";
@@ -66,7 +69,7 @@ namespace fEnd
 		} circle(circleTex, target);
 
 		target.setFramerateLimit(menuFramerateCap);
-
+		
 		sf::Event event;
 		while (loading)
 		{
@@ -121,11 +124,13 @@ namespace fEnd
 
 		for (const auto& it : bEnd::getDirectoryContents("resources/fonts/*.ttf"))
 			fonts[it.substr(0, it.size() - 4)].loadFromFile("resources/fonts/" + it);
-
+		
 		console.init();
-
+		
 		for (const auto& it : bEnd::getDirectoryContents("resources/textures/*.png"))
+		{
 			textures[it.substr(0, it.size() - 4)].loadFromFile("resources/textures/" + it);
+		}
 
 		Nation::loadNations();
 		Map::initialise();
@@ -146,7 +151,7 @@ namespace fEnd
 			.add("ver", gui::TextArea(version, Resources::font("arial"), 15).setStyle(sf::Text::Bold).setColor(sf::Color(200, 200, 200)));
 
 		menu.at("ver").setPosition(resolution.x - menu.at("ver").getGlobalBounds().width - 10, resolution.y - menu.at("ver").getGlobalBounds().height - 10);
-
+		
 		loading = false;
 	}
 
@@ -163,16 +168,17 @@ namespace fEnd
 	{
 		sf::RenderWindow window(sf::VideoMode::getDesktopMode(), "Blitzkrieg: The Thousand-Year Reich", sf::Style::Fullscreen);
 		fEnd::initializeWindow(window);
-		
-		std::thread loadingThread([&window]() { fEnd::Resources::load(window.getSize()); });
 
 		{
 			sf::Texture* cursorTex(new sf::Texture());
 			cursorTex->loadFromFile("resources/cursor.png");
 			fEnd::cursor.setTexture(*cursorTex);
 		}
-
-		fEnd::drawLoadingScreen(window, loading);				
+		std::thread loadingThread([&window]() { fEnd::Resources::load(window.getSize()); });
+		loadingThread.detach();
+		
+		fEnd::drawLoadingScreen(window, loading);
+		system("pause");
 
 		((gui::Button&)menu.at("singleplayer")).bindAction(gui::Released, [&window]()
 			{

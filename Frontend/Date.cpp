@@ -14,7 +14,8 @@ namespace fEnd
 	{
 		date.setFont(font);
 		date.setCharacterSize(13);
-		date.setColor(sf::Color(213, 213, 213));
+		date.setOutlineColor(sf::Color(15, 15, 15, 230));
+		date.setFillColor(sf::Color(213, 213, 213));
 	}
 
 	std::unique_ptr<gui::Interactive> Date::copy() const

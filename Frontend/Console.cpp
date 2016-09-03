@@ -117,9 +117,9 @@ namespace fEnd
 			.setPosition(10, height - 2))
 		.add("output field", gui::TextArea("", Resources::font("arial"), 13)
 			.setColor(sf::Color(170, 170, 170)));
-
+		
 		setBackgroundTextureRect(sf::IntRect(0, 0, width, height + ((gui::TextField&)at("input field")).getHeight() + 5));
-
+		
 		initialised = true;
 		print("Initialised.");
 	}

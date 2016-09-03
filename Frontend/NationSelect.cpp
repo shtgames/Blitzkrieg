@@ -34,7 +34,8 @@ namespace fEnd
 				}, Resources::font("arial"), 15),
 			m_prompt("Click on the map to select a nation.", Resources::font("arial"), 13)
 		{
-			m_prompt.setColor(sf::Color(180, 180, 180));
+			m_prompt.setOutlineColor(sf::Color(15, 15, 15, 230));
+			m_prompt.setFillColor(sf::Color(180, 180, 180));
 
 			setPosition((resolution.x - getGlobalBounds().width) / 2, 0);
 		}

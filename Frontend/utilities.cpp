@@ -103,9 +103,8 @@ namespace utl
 		return intersections % 2;
 	}
 
-	const bool pointIsInsideTriangle(const sf::Vector2s& A1, const sf::Vector2s& B1, const sf::Vector2s& C1, const sf::Vector2s& point1)
+	const bool pointIsInsideTriangle(const sf::Vector2s& A, const sf::Vector2s& B, const sf::Vector2s& C, const sf::Vector2s& point)
 	{
-		const sf::Vector2f A(A1), B(B1), C(C1), point(point1);
 		const float alpha = ((B.y - C.y) * (point.x - C.x) + (C.x - B.x) * (point.y - C.y)) / ((B.y - C.y) * (A.x - C.x) + (C.x - B.x) * (A.y - C.y)),
 			beta = ((C.y - A.y) * (point.x - C.x) + (A.x - C.x) * (point.y - C.y)) / ((B.y - C.y) * (A.x - C.x) + (C.x - B.x) * (A.y - C.y)),
 			gamma = 1.0f - alpha - beta;
