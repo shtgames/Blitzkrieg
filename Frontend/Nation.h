@@ -5,6 +5,9 @@
 
 #include <memory>
 #include <unordered_map>
+#include <mutex>
+
+#include <iostream>
 
 #include "../Backend/Tag.h"
 
@@ -34,7 +37,7 @@ namespace fEnd
 		const sf::Color& getColor()const { return color; }
 		const std::string& getName()const { return name; }
 
-		static Nation& get(const bEnd::Tag& tag) { return nations[tag]; }
+		static Nation& get(const bEnd::Tag& tag) { std::lock_guard<std::mutex> guard(nationsLock); return nations[tag]; }
 		static void loadNations();
 
 	private:
@@ -43,6 +46,7 @@ namespace fEnd
 		std::string name;
 		Continent continent;
 
+		static std::mutex nationsLock;
 		static std::unordered_map<bEnd::Tag, Nation> nations;
 	};
 }

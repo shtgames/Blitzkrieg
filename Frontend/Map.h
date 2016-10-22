@@ -91,8 +91,8 @@ namespace fEnd
 
 		static sf::VertexArray stripesBuffer[2], fillBuffer[2], contourBuffer[2];
 		static volatile std::atomic<bool> drawableBufferSet, vertexArraysVisibilityNeedsUpdate;
-		static std::queue<unsigned short> ProvincesNeedingColorUpdate;
-		static std::mutex colorUpdateQueueLock;
+		static std::queue<unsigned short> provincesNeedingColorUpdate;
+		static std::mutex colorUpdateQueueLock, provincesLock;
 
 		static sf::Vector2s mapSize;
 		static sf::VertexArray oceanGradient, provinceStripes, provinceFill, provinceContours;

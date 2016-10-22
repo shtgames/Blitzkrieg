@@ -1,9 +1,10 @@
 #pragma once
 
 #include <mutex>
+#include <atomic>
 
-#include <GUI/TextField.h>
 #include <GUI/Window.h>
+#include <GUI/TextField.h>
 
 namespace fEnd
 {
@@ -14,7 +15,7 @@ namespace fEnd
 		
 		mutable std::mutex m_outputLock;
 		std::vector<sf::String> m_history;
-		bool initialised = false, allowingInput = false;
+		std::atomic<bool> initialised = false, allowingInput = false;
 
 		static const sf::Texture createTexture();
 

@@ -33,13 +33,19 @@ namespace fEnd
 	class Resources final
 	{
 	public:
-		static const sf::Texture& texture(const std::string& key);
+		static const bool loadTexture(const std::string& key, const std::string& path, const bool smooth = false, const bool repeated = false);
+		static sf::Texture& texture(const std::string& key);
 		static const bool textureExists(const std::string& key);
+
+		static const bool loadFont(const std::string& key, const std::string& path);
 		static const sf::Font& font(const std::string& key);
+		static const bool fontExists(const std::string& key);
+
 		static void load(const sf::Vector2u& resolution);
 
 	private:
-		static std::unordered_map<std::string, sf::Texture> textures;
-		static std::unordered_map<std::string, sf::Font> fonts;
+		static std::unordered_map<std::string, std::shared_ptr<sf::Texture>> textures;
+		static std::unordered_map<std::string, std::shared_ptr<sf::Font>> fonts;
+		static std::mutex texturesLock, fontsLock;
 	};
 }

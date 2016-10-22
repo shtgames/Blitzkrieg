@@ -13,6 +13,8 @@
 #include <set>
 #include <limits>
 
+#include <iostream>
+
 namespace fEnd
 {
 	const std::string stripeShaderCode =
@@ -66,8 +68,8 @@ namespace fEnd
 	sf::VertexArray Map::oceanGradient, Map::provinceStripes, Map::provinceFill, Map::provinceContours;
 	sf::VertexArray Map::stripesBuffer[2], Map::fillBuffer[2], Map::contourBuffer[2];
 	volatile std::atomic<bool> Map::drawableBufferSet, Map::vertexArraysVisibilityNeedsUpdate = false;
-	std::queue<unsigned short> Map::ProvincesNeedingColorUpdate;
-	std::mutex Map::colorUpdateQueueLock;
+	std::queue<unsigned short> Map::provincesNeedingColorUpdate;
+	std::mutex Map::colorUpdateQueueLock, Map::provincesLock;
 
 	sf::Texture Map::mapTile, Map::terrain, Map::sea, Map::stripes;
 	Camera Map::camera;
@@ -132,12 +134,13 @@ namespace fEnd
 	void Map::addProvinceNeedingColorUpdate(const unsigned short ProvinceID)
 	{
 		colorUpdateQueueLock.lock();
-		ProvincesNeedingColorUpdate.emplace(ProvinceID);
+		provincesNeedingColorUpdate.emplace(ProvinceID);
 		colorUpdateQueueLock.unlock();
 	}
 
 	void Map::updateAllProvinceColors()
 	{
+		std::lock_guard<std::mutex> provincesGuard(provincesLock);
 		for (auto& it : provinces)
 			if (it.second.sea || bEnd::Province::get(it.first).sea) continue;
 			else for (auto i(it.second.indexRange.first.first), end(it.second.indexRange.first.second); i < end; ++i)
@@ -157,9 +160,9 @@ namespace fEnd
 
 		{
 			bEnd::FileProcessor basicProvinceDefinitions;
-
 			if (!basicProvinceDefinitions.open("map/default.map")) return;
 
+			std::lock_guard<std::mutex> provincesGuard(provincesLock);
 			provinces[-1].sea = (bEnd::Province::provinces[-1].sea = true);
 			for (auto it(basicProvinceDefinitions.getStatements().begin()), end(basicProvinceDefinitions.getStatements().end()); it != end; ++it)
 				if (it->lValue == "map_size")
@@ -179,12 +182,12 @@ namespace fEnd
 			console.print("Generating Province Cache. This may take up to 2 hours.");
 
 			std::ifstream definitions("map/definition.csv");
-			if (!definitions.is_open()) return;
+			if (!definitions.is_open()) { provincesLock.unlock(); return; }
 
 			std::vector<std::vector<sf::Color>> pixels;
 			{
 				sf::Image bitmap;
-				if (!bitmap.loadFromFile("map/provinces.bmp")) return;
+				if (!bitmap.loadFromFile("map/provinces.bmp")) { provincesLock.unlock(); return; }
 				pixels = std::move(utl::imageToPixelArray(bitmap));
 			}
 
@@ -199,7 +202,7 @@ namespace fEnd
 
 				std::getline(definitions, buffer, '\n');
 				std::stringstream line(buffer);
-				sf::Color ProvinceColor;
+				sf::Color provinceColor;
 
 				std::getline(line, buffer, ';');	
 				const unsigned short provID(std::stoi(buffer));
@@ -208,19 +211,20 @@ namespace fEnd
 				console.print(std::to_string(provID));
 
 				std::getline(line, buffer, ';');
-				ProvinceColor.r = std::stoi(buffer);
+				provinceColor.r = std::stoi(buffer);
 				std::getline(line, buffer, ';');
-				ProvinceColor.g = std::stoi(buffer);
+				provinceColor.g = std::stoi(buffer);
 				std::getline(line, buffer, ';');
-				ProvinceColor.b = std::stoi(buffer);
+				provinceColor.b = std::stoi(buffer);
 
-				if (ProvinceColor.r == 0 && ProvinceColor.g == 0 && ProvinceColor.b == 0) break;
+				if (provinceColor.r == 0 && provinceColor.g == 0 && provinceColor.b == 0) break;
 
-				provinces[provID].traceShape(pixels, ProvinceColor, unassignedBorderTriangles, provinceContourPoints[provID]);
+				provinces[provID].traceShape(pixels, provinceColor, unassignedBorderTriangles, provinceContourPoints[provID]);
 			}
 
 			provinces[-1].traceShape(pixels, sf::Color::White, unassignedBorderTriangles, provinceContourPoints[-1]);
-			
+			provincesLock.unlock();
+
 			assignBorderTriangles(unassignedBorderTriangles, provinceContourPoints);
 
 			createProvinceCache();
@@ -334,7 +338,7 @@ namespace fEnd
 
 	void Map::waitForColorUpdate()
 	{
-		if (ProvincesNeedingColorUpdate.empty()) return;
+		if (provincesNeedingColorUpdate.empty()) return;
 		updatingColors = true;
 		while (updatingColors);
 	}
@@ -342,6 +346,8 @@ namespace fEnd
 	void Map::select(const unsigned short id)
 	{
 		deselect();
+
+		std::lock_guard<std::mutex> provincesGuard(provincesLock);
 		if (!provinces.count(id) || id == -2 || provinces.at(id).sea) return;
 		m_target.reset(new auto(id));
 
@@ -358,7 +364,9 @@ namespace fEnd
 		if (!m_target) return;
 		if (fEnd::currentScreen == Game)
 		{
+			provincesLock.lock();
 			provinces[*m_target].highlighted = false;
+			provincesLock.unlock();
 			addProvinceNeedingColorUpdate(*m_target);
 		}
 		else fillTransitionAnimation.setHighlightedColor(sf::Color(0, 0, 0, 0));
@@ -502,6 +510,7 @@ namespace fEnd
 
 	void Map::assignBorderTriangles(std::vector<sf::Vector2s>& unassignedTriangles, std::map<unsigned short, std::vector<std::vector<sf::Vector2s>>>& provContour)
 	{
+		provincesLock.unlock();
 		for (auto it(provContour.begin()), end(provContour.end()); it != end; ++it)
 		{
 			console.eraseLastLine();
@@ -565,6 +574,7 @@ namespace fEnd
 			provinces.at(it->first).indexRange.first.second = provinceFill.getVertexCount();
 			provinces.at(it->first).indexRange.second.second = provinceContours.getVertexCount();
 		}
+		provincesLock.unlock();
 		provinceStripes = provinceFill;
 	}
 	
@@ -572,6 +582,7 @@ namespace fEnd
 	{
 		std::ofstream cache("map/cache/provinces.bin", std::ios::out | std::ios::binary);
 
+		provincesLock.lock();
 		for (auto it(provinces.begin()), end(provinces.end()); it != end; ++it)
 		{
 			cache.write((char*)&it->first, sizeof(it->first));
@@ -596,6 +607,7 @@ namespace fEnd
 				cache.write((char*)&vertex.y, sizeof(vertex.y));
 			}
 		}
+		provincesLock.unlock();
 	}
 
 	const sf::FloatRect getBounds(const sf::VertexArray& array, size_t begin, size_t end)
@@ -616,6 +628,9 @@ namespace fEnd
 	void Map::loadProvinceCache()
 	{
 		std::ifstream cache("map/cache/provinces.bin", std::ios::in | std::ios::binary);
+		if (!cache.is_open()) return;
+
+		provincesLock.lock();
 		bEnd::Province::provinces[-1].sea = true;
 
 		while (!cache.eof())
@@ -647,6 +662,7 @@ namespace fEnd
 			provinces.at(provID).indexRange.second.second = provinceContours.getVertexCount();
 			provinces.at(provID).bounds = getBounds(provinceContours, provinces.at(provID).indexRange.second.first, provinces.at(provID).indexRange.second.second);
 		}
+		provincesLock.unlock();
 		cache.close();
 
 		provinceStripes = provinceFill;
@@ -659,6 +675,7 @@ namespace fEnd
 
 		std::string line;
 		line.reserve(5);
+		provincesLock.lock();
 		while (!file.eof())
 		{
 			line.clear();
@@ -674,6 +691,7 @@ namespace fEnd
 				break;
 			}
 		}
+		provincesLock.unlock();
 	}
 	
 	void Map::generateWorldGraph()
@@ -682,6 +700,8 @@ namespace fEnd
 		{
 			unsigned short count(0);
 			console.print("Generating Province Graph...");
+
+			provincesLock.lock();
 			console.print(std::to_string(count) + "/" + std::to_string(provinces.size()));
 			for (const auto& it : provinces)
 			{
@@ -735,6 +755,7 @@ namespace fEnd
 					cache.write((char*)&it1.second, sizeof(it1.second));
 				}
 			}
+			provincesLock.unlock();
 		}
 		else
 		{
@@ -774,6 +795,7 @@ namespace fEnd
 
 	Map::Province& Map::get(const unsigned short ProvinceID)
 	{
+		std::lock_guard<std::mutex> provincesGuard(provincesLock);
 		return provinces[ProvinceID];
 	}
 
@@ -793,6 +815,7 @@ namespace fEnd
 	const unsigned short Map::clickCheck(sf::Vector2s point1)
 	{
 		sf::Vector2f point = camera.mapPixelToCoords(sf::Vector2f(point1));
+		std::lock_guard<std::mutex> provincesGuard(provincesLock);
 		for (const auto& it : provinces)
 			if (it.second.sea) continue;
 			else if (it.second.bounds.contains(point))
@@ -871,6 +894,7 @@ namespace fEnd
 
 				}
 
+				provincesLock.lock();
 				for (const auto& it : provinces)
 				{
 					if (it.second.sea || bEnd::Province::get(it.first).sea)
@@ -941,6 +965,7 @@ namespace fEnd
 							}
 					}
 				}
+				provincesLock.unlock();
 
 				drawableBufferSet = !drawableBufferSet;
 				camera.hasChanged = false;
@@ -954,37 +979,43 @@ namespace fEnd
 	void Map::processUpdateQueue()
 	{
 		colorUpdateQueueLock.lock();
-		while (ProvincesNeedingColorUpdate.size() != 0)
+		while (provincesNeedingColorUpdate.size() != 0)
 		{
-			if (bEnd::Province::get(ProvincesNeedingColorUpdate.front()).sea)
+			if (bEnd::Province::get(provincesNeedingColorUpdate.front()).sea)
 			{
-				ProvincesNeedingColorUpdate.pop();
+				provincesNeedingColorUpdate.pop();
 				continue;
 			}
-			const auto& Controller(Nation::get(bEnd::Province::get(ProvincesNeedingColorUpdate.front()).controller)),
-				Owner(Nation::get(bEnd::Province::get(ProvincesNeedingColorUpdate.front()).owner));
-			const auto& Province(provinces[ProvincesNeedingColorUpdate.front()]);
-			if (bEnd::Province::get(ProvincesNeedingColorUpdate.front()).controller != bEnd::Province::get(ProvincesNeedingColorUpdate.front()).owner)
-				for (auto it(provinces[ProvincesNeedingColorUpdate.front()].indexRange.first.first),
-					end(provinces[ProvincesNeedingColorUpdate.front()].indexRange.first.second); it != end; ++it)
+			
+			const auto& controller(Nation::get(bEnd::Province::get(provincesNeedingColorUpdate.front()).controller)),
+				&owner(Nation::get(bEnd::Province::get(provincesNeedingColorUpdate.front()).owner));
+
+			provincesLock.lock();
+			const auto& Province(provinces[provincesNeedingColorUpdate.front()]);
+
+			if (bEnd::Province::get(provincesNeedingColorUpdate.front()).controller != bEnd::Province::get(provincesNeedingColorUpdate.front()).owner)
+				for (auto it(provinces[provincesNeedingColorUpdate.front()].indexRange.first.first),
+					end(provinces[provincesNeedingColorUpdate.front()].indexRange.first.second); it != end; ++it)
 				{
-					provinceFill[it].color.r = Controller.getColor().r + (Province.highlighted ? (255 - Controller.getColor().r) * 0.3f : 0);
-					provinceFill[it].color.g = Controller.getColor().g + (Province.highlighted ? (255 - Controller.getColor().g) * 0.3f : 0);
-					provinceFill[it].color.b = Controller.getColor().b + (Province.highlighted ? (255 - Controller.getColor().b) * 0.3f : 0);
-					provinceStripes[it].color.r = Owner.getColor().r + (Province.highlighted ? (255 - Owner.getColor().r) * 0.3f : 0);
-					provinceStripes[it].color.g = Owner.getColor().g + (Province.highlighted ? (255 - Owner.getColor().g) * 0.3f : 0);
-					provinceStripes[it].color.b = Owner.getColor().b + (Province.highlighted ? (255 - Owner.getColor().b) * 0.3f : 0);
+					provinceFill[it].color.r = controller.getColor().r + (Province.highlighted ? (255 - controller.getColor().r) * 0.3f : 0);
+					provinceFill[it].color.g = controller.getColor().g + (Province.highlighted ? (255 - controller.getColor().g) * 0.3f : 0);
+					provinceFill[it].color.b = controller.getColor().b + (Province.highlighted ? (255 - controller.getColor().b) * 0.3f : 0);
+					provinceStripes[it].color.r = owner.getColor().r + (Province.highlighted ? (255 - owner.getColor().r) * 0.3f : 0);
+					provinceStripes[it].color.g = owner.getColor().g + (Province.highlighted ? (255 - owner.getColor().g) * 0.3f : 0);
+					provinceStripes[it].color.b = owner.getColor().b + (Province.highlighted ? (255 - owner.getColor().b) * 0.3f : 0);
 					provinceStripes[it].color.a = 255;
 				}
-			else for (auto it(provinces[ProvincesNeedingColorUpdate.front()].indexRange.first.first),
-				end(provinces[ProvincesNeedingColorUpdate.front()].indexRange.first.second); it != end; ++it)
+			else for (auto it(provinces[provincesNeedingColorUpdate.front()].indexRange.first.first),
+				end(provinces[provincesNeedingColorUpdate.front()].indexRange.first.second); it != end; ++it)
 			{
-				provinceFill[it].color.r = Controller.getColor().r + (Province.highlighted ? (255 - Controller.getColor().r) * 0.3f : 0);
-				provinceFill[it].color.g = Controller.getColor().g + (Province.highlighted ? (255 - Controller.getColor().g) * 0.3f : 0);
-				provinceFill[it].color.b = Controller.getColor().b + (Province.highlighted ? (255 - Controller.getColor().b) * 0.3f : 0);
+				provinceFill[it].color.r = controller.getColor().r + (Province.highlighted ? (255 - controller.getColor().r) * 0.3f : 0);
+				provinceFill[it].color.g = controller.getColor().g + (Province.highlighted ? (255 - controller.getColor().g) * 0.3f : 0);
+				provinceFill[it].color.b = controller.getColor().b + (Province.highlighted ? (255 - controller.getColor().b) * 0.3f : 0);
 				provinceStripes[it].color.a = 0;
 			}
-			ProvincesNeedingColorUpdate.pop();
+
+			provincesLock.unlock();
+			provincesNeedingColorUpdate.pop();
 		}
 		colorUpdateQueueLock.unlock();
 		updatingColors = false;

@@ -57,6 +57,7 @@ namespace fEnd
 			return *this;
 		}
 	};
+
 	class SelectedNation final : public gui::Icon
 	{
 		void draw(sf::RenderTarget& target, sf::RenderStates states) const override
@@ -164,7 +165,7 @@ namespace fEnd
 			.emplace("Map", gui::Window().add("Map", Map()), true);
 	}
 
-	void NationSelectScreen::run(sf::RenderWindow& target, GameInterface& gameInterface)
+	void fEnd::NationSelectScreen::run(sf::RenderWindow& target, GameInterface& gameInterface)
 	{
 		((gui::Button&)main.at("HUD", true).at("Play"))
 			.bindAction(gui::Released, [&target, &gameInterface]()

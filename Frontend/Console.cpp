@@ -107,16 +107,19 @@ namespace fEnd
 
 	void Console::init()
 	{
-		add("input field", gui::TextField(Resources::font("arial"), width - 25, 13)
-			.setColor(sf::Color(220, 220, 220))
-			.setCursorColor(sf::Color(245, 245, 245))
+		if (initialised) return;
+
+		add("input field", std::move(gui::TextField(Resources::font("arial"), width - 25, 13)
+			.setColor(sf::Color(210, 210, 210))
+			.setCursorColor(sf::Color(250, 250, 250))
 			.setInputProcessingFunction([&](const sf::String& input)
 				{
 					inputProcessor(input);
 				})
-			.setPosition(10, height - 2))
-		.add("output field", gui::TextArea("", Resources::font("arial"), 13)
-			.setColor(sf::Color(170, 170, 170)));
+			.setPosition(10, height - 2)))
+
+		.add("output field", std::move(gui::TextArea("", Resources::font("arial"), 13)
+			.setColor(sf::Color(170, 170, 170))));
 		
 		setBackgroundTextureRect(sf::IntRect(0, 0, width, height + ((gui::TextField&)at("input field")).getHeight() + 5));
 		

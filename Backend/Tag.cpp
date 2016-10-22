@@ -32,7 +32,7 @@ namespace bEnd
 	const bool Tag::operator==(const std::string& tag)const
 	{
 		if (tag.size() < 3) return false;
-		if (tag.at(0) == a && tag.at(1) == b && tag.at(3) == c) return true;
+		if (tag.at(0) == a && tag.at(1) == b && tag.at(2) == c) return true;
 		return false;
 	}
 

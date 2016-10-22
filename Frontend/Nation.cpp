@@ -4,6 +4,7 @@
 
 namespace fEnd
 {
+	std::mutex Nation::nationsLock;
 	std::unordered_map<bEnd::Tag, Nation> Nation::nations;
 
 	void Nation::loadFromFile(const std::string& path)
@@ -25,6 +26,7 @@ namespace fEnd
 			std::ifstream source("nations.csv");
 			if (!source.is_open()) return;
 
+			nationsLock.lock();
 			while (!source.eof())
 			{
 				std::string buffer;
@@ -33,10 +35,13 @@ namespace fEnd
 				std::getline(line, buffer, ';');
 				std::getline(line, nations[buffer].name, ';');
 			}
+			nationsLock.unlock();
 		}
 
 		bEnd::FileProcessor source("nations.txt");
 		if (!source.isOpen()) return;
+
+		nationsLock.lock();
 		for (auto& it : source.getStatements())
 		{
 			Continent currentContinent;
@@ -54,5 +59,6 @@ namespace fEnd
 				nations.at(it1.lValue).loadFromFile(it1.rStrings.front());
 			}
 		}
+		nationsLock.unlock();
 	}
 }
