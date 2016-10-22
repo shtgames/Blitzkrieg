@@ -2,375 +2,56 @@
 
 #include "../Backend/FileProcessor.h"
 #include "../Backend/Province.h"
-
 #include "../Backend/Nation.h"
+
 #include "Nation.h"
-#include "../Frontend.hpp"
+#include "MapLoader.h"
 #include "utilities.h"
+
+#include "../Frontend.hpp"
 
 #include <fstream>
 #include <sstream>
 #include <set>
 #include <limits>
 
-#include <iostream>
-
 namespace fEnd
 {
-	const std::string stripeShaderCode =
-		"uniform sampler2D mask, first, second;\
-		uniform float zoomFactor, amount;\
-		\
-		vec4 highlight(vec4 color)\
-		{\
-			color.r += 0.15f * (1.0f - color.r);\
-			color.g += 0.15f * (1.0f - color.g);\
-			color.b += 0.15f * (1.0f - color.b);\
-			\
-			return color;\
-		}\
-		\
-		void main()\
-		{\
-			gl_FragColor.rgb = (gl_Color *\
-				mix( texture2D(first, gl_TexCoord[0].xy / (2 * zoomFactor)), texture2D(second, gl_TexCoord[0].xy ), amount )).rgb;\
-			gl_FragColor.a = texture2D(mask, gl_TexCoord[0].xy).a;\
-		}";
+	Camera Map::camera;
 
-	const std::string ProvinceFillTextureTransition =
-		"uniform sampler2D first, second;\
-		uniform float zoomFactor, amount;\
-		uniform vec4 highlightColor;\
-		\
-		vec4 highlight(vec4 color)\
-		{\
-			color.r += 0.15f * (1.0f - color.r);\
-			color.g += 0.15f * (1.0f - color.g);\
-			color.b += 0.15f * (1.0f - color.b);\
-			\
-			return color;\
-		}\
-		\
-		void main()\
-		{\
-			gl_FragColor = (gl_Color == highlightColor ? highlight(gl_Color) : gl_Color) *\
-				mix( texture2D(first, gl_TexCoord[0].xy / (2 * zoomFactor)), texture2D(second, gl_TexCoord[0].xy ), amount );\
-		}";
+	gui::FadeAnimation Map::outlineFadeAnimation;
+	std::unique_ptr<MapTransitionAnimation> Map::textureTransitionAnimation;
 
-	const sf::Color borderColor = sf::Color(21, 28, 25, 248);
-	
-	gui::FadeAnimation Map::animation;
-
-	std::unordered_map<unsigned short, Map::Province> Map::provinces;
+	std::unordered_map<unsigned short, Province> Map::provinces;
 
 	sf::Vector2s Map::mapSize;
 
 	sf::VertexArray Map::oceanGradient, Map::provinceStripes, Map::provinceFill, Map::provinceContours;
 	sf::VertexArray Map::stripesBuffer[2], Map::fillBuffer[2], Map::contourBuffer[2];
 	volatile std::atomic<bool> Map::drawableBufferSet, Map::vertexArraysVisibilityNeedsUpdate = false;
-	std::queue<unsigned short> Map::provincesNeedingColorUpdate;
-	std::mutex Map::colorUpdateQueueLock, Map::provincesLock;
 
-	sf::Texture Map::mapTile, Map::terrain, Map::sea, Map::stripes;
-	Camera Map::camera;
+	std::queue<unsigned short> Map::provincesNeedingColorUpdate;
+	std::mutex Map::colorUpdateQueueLock/*, Map::provincesLock*/;
+
 	std::unique_ptr<unsigned short> Map::m_target;
 	const std::unique_ptr<unsigned short>& Map::target = Map::m_target;
-	std::unique_ptr<std::thread> Map::updateThread = nullptr;
+
+	sf::Texture Map::tile, Map::terrain, Map::sea, Map::stripes;
+
 	std::atomic<bool> Map::m_terminate = false;
+	std::unique_ptr<std::thread> Map::updateThread = nullptr;
 
-	struct TexTransitionAnimation : public gui::Animation
+
+	void Map::initialise()
 	{
-		TexTransitionAnimation()
-		{
-			if (!sf::Shader::isAvailable())
-				console.print("Unable to load shaders. Reason: System does not support Shader Model 3.0. Some elements may be rendered incorrectly.");
-			else if (!fill.loadFromMemory(ProvinceFillTextureTransition, sf::Shader::Fragment) ||
-				!stripes.loadFromMemory(stripeShaderCode, sf::Shader::Fragment))
-				console.print("Failed to load shaders: Some elements may be rendered incorrectly.");
-			else console.print("Shaders loaded successfully.");
-		}
-		void step()const override
-		{
-			amount += (direction ? 1 : -1) / (getAnimationFPS() * getAnimationDuration());
-			if (amount > 1.0f) amount = 1.0f;
-			else if (amount < 0.0f) amount = 0.0f;
-			fill.setUniform("amount", amount);
-			stripes.setUniform("amount", amount);
-		}
-		void setTextures(const sf::Texture& first)
-		{
-			fill.setUniform("first", first);
-			fill.setUniform("second", sf::Shader::CurrentTexture);
-			stripes.setUniform("first", first);
-			stripes.setUniform("second", sf::Shader::CurrentTexture);
-		}
-		void setMask(const sf::Texture& mask)
-		{
-			stripes.setUniform("mask", mask);
-		}
-		void setFactor(const float factor)
-		{
-			fill.setUniform("zoomFactor", factor);
-			stripes.setUniform("zoomFactor", factor);
-		}
-		void setHighlightedColor(const sf::Color& color)
-		{
-			fill.setUniform("highlightColor", sf::Glsl::Vec4(color));
-		}
-		const sf::Shader& getFillShader()const
-		{
-			return fill;
-		}
-		const sf::Shader& getStripeShader()const
-		{
-			return stripes;
-		}
-		bool direction = 0;
-	private:
-		mutable sf::Shader fill, stripes;
-		mutable float amount = 0;
-	} fillTransitionAnimation;
+		console.print("Loading map.");
 
-	void Map::addProvinceNeedingColorUpdate(const unsigned short ProvinceID)
-	{
-		colorUpdateQueueLock.lock();
-		provincesNeedingColorUpdate.emplace(ProvinceID);
-		colorUpdateQueueLock.unlock();
-	}
+		MapLoader::loadProvinces();
+		MapLoader::generateWorldGraph();
+		MapLoader::loadResources();
+		MapLoader::loadProvinceNames();
 
-	void Map::updateAllProvinceColors()
-	{
-		std::lock_guard<std::mutex> provincesGuard(provincesLock);
-		for (auto& it : provinces)
-			if (it.second.sea || bEnd::Province::get(it.first).sea) continue;
-			else for (auto i(it.second.indexRange.first.first), end(it.second.indexRange.first.second); i < end; ++i)
-			{
-				provinceFill[i].color = Nation::get(bEnd::Province::get(it.first).controller).getColor(); 
-				if (bEnd::Province::get(it.first).controller != bEnd::Province::get(it.first).owner)
-					provinceStripes[i].color = Nation::get(bEnd::Province::get(it.first).owner).getColor();
-				else provinceStripes[i].color.a = 0;
-			}
-
-		vertexArraysVisibilityNeedsUpdate = true;
-	}
-
-	void Map::loadProvinces()
-	{
-		unsigned short maxProvinces(0);
-
-		{
-			bEnd::FileProcessor basicProvinceDefinitions;
-			if (!basicProvinceDefinitions.open("map/default.map")) return;
-
-			std::lock_guard<std::mutex> provincesGuard(provincesLock);
-			provinces[-1].sea = (bEnd::Province::provinces[-1].sea = true);
-			for (auto it(basicProvinceDefinitions.getStatements().begin()), end(basicProvinceDefinitions.getStatements().end()); it != end; ++it)
-				if (it->lValue == "map_size")
-				{
-					mapSize.x = std::stoi(it->rStrings.front());
-					mapSize.y = std::stoi(it->rStrings.back());
-				}
-				else if (it->lValue == "max_Provinces")
-					maxProvinces = std::stoi(it->rStrings.front());
-				else if (it->lValue == "sea_starts")
-					for (const auto& it1 : it->rStrings)
-						provinces[std::stoi(it1)].sea = (bEnd::Province::provinces[std::stoi(it1)].sea = true);
-		}
-
-		if (!std::fstream("map/cache/provinces.bin").good())
-		{
-			console.print("Generating Province Cache. This may take up to 2 hours.");
-
-			std::ifstream definitions("map/definition.csv");
-			if (!definitions.is_open()) { provincesLock.unlock(); return; }
-
-			std::vector<std::vector<sf::Color>> pixels;
-			{
-				sf::Image bitmap;
-				if (!bitmap.loadFromFile("map/provinces.bmp")) { provincesLock.unlock(); return; }
-				pixels = std::move(utl::imageToPixelArray(bitmap));
-			}
-
-			std::vector<sf::Vector2s> unassignedBorderTriangles;
-			std::map<unsigned short, std::vector<std::vector<sf::Vector2s>>> provinceContourPoints;
-
-			provinces.reserve(maxProvinces);
-
-			while (!definitions.eof() && provinces.size() < maxProvinces - 1)
-			{
-				std::string buffer;
-
-				std::getline(definitions, buffer, '\n');
-				std::stringstream line(buffer);
-				sf::Color provinceColor;
-
-				std::getline(line, buffer, ';');	
-				const unsigned short provID(std::stoi(buffer));
-				
-				console.eraseLastLine();
-				console.print(std::to_string(provID));
-
-				std::getline(line, buffer, ';');
-				provinceColor.r = std::stoi(buffer);
-				std::getline(line, buffer, ';');
-				provinceColor.g = std::stoi(buffer);
-				std::getline(line, buffer, ';');
-				provinceColor.b = std::stoi(buffer);
-
-				if (provinceColor.r == 0 && provinceColor.g == 0 && provinceColor.b == 0) break;
-
-				provinces[provID].traceShape(pixels, provinceColor, unassignedBorderTriangles, provinceContourPoints[provID]);
-			}
-
-			provinces[-1].traceShape(pixels, sf::Color::White, unassignedBorderTriangles, provinceContourPoints[-1]);
-			provincesLock.unlock();
-
-			assignBorderTriangles(unassignedBorderTriangles, provinceContourPoints);
-
-			createProvinceCache();
-		}
-		else loadProvinceCache();
-	}
-
-	void Map::updateProvinceVisuals(const sf::Vector2s& newResolution)
-	{
-		const float maxZoomFactor(newResolution.y / (mapSize.y * Camera::upperZoomLimitAsMapSizeFraction));
-
-		createStripesTexture(stripes, 64 * maxZoomFactor, 1 * maxZoomFactor);
-		stripes.setRepeated(true);
-
-		fillTransitionAnimation.setFactor(maxZoomFactor);
-		fillTransitionAnimation.setMask(stripes);
-
-		for (size_t it(0), end(provinceStripes.getVertexCount()); it != end; ++it)
-		{
-			provinceStripes[it].color.a = 0;
-			provinceStripes[it].texCoords.x = provinceStripes[it].position.x * maxZoomFactor;
-			provinceStripes[it].texCoords.y = provinceStripes[it].position.y * maxZoomFactor;
-			provinceFill[it].texCoords.x = provinceFill[it].position.x * maxZoomFactor;
-			provinceFill[it].texCoords.y = provinceFill[it].position.y * maxZoomFactor;
-		}
-
-		for (size_t it(0), end(oceanGradient.getVertexCount()); it != end; ++it)
-		{
-			oceanGradient[it].texCoords.x = oceanGradient[it].position.x * maxZoomFactor;
-			oceanGradient[it].texCoords.y = oceanGradient[it].position.y * maxZoomFactor;
-		}
-		
-		camera.setPosition(0, 0)
-			.setSize(newResolution)
-			.setScreenResolution(newResolution)
-			.setMapSize(mapSize);
-	}
-
-	void Map::createStripesTexture(sf::Texture& targetTexture, const float size, const float stripeWidth)
-	{
-		sf::RenderTexture buffer;
-
-		buffer.create(size, size);
-		buffer.clear(sf::Color(0, 0, 0, 0));
-
-		sf::VertexArray stripe(sf::PrimitiveType::Quads);
-		stripe.append(sf::Vertex(sf::Vector2f(-(stripeWidth) / 2.0f - size * 1.5f, (stripeWidth) / 2.0f - size * 1.5f), sf::Color(255, 255, 255, 255)));
-		stripe.append(sf::Vertex(sf::Vector2f((stripeWidth) / 2.0f - size * 1.5f, -(stripeWidth) / 2.0f - size * 1.5f), sf::Color(255, 255, 255, 255)));
-		stripe.append(sf::Vertex(sf::Vector2f((stripeWidth) / 2.0f + size * 1.5f, -(stripeWidth) / 2.0f + size * 1.5f), sf::Color(255, 255, 255, 255)));
-		stripe.append(sf::Vertex(sf::Vector2f(-(stripeWidth) / 2.0f + size * 1.5f, (stripeWidth) / 2.0f + size * 1.5f), sf::Color(255, 255, 255, 255)));
-
-		sf::Transform translate;
-		translate.translate(-2 * size, 0);
-		while (translate.transformRect(stripe.getBounds()).left <= size)
-		{
-			buffer.draw(stripe, translate);
-			translate.translate(size / 4, 0);
-		}
-
-		buffer.display();
-
-		targetTexture = buffer.getTexture();
-	}
-
-	void Map::loadResources()
-	{
-		mapTile.loadFromFile("map/resources/mapTile.png");
-		mapTile.setRepeated(true);
-		mapTile.setSmooth(true);
-
-		terrain.loadFromFile("map/resources/terrain.png");
-		terrain.setRepeated(true);
-		terrain.setSmooth(true);
-
-		sea.loadFromFile("map/resources/sea.png");
-		sea.setRepeated(true);
-		sea.setSmooth(true);
-		
-		stripesBuffer[0].setPrimitiveType(sf::PrimitiveType::Triangles);
-		fillBuffer[0].setPrimitiveType(sf::PrimitiveType::Triangles);
-		contourBuffer[0].setPrimitiveType(sf::PrimitiveType::Lines);
-
-		stripesBuffer[1].setPrimitiveType(sf::PrimitiveType::Triangles);
-		fillBuffer[1].setPrimitiveType(sf::PrimitiveType::Triangles);
-		contourBuffer[1].setPrimitiveType(sf::PrimitiveType::Lines);
-
-		oceanGradient.clear();
-		oceanGradient.setPrimitiveType(sf::PrimitiveType::Quads);
-		oceanGradient.append(sf::Vertex(sf::Vector2f(0.0f, 0.0f), sf::Color(125, 130, 165, 255), sf::Vector2f(0.0f, 0.0f)));
-		oceanGradient.append(sf::Vertex(sf::Vector2f(mapSize.x, 0.0f), sf::Color(125, 130, 165, 255), sf::Vector2f(mapSize.x, 0.0f)));
-		oceanGradient.append(sf::Vertex(sf::Vector2f(mapSize.x, mapSize.y), sf::Color(135, 195, 205, 255), sf::Vector2f(mapSize.x, mapSize.y)));
-		oceanGradient.append(sf::Vertex(sf::Vector2f(0.0f, mapSize.y), sf::Color(135, 195, 205, 255), sf::Vector2f(0.0f, mapSize.y)));
-
-		animation.setDuration(1.0f);
-		animation.setFadeDirection(0);
-		fillTransitionAnimation.setDuration(1.0f);
-		fillTransitionAnimation.setTextures(mapTile);
-	}
-
-	const sf::FloatRect Map::getViewBounds()
-	{
-		return camera.getGlobalBounds();
-	}
-
-	void Map::setViewPosition(const float x, const float y)
-	{
-		camera.setPosition(x, y);
-	}
-
-	volatile std::atomic<bool> updatingColors = false;
-
-	void Map::waitForColorUpdate()
-	{
-		if (provincesNeedingColorUpdate.empty()) return;
-		updatingColors = true;
-		while (updatingColors);
-	}
-
-	void Map::select(const unsigned short id)
-	{
-		deselect();
-
-		std::lock_guard<std::mutex> provincesGuard(provincesLock);
-		if (!provinces.count(id) || id == -2 || provinces.at(id).sea) return;
-		m_target.reset(new auto(id));
-
-		if (fEnd::currentScreen == Game)
-		{
-			provinces[*m_target].highlighted = true;
-			addProvinceNeedingColorUpdate(*m_target);
-		}
-		else fillTransitionAnimation.setHighlightedColor(Nation::get(bEnd::Nation::player = bEnd::Province::get(*m_target).getController()).getColor());
-	}
-
-	void Map::deselect()
-	{
-		if (!m_target) return;
-		if (fEnd::currentScreen == Game)
-		{
-			provincesLock.lock();
-			provinces[*m_target].highlighted = false;
-			provincesLock.unlock();
-			addProvinceNeedingColorUpdate(*m_target);
-		}
-		else fillTransitionAnimation.setHighlightedColor(sf::Color(0, 0, 0, 0));
-		m_target.reset();
+		updateThread.reset(new std::thread(updateVertexArrays));
 	}
 
 	void Map::terminate()
@@ -383,31 +64,6 @@ namespace fEnd
 		}
 	}
 
-	void Map::draw(sf::RenderTarget& target, sf::RenderStates states)const
-	{
-		target.draw(camera);
-		target.draw(fillTransitionAnimation);
-
-		states.texture = &sea;
-		states.shader = &fillTransitionAnimation.getFillShader();
-		if (camera.getPosition().x < 0)
-		{
-			states.transform.translate(-mapSize.x, 0);
-			target.draw(oceanGradient, states);
-			states.transform.translate(mapSize.x, 0);
-		}
-
-		target.draw(oceanGradient, states);
-		states.texture = &terrain;
-		target.draw(fillBuffer[drawableBufferSet], states);
-		states.shader = &fillTransitionAnimation.getStripeShader();
-		target.draw(stripesBuffer[drawableBufferSet], states);
-
-		target.draw(animation);
-		if (animation.getFadeAmount() != 0.0f)
-			target.draw(contourBuffer[drawableBufferSet], &animation.getShaderNonTextured());
-		target.setView(target.getDefaultView());
-	}
 
 	std::unique_ptr<gui::Interactive> Map::copy() const
 	{
@@ -419,6 +75,77 @@ namespace fEnd
 		return std::unique_ptr<Map>(new Map(std::move(*this)));
 	}
 
+
+	const sf::FloatRect Map::getViewBounds()
+	{
+		return camera.getGlobalBounds();
+	}
+
+	const sf::FloatRect Map::getGlobalBounds() const
+	{
+		return camera.getGlobalBounds();
+	}
+
+	const sf::Vector2f& Map::getPosition() const
+	{
+		return camera.getPosition();
+	}
+
+	Province& Map::get(const unsigned short ProvinceID)
+	{
+		//std::lock_guard<std::mutex> provincesGuard(provincesLock);
+		return provinces[ProvinceID];
+	}
+
+	const sf::Vector2s& Map::size()
+	{
+		return mapSize;
+	}
+
+
+	void Map::setViewPosition(const float x, const float y)
+	{
+		camera.setPosition(x, y);
+	}
+
+	Map& Map::setPosition(const float x, const float y)
+	{
+		camera.setPosition(x, y);
+		return *this;
+	}
+
+
+	void Map::select(const unsigned short id)
+	{
+		deselect();
+
+		//std::lock_guard<std::mutex> provincesGuard(provincesLock);
+		if (!provinces.count(id) || id == -2 || provinces.at(id).sea) return;
+		m_target.reset(new auto(id));
+
+		if (fEnd::currentScreen == Game)
+		{
+			provinces[*m_target].highlighted = true;
+			addProvinceNeedingColorUpdate(*m_target);
+		}
+		else textureTransitionAnimation->setHighlightedColor(Nation::get(bEnd::Nation::player = bEnd::Province::get(*m_target).getController()).getColor());
+	}
+
+	void Map::deselect()
+	{
+		if (!m_target) return;
+		if (fEnd::currentScreen == Game)
+		{
+			//provincesLock.lock();
+			provinces[*m_target].highlighted = false;
+			//provincesLock.unlock();
+			addProvinceNeedingColorUpdate(*m_target);
+		}
+		else textureTransitionAnimation->setHighlightedColor(sf::Color(0, 0, 0, 0));
+		m_target.reset();
+	}
+
+
 	const bool Map::input(const sf::Event& event)
 	{
 		switch (event.type)
@@ -426,10 +153,10 @@ namespace fEnd
 		case sf::Event::MouseMoved:
 			return camera.input(event);
 		case sf::Event::MouseWheelMoved:
-		{	
+		{
 			const bool ret(camera.input(event));
-			if (camera.getTotalZoom() <= 0.2f) animation.setFadeDirection(fillTransitionAnimation.direction = 1);
-			else animation.setFadeDirection(fillTransitionAnimation.direction = 0);
+			if (camera.getTotalZoom() <= 0.2f) outlineFadeAnimation.setFadeDirection(textureTransitionAnimation->direction = 1);
+			else outlineFadeAnimation.setFadeDirection(textureTransitionAnimation->direction = 0);
 			return ret;
 		}
 		case sf::Event::MouseButtonReleased:
@@ -446,393 +173,117 @@ namespace fEnd
 		}
 	}
 
-	const sf::FloatRect Map::getGlobalBounds() const
-	{
-		return camera.getGlobalBounds();
-	}
-
-	const sf::Vector2f& Map::getPosition() const
-	{
-		return camera.getPosition();
-	}
-
-	Map& Map::setPosition(const float x, const float y)
-	{
-		camera.setPosition(x, y);
-		return *this;
-	}
-
-	const sf::Vector2s& Map::size()
-	{
-		return mapSize;
-	}
-
-	std::pair<std::pair<std::vector<sf::Vector2s>::const_iterator, bool>, sf::Vector2s> findCommonPoints(const std::vector<sf::Vector2s>& polygon, const std::vector<sf::Vector2s>& triangle)
-	{
-		auto returnValue(std::make_pair(std::make_pair(polygon.end(), false), sf::Vector2s(-1, -1)));
-		if (triangle.size() != 3) return returnValue;
-
-		bool firstPass = true;
-		for (auto begin(polygon.begin()), end(polygon.end()), it(begin); it != begin + 2 || firstPass; ++it)
-		{
-			if (it == end)
-			{
-				firstPass = false;
-				it = begin;
-			}
-			if (std::find(triangle.begin(), triangle.end(), *it) != triangle.end())
-			{
-				if (returnValue.first.first == polygon.end())
-					returnValue.first.first = it;
-				else if (returnValue.second.x == -1)
-				{
-					returnValue.second = *std::find_if(triangle.begin(), triangle.end(), [&](const sf::Vector2s& element)
-					{
-						return element != *it && element != *returnValue.first.first;
-					});
-					returnValue.first.first = it;
-				}
-				else
-				{
-					returnValue.first.second = true;
-					return returnValue;
-				}
-			}
-			else
-			{
-				if (returnValue.second.x != -1) return returnValue;
-				returnValue = std::make_pair(std::make_pair(polygon.end(), false), sf::Vector2s(-1, -1));
-			}
-		}
-
-		return std::make_pair(std::make_pair(polygon.end(), false), sf::Vector2s(-1, -1));
-	}
-
-	void Map::assignBorderTriangles(std::vector<sf::Vector2s>& unassignedTriangles, std::map<unsigned short, std::vector<std::vector<sf::Vector2s>>>& provContour)
-	{
-		provincesLock.unlock();
-		for (auto it(provContour.begin()), end(provContour.end()); it != end; ++it)
-		{
-			console.eraseLastLine();
-			console.print(std::to_string(it->first));
-
-			provinces[it->first].indexRange.first.first = provinceFill.getVertexCount();
-			provinces.at(it->first).indexRange.second.first = provinceContours.getVertexCount();
-
-			for (auto it1(it->second.begin()), end1(it->second.end()); it1 != end1; ++it1)
-			{
-				bool firstPass(true);
-				while (true)
-				{
-					for (size_t i(0), end3(unassignedTriangles.size()); i < end3; i += 3)
-					{
-						if (unassignedTriangles.at(i).x == -1) continue;
-
-						auto commonPoints(findCommonPoints(*it1, std::vector<sf::Vector2s> {unassignedTriangles.at(i),
-							unassignedTriangles.at(i + 1), unassignedTriangles.at(i + 2)}));
-
-						if (commonPoints.first.first != it1->end())
-						{
-							unassignedTriangles.at(i).x = -1;
-							if (commonPoints.first.second) it1->erase(commonPoints.first.first);
-							else if (std::find(it1->begin(), it1->end(), commonPoints.second) == it1->end()) it1->emplace(commonPoints.first.first, commonPoints.second);
-						}
-					}
-					if (firstPass) firstPass = false;
-					else break;
-				}
-
-				const std::vector<sf::Vector2s> simpContour(std::move(utl::simplifyShape(*it1)));
-				{
-					sf::Vector2f vertex(simpContour.front().x, simpContour.front().y);
-					provinceContours.append(sf::Vertex(vertex, borderColor, vertex));
-					for (auto it2(simpContour.begin() + 1), end2(simpContour.end() - 1); it2 != end2; ++it2)
-					{
-						vertex.x = (it2->x);
-						vertex.y = (it2->y);
-						provinceContours.append(sf::Vertex(vertex, borderColor, vertex));
-						provinceContours.append(provinceContours[provinceContours.getVertexCount() - 1]);
-					}
-					vertex.x = simpContour.back().x;
-					vertex.y = simpContour.back().y;
-					provinceContours.append(sf::Vertex(vertex, borderColor, vertex));
-				}
-
-				{
-					std::vector<sf::Vector2s> finalProvince;
-
-					utl::tesselateShape(simpContour, finalProvince);
-
-					for (auto it2(finalProvince.begin()), end2(finalProvince.end()); it2 != end2; ++it2)
-					{
-						const sf::Vector2f vertex(it2->x, it2->y);
-						provinceFill.append(sf::Vertex(vertex, sf::Color::White, vertex));
-					}
-				}
-			}
-
-			provinces.at(it->first).indexRange.first.second = provinceFill.getVertexCount();
-			provinces.at(it->first).indexRange.second.second = provinceContours.getVertexCount();
-		}
-		provincesLock.unlock();
-		provinceStripes = provinceFill;
-	}
-	
-	void Map::createProvinceCache()
-	{
-		std::ofstream cache("map/cache/provinces.bin", std::ios::out | std::ios::binary);
-
-		provincesLock.lock();
-		for (auto it(provinces.begin()), end(provinces.end()); it != end; ++it)
-		{
-			cache.write((char*)&it->first, sizeof(it->first));
-
-			unsigned short bytes((provinces.at(it->first).indexRange.first.second - provinces.at(it->first).indexRange.first.first) * 2 * 2);
-			cache.write((char*)&bytes, sizeof(bytes));
-
-			for (auto i(it->second.indexRange.first.first), end(it->second.indexRange.first.second); i < end; i++)
-			{
-				sf::Vector2s vertex(provinceFill[i].position.x - bool(provinceFill[i].position.x), provinceFill[i].position.y - bool(provinceFill[i].position.y));
-				cache.write((char*)&vertex.x, sizeof(vertex.x));
-				cache.write((char*)&vertex.y, sizeof(vertex.y));
-			}
-
-			bytes = (provinces.at(it->first).indexRange.second.second - provinces.at(it->first).indexRange.second.first) * 2 * 2;
-			cache.write((char*)&bytes, sizeof(bytes));
-
-			for (auto i(it->second.indexRange.second.first), end(it->second.indexRange.second.second); i < end; i++)
-			{
-				sf::Vector2s vertex(provinceContours[i].position.x - bool(provinceContours[i].position.x), provinceContours[i].position.y - bool(provinceContours[i].position.y));
-				cache.write((char*)&vertex.x, sizeof(vertex.x));
-				cache.write((char*)&vertex.y, sizeof(vertex.y));
-			}
-		}
-		provincesLock.unlock();
-	}
-
-	const sf::FloatRect getBounds(const sf::VertexArray& array, size_t begin, size_t end)
-	{
-		sf::FloatRect returnValue(std::numeric_limits<float>::max(), std::numeric_limits<float>::max(), std::numeric_limits<float>::min(), std::numeric_limits<float>::min());
-		for (;begin != end; ++begin)
-		{
-			if (array[begin].position.x < returnValue.left) returnValue.left = array[begin].position.x;
-			if (array[begin].position.y < returnValue.top) returnValue.top = array[begin].position.y;
-			if (array[begin].position.x > returnValue.width) returnValue.width = array[begin].position.x;
-			if (array[begin].position.y > returnValue.height) returnValue.height = array[begin].position.y;
-		}
-		returnValue.height -= returnValue.top;
-		returnValue.width -= returnValue.left;
-		return returnValue;
-	}
-
-	void Map::loadProvinceCache()
-	{
-		std::ifstream cache("map/cache/provinces.bin", std::ios::in | std::ios::binary);
-		if (!cache.is_open()) return;
-
-		provincesLock.lock();
-		bEnd::Province::provinces[-1].sea = true;
-
-		while (!cache.eof())
-		{
-			unsigned short provID(0), bytes(0);
-			cache.read((char*)&provID, sizeof(provID));
-			cache.read((char*)&bytes, sizeof(bytes));
-
-			provinces[provID].indexRange.first.first = provinceFill.getVertexCount();
-			for (bytes; bytes > 0; bytes -= 4)
-			{
-				sf::Vector2s vertex(0, 0);
-				cache.read((char*)&vertex.x, sizeof(vertex.x));
-				cache.read((char*)&vertex.y, sizeof(vertex.y));
-				provinceFill.append(sf::Vertex(sf::Vector2f(vertex), sf::Color::White, sf::Vector2f(vertex)));
-			}
-			provinces.at(provID).indexRange.first.second = provinceFill.getVertexCount();
-
-			cache.read((char*)&(bytes = 0), sizeof(bytes));
-
-			provinces.at(provID).indexRange.second.first = provinceContours.getVertexCount();
-			for (bytes; bytes > 0; bytes -= 4)
-			{
-				sf::Vector2s vertex(0, 0);
-				cache.read((char*)&vertex.x, sizeof(vertex.x));
-				cache.read((char*)&vertex.y, sizeof(vertex.y));
-				provinceContours.append(sf::Vertex(sf::Vector2f(vertex), borderColor, sf::Vector2f(vertex)));
-			}
-			provinces.at(provID).indexRange.second.second = provinceContours.getVertexCount();
-			provinces.at(provID).bounds = getBounds(provinceContours, provinces.at(provID).indexRange.second.first, provinces.at(provID).indexRange.second.second);
-		}
-		provincesLock.unlock();
-		cache.close();
-
-		provinceStripes = provinceFill;
-	}
-
-	void Map::loadProvinceNames()
-	{
-		std::ifstream file("map/province_names.csv");
-		if (!file.is_open()) return;
-
-		std::string line;
-		line.reserve(5);
-		provincesLock.lock();
-		while (!file.eof())
-		{
-			line.clear();
-			std::getline(file, line, ';');
-
-			try
-			{
-				const auto ID(std::stoi(line));
-				std::getline(file, provinces[ID].name, '\n');
-			}
-			catch (std::exception end)
-			{
-				break;
-			}
-		}
-		provincesLock.unlock();
-	}
-	
-	void Map::generateWorldGraph()
-	{
-		if (!std::fstream("map/cache/adjacencies.bin").good())
-		{
-			unsigned short count(0);
-			console.print("Generating Province Graph...");
-
-			provincesLock.lock();
-			console.print(std::to_string(count) + "/" + std::to_string(provinces.size()));
-			for (const auto& it : provinces)
-			{
-				if (it.first == unsigned short(-1)) continue;
-
-				++count;
-				console.eraseLastLine();
-				console.print(std::to_string(count) + "/" + std::to_string(provinces.size()));
-
-				for (const auto& it1 : provinces)
-					if (it.first == it1.first || it1.first == unsigned short(-1)) continue;
-					else if (it1.second.bounds.contains(it.second.bounds.left, it.second.bounds.top) &&
-						it1.second.bounds.contains(it.second.bounds.left + it.second.bounds.width, it.second.bounds.top + it.second.bounds.top + it.second.bounds.height))
-						for (size_t i(it.second.indexRange.first.first), end(it.second.indexRange.first.second); i < end; ++i)
-						{
-							bool found(false);
-							for (size_t i1(it1.second.indexRange.first.first), end1(it1.second.indexRange.first.second); i1 < end1; i1 += 3)
-								if (utl::pointIsInsideTriangle(provinceFill[i1].position, provinceFill[i1 + 1].position, provinceFill[i1 + 2].position, provinceFill[i].position))
-								{
-									connectProvinces(it.first, it1.first);
-									found = true;
-									break;
-								}
-							if (found) break;
-						}
-					else if (it1.second.bounds.intersects(it.second.bounds))
-						for (size_t i(it.second.indexRange.second.first), end(it.second.indexRange.second.second); i < end; i += 2)
-						{
-							bool found(false);
-							for (size_t i1(it1.second.indexRange.second.first), end1(it1.second.indexRange.second.second); i1 < end1; i1 += 2)
-								if (utl::haveCommonSegment(provinceContours[i].position, provinceContours[i + 1].position,
-									provinceContours[i1].position, provinceContours[i1 + 1].position))
-								{
-									connectProvinces(it.first, it1.first);
-									found = true;
-									break;
-								}
-							if (found) break;
-						}
-			}
-
-			std::ofstream cache("map/cache/adjacencies.bin", std::ios::out | std::ios::binary);
-			for (const auto& it : provinces)
-			{
-				cache.write((char*)&it.first, sizeof(unsigned short));
-				const unsigned short buffer(bEnd::Province::get(it.first).getNeighbours().size());
-				cache.write((char*)&buffer, sizeof(unsigned char));
-				for (const auto& it1 : bEnd::Province::get(it.first).getNeighbours())
-				{
-					cache.write((char*)&it1.first, sizeof(it1.first));
-					cache.write((char*)&it1.second, sizeof(it1.second));
-				}
-			}
-			provincesLock.unlock();
-		}
-		else
-		{
-			console.print("Loading Province Graph...");
-			std::ifstream cache("map/cache/adjacencies.bin", std::ios::in | std::ios::binary);
-			while (!cache.eof())
-			{
-				unsigned short provID(0), neighbour(0), distance(0);
-				cache.read((char*)&provID, sizeof(provID));
-				unsigned char size(0);
-				cache.read((char*)&size, sizeof(size));
-				for (;size != 0; --size)
-				{
-					cache.read((char*)&neighbour, sizeof(neighbour));
-					cache.read((char*)&distance, sizeof(distance));
-					bEnd::Province::get(provID).neighbours.emplace(std::make_pair(neighbour, distance));
-					if (!bEnd::Province::get(provID).sea && bEnd::Province::get(neighbour).sea)
-						bEnd::Province::get(provID).coastal = true;
-				}
-			}
-		}
-	}
-
-	void Map::connectProvinces(const unsigned short a, const unsigned short b)
-	{
-		auto& it(provinces.at(a)), &it1(provinces.at(b));
-		const auto distance(utl::distanceBetweenPoints(sf::Vector2f(it.bounds.left + it.bounds.width / 2, it.bounds.top + it.bounds.height / 2),
-			sf::Vector2f(it1.bounds.left + it1.bounds.width / 2, it1.bounds.top + it1.bounds.height / 2)) * (40075 / mapSize.x));
-		bEnd::Province::get(a).neighbours.emplace(std::make_pair(b, distance));
-		bEnd::Province::get(b).neighbours.emplace(std::make_pair(a, distance));
-
-		if (bEnd::Province::get(a).sea && !bEnd::Province::get(b).sea)
-			bEnd::Province::get(b).coastal = true;
-		else if (!bEnd::Province::get(a).sea && bEnd::Province::get(b).sea)
-			bEnd::Province::get(a).coastal = true;
-	}
-
-	Map::Province& Map::get(const unsigned short ProvinceID)
-	{
-		std::lock_guard<std::mutex> provincesGuard(provincesLock);
-		return provinces[ProvinceID];
-	}
-
-	void Map::initialise()
-	{
-		console.print("Loading Map...");
-
-		loadProvinces();
-		generateWorldGraph();
-		loadResources();
-		loadProvinceNames();
-		updateThread.reset(new std::thread(updateVertexArrays));
-
-		console.print("Done.");
-	}
-
 	const unsigned short Map::clickCheck(sf::Vector2s point1)
 	{
 		sf::Vector2f point = camera.mapPixelToCoords(sf::Vector2f(point1));
-		std::lock_guard<std::mutex> provincesGuard(provincesLock);
+		//std::lock_guard<std::mutex> provincesGuard(provincesLock);
 		for (const auto& it : provinces)
 			if (it.second.sea) continue;
 			else if (it.second.bounds.contains(point))
 				for (size_t i(it.second.indexRange.first.first); i != it.second.indexRange.first.second; i += 3)
-				if (utl::pointIsInsideTriangle(provinceFill[i].position, provinceFill[i + 1].position,
-					provinceFill[i + 2].position, point) || utl::pointIsInsideTriangle(provinceFill[i].position, provinceFill[i + 1].position,
-						provinceFill[i + 2].position, sf::Vector2f(point.x + mapSize.x, point.y)))
-					return it.first;
+					if (utl::pointIsInsideTriangle(provinceFill[i].position, provinceFill[i + 1].position,
+						provinceFill[i + 2].position, point) || utl::pointIsInsideTriangle(provinceFill[i].position, provinceFill[i + 1].position,
+							provinceFill[i + 2].position, sf::Vector2f(point.x + mapSize.x, point.y)))
+						return it.first;
 		for (const auto& it : provinces)
 			if (!it.second.sea) continue;
 			else if (it.second.bounds.contains(point))
 				for (size_t i(it.second.indexRange.first.first); i != it.second.indexRange.first.second; i += 3)
-				if (utl::pointIsInsideTriangle(provinceFill[i].position, provinceFill[i + 1].position,
-					provinceFill[i + 2].position, point) || utl::pointIsInsideTriangle(provinceFill[i].position, provinceFill[i + 1].position,
-						provinceFill[i + 2].position, sf::Vector2f(point.x + mapSize.x, point.y)))
-					return it.first;
+					if (utl::pointIsInsideTriangle(provinceFill[i].position, provinceFill[i + 1].position,
+						provinceFill[i + 2].position, point) || utl::pointIsInsideTriangle(provinceFill[i].position, provinceFill[i + 1].position,
+							provinceFill[i + 2].position, sf::Vector2f(point.x + mapSize.x, point.y)))
+						return it.first;
 		return unsigned short(-2);
+	}
+
+
+	void Map::draw(sf::RenderTarget& target, sf::RenderStates states)const
+	{
+		target.draw(camera);
+		target.draw(*textureTransitionAnimation);
+
+		states.texture = &sea;
+		states.shader = &textureTransitionAnimation->getFillShader();
+		if (camera.getPosition().x < 0)
+		{
+			states.transform.translate(-mapSize.x, 0);
+			target.draw(oceanGradient, states);
+			states.transform.translate(mapSize.x, 0);
+		}
+
+		target.draw(oceanGradient, states);
+		states.texture = &terrain;
+		target.draw(fillBuffer[drawableBufferSet], states);
+		states.shader = &textureTransitionAnimation->getStripeShader();
+		target.draw(stripesBuffer[drawableBufferSet], states);
+
+		target.draw(outlineFadeAnimation);
+		if (outlineFadeAnimation.getFadeAmount() != 0.0f)
+			target.draw(contourBuffer[drawableBufferSet], &outlineFadeAnimation.getShaderNonTextured());
+		target.setView(target.getDefaultView());
+	}
+
+
+	volatile std::atomic<bool> updatingColors = false;
+	void Map::waitForColorUpdate()
+	{
+		if (provincesNeedingColorUpdate.empty()) return;
+		updatingColors = true;
+		while (updatingColors);
+	}
+
+	void Map::addProvinceNeedingColorUpdate(const unsigned short ProvinceID)
+	{
+		colorUpdateQueueLock.lock();
+		provincesNeedingColorUpdate.emplace(ProvinceID);
+		colorUpdateQueueLock.unlock();
+	}
+
+	void Map::updateAllProvinceColors()
+	{
+		//std::lock_guard<std::mutex> provincesGuard(provincesLock);
+		for (auto& it : provinces)
+			if (it.second.sea || bEnd::Province::get(it.first).sea) continue;
+			else for (auto i(it.second.indexRange.first.first), end(it.second.indexRange.first.second); i < end; ++i)
+			{
+				provinceFill[i].color = Nation::get(bEnd::Province::get(it.first).controller).getColor();
+				if (bEnd::Province::get(it.first).controller != bEnd::Province::get(it.first).owner)
+					provinceStripes[i].color = Nation::get(bEnd::Province::get(it.first).owner).getColor();
+				else provinceStripes[i].color.a = 0;
+			}
+
+		vertexArraysVisibilityNeedsUpdate = true;
+	}
+
+	void Map::updateProvinceVisuals(const sf::Vector2s& newResolution)
+	{
+		const float maxZoomFactor(newResolution.y / (mapSize.y * Camera::upperZoomLimitAsMapSizeFraction));
+
+		MapLoader::createStripesTexture(stripes, 64 * maxZoomFactor, 1 * maxZoomFactor);
+		stripes.setRepeated(true);
+
+		textureTransitionAnimation->setFactor(maxZoomFactor);
+		textureTransitionAnimation->setMask(stripes);
+
+		for (size_t it(0), end(provinceStripes.getVertexCount()); it != end; ++it)
+		{
+			provinceStripes[it].color.a = 0;
+			provinceStripes[it].texCoords.x = provinceStripes[it].position.x * maxZoomFactor;
+			provinceStripes[it].texCoords.y = provinceStripes[it].position.y * maxZoomFactor;
+			provinceFill[it].texCoords.x = provinceFill[it].position.x * maxZoomFactor;
+			provinceFill[it].texCoords.y = provinceFill[it].position.y * maxZoomFactor;
+		}
+
+		for (size_t it(0), end(oceanGradient.getVertexCount()); it != end; ++it)
+		{
+			oceanGradient[it].texCoords.x = oceanGradient[it].position.x * maxZoomFactor;
+			oceanGradient[it].texCoords.y = oceanGradient[it].position.y * maxZoomFactor;
+		}
+
+		camera.setPosition(0, 0)
+			.setSize(newResolution)
+			.setScreenResolution(newResolution)
+			.setMapSize(mapSize);
 	}
 
 	inline const sf::FloatRect translateRect(sf::FloatRect rect, const float amount)
@@ -840,7 +291,6 @@ namespace fEnd
 		rect.left += amount;
 		return rect;
 	}
-
 	void Map::updateVertexArrays()
 	{
 		gui::TimePoint timeOfLastUpdate(gui::Internals::timeSinceStart());
@@ -861,7 +311,7 @@ namespace fEnd
 				stripesBuffer[targetSet].clear();
 				contourBuffer[targetSet].clear();
 
-				if (animation.getFadeAmount() != 0.0f)
+				if (outlineFadeAnimation.getFadeAmount() != 0.0f)
 				{
 					if (bounds.left < 0)
 					{
@@ -894,7 +344,7 @@ namespace fEnd
 
 				}
 
-				provincesLock.lock();
+				//provincesLock.lock();
 				for (const auto& it : provinces)
 				{
 					if (it.second.sea || bEnd::Province::get(it.first).sea)
@@ -965,7 +415,7 @@ namespace fEnd
 							}
 					}
 				}
-				provincesLock.unlock();
+				//provincesLock.unlock();
 
 				drawableBufferSet = !drawableBufferSet;
 				camera.hasChanged = false;
@@ -990,7 +440,7 @@ namespace fEnd
 			const auto& controller(Nation::get(bEnd::Province::get(provincesNeedingColorUpdate.front()).controller)),
 				&owner(Nation::get(bEnd::Province::get(provincesNeedingColorUpdate.front()).owner));
 
-			provincesLock.lock();
+			//provincesLock.lock();
 			const auto& Province(provinces[provincesNeedingColorUpdate.front()]);
 
 			if (bEnd::Province::get(provincesNeedingColorUpdate.front()).controller != bEnd::Province::get(provincesNeedingColorUpdate.front()).owner)
@@ -1014,105 +464,11 @@ namespace fEnd
 				provinceStripes[it].color.a = 0;
 			}
 
-			provincesLock.unlock();
+			//provincesLock.unlock();
 			provincesNeedingColorUpdate.pop();
 		}
 		colorUpdateQueueLock.unlock();
 		updatingColors = false;
 		vertexArraysVisibilityNeedsUpdate = true;
-	}
-
-	const bool isProvinceAnIsland(const std::vector<std::vector<sf::Color>>& pixels, const std::vector<sf::Vector2s> contour, const sf::Color& colorCode)
-	{
-		if (pixels.empty() || contour.empty()) return false;
-
-		std::vector<sf::Vector2s> pointVector;
-
-		for (const auto& it : contour)
-			if (pixels.at(it.x).at(it.y) == colorCode)
-			{
-				pointVector.push_back(it);
-				break;
-			}
-		
-		std::unique_ptr<sf::Color> firstBorderColor(nullptr);
-		std::unordered_map<unsigned short, std::unordered_map<unsigned short, bool>> flag;
-
-		while (!pointVector.empty())
-		{
-			const sf::Vector2s point(pointVector.back());
-			pointVector.pop_back();
-
-			if (!flag[point.x + 1][point.y])
-			{
-				if (pixels.at(point.x + 1).at(point.y) == colorCode)
-					pointVector.emplace_back(point.x + 1, point.y);
-				else if (firstBorderColor && *firstBorderColor != pixels.at(point.x + 1).at(point.y)) return false;
-				else firstBorderColor.reset(new sf::Color(pixels.at(point.x + 1).at(point.y)));
-			}
-
-			if (!flag[point.x - 1][point.y])
-			{
-				if (pixels.at(point.x - 1).at(point.y) == colorCode)
-					pointVector.emplace_back(point.x - 1, point.y);
-				else if (firstBorderColor && *firstBorderColor != pixels.at(point.x - 1).at(point.y)) return false;
-				else firstBorderColor.reset(new sf::Color(pixels.at(point.x - 1).at(point.y)));
-			}
-
-			if (!flag[point.x][point.y + 1])
-			{
-				if (pixels.at(point.x).at(point.y + 1) == colorCode)
-					pointVector.emplace_back(point.x, point.y + 1);
-				else if (firstBorderColor && *firstBorderColor != pixels.at(point.x).at(point.y + 1)) return false;
-				else firstBorderColor.reset(new sf::Color(pixels.at(point.x).at(point.y + 1)));
-			}
-
-			if (!flag[point.x][point.y - 1])
-			{
-				if (pixels.at(point.x).at(point.y - 1) == colorCode)
-					pointVector.emplace_back(point.x, point.y - 1);
-				else if (firstBorderColor && *firstBorderColor != pixels.at(point.x).at(point.y - 1)) return false;
-				else firstBorderColor.reset(new sf::Color(pixels.at(point.x).at(point.y - 1)));
-			}
-
-			flag[point.x][point.y] = true;
-		}
-		
-		return true;
-	}
-
-	void cullBorderTriangles(std::vector<sf::Vector2s>& ProvinceContour)
-	{
-		if (ProvinceContour.size() <= 4) return;
-		
-		for (auto it(ProvinceContour.begin()); it != ProvinceContour.end(); ++it)
-		{
-			const auto A((it == ProvinceContour.begin() ? ProvinceContour.end() : it) - 1),
-				B(it),
-				C(it == ProvinceContour.end() - 1 ? ProvinceContour.begin() : it + 1),
-				prev((A == ProvinceContour.begin() ? ProvinceContour.end() : A) - 1),
-				next(C == ProvinceContour.end() - 1 ? ProvinceContour.begin() : C + 1);
-			if (utl::angleType(*A, *B, *C) >= 0 && !(utl::pointsAreOnOneLine(*prev, *A, *B) &&
-				utl::pointsAreOnOneLine(*B, *C, *next)) && (B->x - C->x != A->x - next->x || B->y - C->y != A->y - next->y) &&
-				(B->x - A->x != C->x - prev->x || B->y - A->y != C->y - prev->y))
-					it = ProvinceContour.erase(it);
-
-			if (it == ProvinceContour.end()) break;
-		}
-	}
-
-	void Map::Province::traceShape(std::vector<std::vector<sf::Color>>& pixels, const sf::Color& colorCode,
-		std::vector<sf::Vector2s>& borderTrianglesTarget, std::vector<std::vector<sf::Vector2s>>& contourPointsTarget)
-	{
-		auto points(std::move(utl::marchingSquares(pixels, colorCode)));
-
-		for (auto& it : points)
-		{
-			if (it.empty()) continue;
-
-			isProvinceAnIsland(pixels, it, colorCode) ? cullBorderTriangles(it) :
-				utl::cullBorderTriangles(pixels, colorCode, it, borderTrianglesTarget);
-			contourPointsTarget.emplace_back(it);
-		}
 	}
 }

@@ -129,10 +129,9 @@ namespace fEnd
 
 	NationSelectScreen::NationSelectScreen(const sf::Vector2u& resolution)
 	{
-		console.print("Loading History...");
+		console.print("Loading history.");
 		bEnd::loadSavedGame(bEnd::getDirectoryContents("save game/*.bk").at(0));
 		fEnd::Map::updateAllProvinceColors();
-		console.print("Done.");
 
 		main.emplace("HUD", gui::Window()
 				.add("Play", gui::Button(gui::Icon(Resources::texture("play_button"), true))

@@ -133,6 +133,8 @@ namespace fEnd
 
 	void Resources::load(const sf::Vector2u& resolution)
 	{
+		const auto startPoint(gui::Internals::timeSinceStart());
+
 		{
 			unsigned char index(0);
 			for (const auto& it : bEnd::getDirectoryContents("music/*.ogg"))
@@ -182,7 +184,7 @@ namespace fEnd
 		Map::initialise();
 		bEnd::Unit::load();
 
-		console.print("Loading Interface...");
+		console.print("Loading interface.");
 
 		gameInterface.reset(new GameInterface(resolution));
 
@@ -203,6 +205,12 @@ namespace fEnd
 		menu.at("ver").setPosition(resolution.x - menu.at("ver").getGlobalBounds().width - 10, resolution.y - menu.at("ver").getGlobalBounds().height - 10);
 		
 		loading = false;
+
+		const unsigned short minutes(int(gui::Duration(gui::Internals::timeSinceStart() - startPoint).count()) / 60),
+			seconds(int(gui::Duration(gui::Internals::timeSinceStart() - startPoint).count()) % 60);
+
+		console.print("Done: load took " + (minutes <= 9 ? std::string("0") : std::string("")) + std::to_string(minutes) + ":" +
+			(seconds <= 9 ? std::string("0") : std::string("")) + std::to_string(seconds));
 	}
 
 	void initializeWindow(sf::RenderWindow& window)
@@ -214,7 +222,7 @@ namespace fEnd
 		window.setIcon(icon.getSize().x, icon.getSize().y, icon.getPixelsPtr());
 	}
 
-	void run()
+	int run()
 	{
 		sf::RenderWindow window(sf::VideoMode::getDesktopMode(), "Blitzkrieg: The Thousand-Year Reich", sf::Style::Fullscreen);
 		fEnd::initializeWindow(window);
@@ -268,5 +276,7 @@ namespace fEnd
 			window.draw(fEnd::cursor);
 			window.display();
 		}
+
+		return 1889;
 	}
 }

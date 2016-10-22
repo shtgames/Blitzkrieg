@@ -72,7 +72,7 @@ namespace fEnd
 			return;
 		}
 
-		if (output.getSize() * ((gui::TextField&)at("input field")).getHeight() > width)
+		if ((output.getSize() * ((gui::TextField&)at("input field")).getHeight()) / 1.33 > width)
 		{
 			const size_t count(width / ((gui::TextField&)at("input field")).getHeight());
 			if (count != 0)
@@ -91,7 +91,8 @@ namespace fEnd
 		if (!visual.isEmpty()) visual.erase(visual.getSize() - 1);
 
 		((gui::TextArea&)at("output field")).setText(visual);
-		((gui::TextArea&)at("output field")).setPosition(5, height - ((gui::TextArea&)at("output field")).getGlobalBounds().height - ((gui::TextField&)at("input field")).getHeight());
+		((gui::TextArea&)at("output field")).setPosition(5, height - ((gui::TextArea&)at("output field")).getGlobalBounds().height -
+			((gui::TextField&)at("input field")).getHeight());
 	}
 
 	void Console::eraseLastLine()

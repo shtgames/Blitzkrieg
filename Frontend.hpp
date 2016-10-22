@@ -28,7 +28,7 @@ namespace fEnd
 	extern const unsigned short menuFramerateCap, ingameFramerateCap;
 	void initializeWindow(sf::RenderWindow& window);
 	void drawLoadingScreen(sf::RenderWindow& target, std::atomic<bool>& loading);
-	void run();
+	int run();
 
 	class Resources final
 	{

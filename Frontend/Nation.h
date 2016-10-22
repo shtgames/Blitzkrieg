@@ -37,7 +37,7 @@ namespace fEnd
 		const sf::Color& getColor()const { return color; }
 		const std::string& getName()const { return name; }
 
-		static Nation& get(const bEnd::Tag& tag) { std::lock_guard<std::mutex> guard(nationsLock); return nations[tag]; }
+		static Nation& get(const bEnd::Tag& tag);
 		static void loadNations();
 
 	private:

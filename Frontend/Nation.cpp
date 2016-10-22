@@ -20,6 +20,12 @@ namespace fEnd
 			}
 	}
 
+	Nation& Nation::get(const bEnd::Tag& tag)
+	{
+		std::lock_guard<std::mutex> guard(nationsLock);
+		return nations[tag];
+	}
+
 	void Nation::loadNations()
 	{
 		{

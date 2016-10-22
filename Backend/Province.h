@@ -18,6 +18,7 @@ using namespace std;
 namespace fEnd
 {
 	class Map;
+	class MapLoader;
 }
 
 namespace bEnd
@@ -26,6 +27,7 @@ namespace bEnd
 	class Province final
 	{
 		friend class fEnd::Map;
+		friend class fEnd::MapLoader;
 	public:
 		typedef pair<float, unsigned char>(BuildingLevels);
 
