@@ -187,6 +187,6 @@ namespace bEnd
 	void Research::loadExperienceLevels(const FileProcessor::Statement& source)
 	{
 		if (source.lValue == "nocategory") return;
-		else experience.emplace(source.lValue, std::stof(source.rStrings.front()));
+		else experience[source.lValue] = {std::stof(source.rStrings.front())};
 	}
 }

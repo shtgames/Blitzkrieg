@@ -63,9 +63,9 @@ namespace bEnd
 		private:
 			const Unit& unit;
 
-			atomic<unsigned short> productionDays = 0, targetProvince = -1;
-			atomic<float> completionPercentage = 0.0f;
-			atomic<float> dedicatedICPercentage = 0.0f;
+			atomic<unsigned short> productionDays = {0}, targetProvince = {(unsigned short)-1};
+			atomic<float> completionPercentage = {0.0f};
+			atomic<float> dedicatedICPercentage = {0.0f};
 		};
 
 		Production(const Tag& tag) : tag(tag) {}
@@ -77,7 +77,7 @@ namespace bEnd
 		
 		vector<unique_ptr<ProductionItem>> productionLine;
 		vector<unique_ptr<ProductionItem>> deploymentQueue;
-		atomic<float> totalDedicatedIC = 0.0f;
+		atomic<float> totalDedicatedIC = {0.0f};
 		const Tag tag;
 		mutex productionLineLock, deploymentQueueLock;
 

@@ -21,8 +21,10 @@ namespace bEnd
 	const float Province::ANNEXED_NON_CORE_PENALTY = 0.7f;
 
 	Province::Province()
-		: IC(std::make_pair(0.0f, 1.0f)), leadership(std::make_pair(0.0f, 1.0f)), manpowerGeneration(std::make_pair(0.0f, 1.0f))
 	{
+		leadership.first = IC.first = manpowerGeneration.first = { 0.0f };
+		leadership.second = IC.second = manpowerGeneration.second = { 1.0f };
+
 		for (unsigned char it(0); it < Resource::Last; it++)
 			resourceGeneration[(Resource)it] = make_pair(0.0f, 1.0f);
 	}

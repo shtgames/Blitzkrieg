@@ -5,8 +5,10 @@
 #include "FileProcessor.h"
 
 #include <unordered_map>
+#include <set>
 #include <memory>
 #include <map>
+#include <string>
 
 namespace bEnd
 {
@@ -47,8 +49,8 @@ namespace bEnd
 		static const bool loadFromFile(const FileProcessor::Statement& file);
 		static const bool exists(const std::string& unit) { if (units.count(unit)) return true; return false; }
 		static const Unit& get(const std::string& unit) { return units.at(unit); }
-		static std::unordered_map<std::string, Unit>::const_iterator begin();
-		static std::unordered_map<std::string, Unit>::const_iterator end();
+		static std::set<std::string>::const_iterator begin();
+		static std::set<std::string>::const_iterator end();
 		static const unsigned short unitsOfType(const Type type);
 
 		static void load();
@@ -77,8 +79,9 @@ namespace bEnd
 		// Land
 		bool canParadrop = false;
 		
+		static std::set<std::string> iterable;
 		static std::unordered_map<std::string, Unit> units;
-		static std::unordered_map<Type, unsigned short> unitCount;
+		static std::unordered_map<unsigned char, unsigned short> unitCount;
 	};
 }
 

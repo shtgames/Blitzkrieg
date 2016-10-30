@@ -13,6 +13,9 @@ namespace bEnd
 	ResourceDistributor::ResourceDistributor(const Tag& tag)
 		: tag(tag)
 	{
+		IC.first = { BASE_IC };
+		IC.second =	{ 1.0f };
+
 		manpower.second = std::make_pair(0.0f, 1.0f);
 
 		for (auto it(0); it <= ICDistributionCategory::ToLendLease; it++)

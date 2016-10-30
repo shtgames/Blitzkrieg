@@ -63,9 +63,9 @@ namespace bEnd
 	private:
 		const bool isLeapYear()const;
 
-		std::atomic<unsigned char> day = 1, hour = 0;
-		std::atomic<unsigned char> month = January;
-		std::atomic<unsigned short> year = 1;
+		std::atomic<unsigned char> day = { 1 }, hour = { 0 };
+		std::atomic<unsigned char> month = { January };
+		std::atomic<unsigned short> year = { 1 };
 
 		static const unsigned short monthToDays[13];
 

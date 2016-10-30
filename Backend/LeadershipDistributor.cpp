@@ -15,6 +15,9 @@ namespace bEnd
 	LeadershipDistributor::LeadershipDistributor(const Tag& tag)
 		: tag(tag)
 	{
+		leadership.first = {BASE_LEADERSHIP};
+		leadership.second = {1.0f};
+
 		for (auto it(0); it <= LeadershipDistributionCategory::ToOfficers; it++)
 			leadershipDistribution[(LeadershipDistributionCategory)it] = std::make_pair(0.0f, false);
 		leadershipDistribution[ToResearch] = std::make_pair(1.0f, false);

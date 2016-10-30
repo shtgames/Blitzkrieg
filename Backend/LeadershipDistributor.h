@@ -55,8 +55,8 @@ namespace bEnd
 
 		void distributeLeadership();
 
-		atomic<float>                                                        wastedLeadership = 0.0f;
-		pair<atomic<float>, atomic<float>>                                   leadership = make_pair(BASE_LEADERSHIP, 1.0f);
+		atomic<float>                                                        wastedLeadership = {0.0f};
+		pair<atomic<float>, atomic<float>>                                   leadership;
 		mutable map<LeadershipDistributionCategory, std::pair<double, bool>> leadershipDistribution;
 
 		const Tag tag;

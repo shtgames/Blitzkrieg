@@ -20,6 +20,7 @@ namespace bEnd
 	{
 		friend class TimeSystem;
 	public:
+
 		enum ICDistributionCategory
 		{
 			ToUpgrades,
@@ -54,12 +55,13 @@ namespace bEnd
 				}
 				float add = 0, mult = 1;
 			};
+
 			void resetTotal()
-				{
-					for (auto it(1); it != ResourceChangeCategory::Last; ++it)
-						m_mod[(ResourceChangeCategory)it].add = 0;
-					m_mod[Total].add = get(Generated);
-				}
+			{
+				for (auto it(1); it != ResourceChangeCategory::Last; ++it)
+					m_mod[(ResourceChangeCategory)it].add = 0;
+				m_mod[Total].add = get(Generated);
+			}
 			void add(const ResourceChangeCategory cat, const float amount, const bool reset = false)
 			{
 				if (cat == Total) return;
@@ -68,23 +70,24 @@ namespace bEnd
 				m_mod[Total].add += m_mod[cat].get();
 			}
 			void mult(const ResourceChangeCategory cat, const float amount, const bool reset = false)
-				{
-					if (cat == Total) return;
-					reset ? m_mod[cat].mult = amount: m_mod[cat].mult *= amount;
-				}
+			{
+				if (cat == Total) return;
+				reset ? m_mod[cat].mult = amount: m_mod[cat].mult *= amount;
+			}
 			const float add(const ResourceChangeCategory cat)
-				{
-					return m_mod[cat].add;
-				}
+			{
+				return m_mod[cat].add;
+			}
 			const float mult(const ResourceChangeCategory cat)
-				{
-					return m_mod[cat].mult;
-				}
+			{
+				return m_mod[cat].mult;
+			}
+
 			const float get(const ResourceChangeCategory cat)
 			{
 				return m_mod[cat].get();
 			}
-			const auto& operator[] (const ResourceChangeCategory cat)
+			const Mod& operator[] (const ResourceChangeCategory cat)
 			{
 				return m_mod[cat];
 			}
@@ -92,14 +95,16 @@ namespace bEnd
 			{
 				return m_mod.at(cat);
 			}
+
 			void apply()
 			{
 				amount += m_mod[Total].add;
 			}
 
 			float amount = 0;
+
 		private:
-			std::unordered_map<ResourceChangeCategory, Mod> m_mod;
+			std::unordered_map<unsigned char, Mod> m_mod;
 		};
 
 		~ResourceDistributor() = default;
@@ -161,8 +166,8 @@ namespace bEnd
 		void distributeIC();
 		void calculateMoneyChangeAmount();
 
-		atomic<float>                                           wastedIC = 0.0f, ICResourceBottleneck = 1.0f;
-		pair<atomic<float>, atomic<float>>                      IC = make_pair(BASE_IC, 1.0f);
+		atomic<float>                                           wastedIC = { 0.0f }, ICResourceBottleneck = { 1.0f };
+		pair<atomic<float>, atomic<float>>                      IC;
 		pair<atomic<float>, pair<atomic<float>, atomic<float>>> manpower;
 		mutable map<Resource, ResourceCell>                     resources;
 

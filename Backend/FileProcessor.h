@@ -6,13 +6,15 @@
 #include <unordered_map>
 #include <functional>
 #include <memory>
+#include <vector>
+#include <string>
 
 namespace bEnd
 {
-	void load();
-	const std::string& currentlyLoadedFile();
-	void loadSavedGame(const std::string& source);
-	const std::vector<std::string> getDirectoryContents(const std::string& path);
+	extern void load();
+	extern const std::string& currentlyLoadedFile();
+	extern void loadSavedGame(const std::string& source);
+	extern const std::vector<std::string> getDirectoryContents(const std::string& path, const std::string& filenameRegex = "*");
 
 	class FileProcessor final : private std::ifstream
 	{

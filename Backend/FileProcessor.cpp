@@ -1,5 +1,4 @@
 #include "FileProcessor.h"
-#include "FileProcessor.h"
 
 #include "Unit.h"
 #include "Tech.h"
@@ -10,14 +9,16 @@
 #include <algorithm>
 #include <stack>
 #include <cctype>
-#include <io.h>
+#include <boost/filesystem.hpp>
+#include <boost/range/iterator_range.hpp>
+#include <regex>
 
 namespace bEnd 
 {
 	std::string currentSave;
 	const long long FileProcessor::unlimitedStreamsize(std::numeric_limits<std::streamsize>::max());
 
-	void bEnd::load()
+	void load()
 	{
 		auto source(std::move(getDirectoryContents("units/*.*")));
 
@@ -61,13 +62,13 @@ namespace bEnd
 		return returnValue;
 	}
 
-	void bEnd::loadSavedGame(const std::string& path)
+	void loadSavedGame(const std::string& path)
 	{
 		FileProcessor source("save game/" + path);
 		if (!source.isOpen()) return;
 
 		currentSave.clear();
-		for (size_t i(0), end(path.size()); i != end, path[i] != '.'; ++i)
+		for (size_t i(0), end(path.size()); i != end && path[i] != '.'; ++i)
 			currentSave.push_back(path[i]);
 
 		Nation::reset();
@@ -83,28 +84,18 @@ namespace bEnd
 				Nation::loadFromSave(it);
 	}
 
-	const std::vector<std::string> getDirectoryContents(const std::string& path)
+	const std::vector<std::string> getDirectoryContents(const std::string& path, const std::string& filenameRegex)
 	{
-		_finddata_t target;
 		std::vector<std::string> returnValue;
 
-		auto start = _findfirst(path.c_str(), &target);
-		if (start == -1) return returnValue;
-		returnValue.emplace_back();
-		returnValue.back().assign(target.name);
+		if (!boost::filesystem::exists(path) || !boost::filesystem::is_directory(path)) return returnValue;
 
-		while (true)
-		{
-			auto next = _findnext(start, &target);
-			if (next == -1) break;
-			if ((target.attrib & _A_SUBDIR) != _A_SUBDIR)
-			{
-				returnValue.emplace_back();
-				returnValue.back().assign(target.name);
-			}
-		}
+		const std::regex filename(filenameRegex);
 
-		_findclose(start);
+		for (const auto& entry : boost::make_iterator_range(boost::filesystem::directory_iterator(path), {}))
+			if (std::regex_match(entry.path().filename().string() + entry.path().extension().string(), filename)
+				&& boost::filesystem::is_regular_file(entry.path().string()))
+				returnValue.push_back(entry.path().filename().string() + entry.path().extension().string());
 
 		return returnValue;
 	}

@@ -6,6 +6,8 @@
 #include "TimeSystem.h"
 #include "Research.h"
 
+#include <cmath>
+
 namespace bEnd
 {
 	std::unordered_map<std::string, Tech> Tech::technologies;

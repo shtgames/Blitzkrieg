@@ -33,7 +33,7 @@ namespace bEnd
 
 		float manpowerModifier, ICModifier, leadershipModifier, partisanActivityModifier, ResourceModifier;
 
-		static const std::unordered_map<Policy, OccupationPolicy> occupationPolicies;
+		static const std::unordered_map<unsigned char, OccupationPolicy> occupationPolicies;
 
 	};
 }

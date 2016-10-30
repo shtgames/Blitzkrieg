@@ -72,14 +72,15 @@ namespace bEnd
 
 		void repair(const Unit& building, float levels);
 		
-		std::atomic<unsigned char>                                victoryPoints = 0;
-		std::atomic<bool>                                         sea = false, coastal = false, initialized = false, capital = false, generatingResources = false;
+		std::atomic<unsigned char>                                victoryPoints = {0};
+		std::atomic<bool>                                         sea = {false}, coastal = {false},
+				initialized = {false}, capital = {false}, generatingResources = {false};
 		mutable map<string, BuildingLevels>                       buildings;
 		mutable map<Resource, pair<atomic<float>, atomic<float>>> resourceGeneration;
-		pair<atomic<float>, atomic<float>>                        leadership = std::make_pair(0.0f, 1.0f), IC = std::make_pair(0.0f, 1.0f), manpowerGeneration = std::make_pair(0.0f, 1.0f);
+		pair<atomic<float>, atomic<float>>                        leadership, IC, manpowerGeneration;
 		Tag                                                       owner, controller;
 		set<Tag>                                                  cores;
-		std::atomic<unsigned short>                               provID = 0;
+		std::atomic<unsigned short>                               provID = {0};
 		std::unordered_map<std::string, unsigned char>            queuedBuildingCount;
 		std::unordered_map<unsigned short, unsigned short>        neighbours; // Key is province index, value is distance to province.
 

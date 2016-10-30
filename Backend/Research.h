@@ -70,9 +70,9 @@ namespace bEnd
 		private:
 			const Tech& tech;
 
-			atomic<unsigned short> researchDays = 0;
-			atomic<float>          completionPercentage = 0.0f;
-			atomic<float>          dedicatedLeadership = 0.0f;
+			atomic<unsigned short> researchDays = {0};
+			atomic<float>          completionPercentage = {0.0f};
+			atomic<float>          dedicatedLeadership = {0.0f};
 		};
 
 		Research(const Tag& tag) : tag(tag) {}
@@ -83,7 +83,7 @@ namespace bEnd
 		mutable map<string, atomic<float>> experience;
 		map<string, atomic<bool>>          experienceHasBeenAdded;
 		vector<unique_ptr<ResearchItem>>   researchQueue;
-		atomic<float>                      totalDedicatedLeadership = 0.0f;
+		atomic<float>                      totalDedicatedLeadership = {0.0f};
 		const Tag                          tag;
 		mutable mutex                      researchQueueLock, techLevelsLock, experienceLock;
 

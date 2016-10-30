@@ -2,15 +2,19 @@
 
 namespace bEnd
 {
-	const Date Date::NEVER = Date(24, 31, December, unsigned short(-1));
+	typedef unsigned char (uChar);
+	typedef unsigned short (uShort);
+	typedef unsigned long long (uLongLong);
+
+	const Date Date::NEVER = Date(24, 31, December, uChar(-1));
 	const unsigned short Date::monthToDays[13] = { 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365 };
 
 	Date::Date(const Date& copy)
-		: hour(unsigned char(copy.hour)), day(unsigned char(copy.day)), month(unsigned char(copy.month)), year(unsigned short(copy.year))
+		: day(uChar(copy.day)), hour(uChar(copy.hour)), month(uChar(copy.month)), year(uShort(copy.year))
 	{}
 
-	Date::Date(const unsigned char newHour, const unsigned char newDay, const Month newMonth, const unsigned short newYear)
-		: year(newYear != 0 ? newYear : 1), month(newMonth != 0 && newMonth <= 12 ? newMonth : January), hour(newHour <= 24 ? newHour : 0)
+	Date::Date(const uChar newHour, const uChar newDay, const Month newMonth, const unsigned short newYear)
+		: hour(newHour <= 24 ? newHour : 0), month(newMonth != 0 && newMonth <= 12 ? newMonth : January), year(newYear != 0 ? newYear : 1)
 	{
 		setDay(newDay);
 	}
@@ -24,7 +28,8 @@ namespace bEnd
 
 		days -= (year - 1) / 4 - (year - 1) / 100 + (year - 1) / 400;
 		
-		for (month = January; month < 13, days > monthToDays[month] + (month >= 2 ? (isLeapYear() ? 1 : 0) : 0); month++);
+		for (month = January; month < 13, days > monthToDays[month] +
+			(month >= 2 ? (isLeapYear() ? 1 : 0) : 0); month++);
 		day = days - monthToDays[month - 1];
 
 		hour = hours  % 24;
@@ -32,39 +37,39 @@ namespace bEnd
 
 	Date& Date::operator=(const Date& copy)
 	{
-		hour = unsigned char(copy.hour);
-		day = unsigned char(copy.day);
-		month = unsigned char(copy.month);
-		year = unsigned short(copy.year);
+		day = uChar(copy.day);
+		hour = (uChar)(copy.hour);
+		month = (uChar)(copy.month);
+		year = (uShort)(copy.year);
 
 		return *this;
 	}
 
 	Date::operator unsigned long long() const
 	{
-		return (year * 365 + unsigned short(year * (97.0f / 400.0f)) +
+		return (year * 365 + uShort(year * (97.0f / 400.0f)) +
 			monthToDays[month - 1] + (month - 1 >= 2 ? (isLeapYear() ? 1 : 0) : 0) +
 			day) * 24 + hour;
 	}
 
 	Date Date::operator+(const unsigned long long hours)const
 	{
-		return Date(unsigned long long(*this) + hours);
+		return Date((*this).operator unsigned long long int() + hours);
 	}
 
 	Date Date::operator-(const unsigned long long hours)const
 	{
-		return Date(unsigned long long(*this) - hours);
+		return Date((*this).operator unsigned long long int() - hours);
 	}
 
 	Date Date::operator+(const Date& date)const
 	{
-		return Date(unsigned long long(*this) + unsigned long long(date));
+		return Date((*this).operator unsigned long long int() + (date).operator unsigned long long int());
 	}
 
 	Date Date::operator-(const Date& date)const
 	{
-		return Date(unsigned long long(*this) + unsigned long long(date));
+		return Date((*this).operator unsigned long long int() + (date).operator unsigned long long int());
 	}
 
 	Date& Date::operator++()

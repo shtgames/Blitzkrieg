@@ -2,7 +2,7 @@
 
 namespace bEnd
 {
-	const std::unordered_map<Policy, OccupationPolicy> OccupationPolicy::occupationPolicies { 
+	const std::unordered_map<unsigned char, OccupationPolicy> OccupationPolicy::occupationPolicies {
 		{ CollaborationGovernment, OccupationPolicy(CollaborationGovernment) },
 		{ MilitaryGovernment, OccupationPolicy(MilitaryGovernment) },
 		{ FullOccupation, OccupationPolicy(FullOccupation) },

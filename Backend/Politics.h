@@ -36,7 +36,7 @@ namespace bEnd
 		Politics(Politics&&) = default;
 		Politics() = default;
 
-		atomic<float> nationalUnity = 50.0f, dissent = 0.0f, dissentChange = 0.0f;
+		atomic<float> nationalUnity = {50.0f}, dissent = {0.0f}, dissentChange = {0.0f};
 		mutable unordered_map<Tag, Policy> occupationPolicies;
 
 		mutable mutex occupationPoliciesLock;

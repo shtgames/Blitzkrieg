@@ -7,7 +7,7 @@
 namespace bEnd
 {
 	std::unordered_map<std::string, Unit> Unit::units;
-	std::unordered_map<Unit::Type, unsigned short> Unit::unitCount;
+	std::unordered_map<unsigned char, unsigned short> Unit::unitCount;
 
 	const float Unit::getRequiredIC(const Tag& tag)const
 	{
@@ -26,6 +26,7 @@ namespace bEnd
 
 	const bool Unit::loadFromFile(const FileProcessor::Statement& source)
 	{
+		iterable.emplace(source.lValue);
 		units.emplace(std::make_pair(source.lValue, Unit(source.lValue)));
 		Unit& target(units.at(source.lValue));
 
@@ -77,14 +78,14 @@ namespace bEnd
 		return true;
 	}
 
-	std::unordered_map<std::string, Unit>::const_iterator Unit::begin()
+	std::set<std::string>::const_iterator Unit::begin()
 	{
-		return units.begin();
+		return iterable.begin();
 	}
 
-	std::unordered_map<std::string, Unit>::const_iterator Unit::end()
+	std::set<std::string>::const_iterator Unit::end()
 	{
-		return units.end();
+		return iterable.end();
 	}
 
 	const unsigned short Unit::unitsOfType(const Type type)
