@@ -28,7 +28,7 @@ namespace fEnd
 
 	sf::VertexArray Map::oceanGradient, Map::provinceStripes, Map::provinceFill, Map::provinceContours;
 	sf::VertexArray Map::stripesBuffer[2], Map::fillBuffer[2], Map::contourBuffer[2];
-	volatile std::atomic<bool> Map::drawableBufferSet, Map::vertexArraysVisibilityNeedsUpdate = false;
+	volatile std::atomic<bool> Map::drawableBufferSet = {0}, Map::vertexArraysVisibilityNeedsUpdate = {false};
 
 	std::queue<unsigned short> Map::provincesNeedingColorUpdate;
 	std::mutex Map::colorUpdateQueueLock/*, Map::provincesLock*/;
@@ -38,8 +38,8 @@ namespace fEnd
 
 	sf::Texture Map::tile, Map::terrain, Map::sea, Map::stripes;
 
-	std::atomic<bool> Map::m_terminate = false;
-	std::unique_ptr<std::thread> Map::updateThread = nullptr;
+	std::atomic<bool> Map::m_terminate = {false};
+	std::unique_ptr<boost::thread> Map::updateThread = nullptr;
 
 
 	void Map::initialise()
@@ -51,7 +51,7 @@ namespace fEnd
 		MapLoader::loadResources();
 		MapLoader::loadProvinceNames();
 
-		updateThread.reset(new std::thread(updateVertexArrays));
+		updateThread.reset(new boost::thread(updateVertexArrays));
 	}
 
 	void Map::terminate()
@@ -193,7 +193,7 @@ namespace fEnd
 						provinceFill[i + 2].position, point) || utl::pointIsInsideTriangle(provinceFill[i].position, provinceFill[i + 1].position,
 							provinceFill[i + 2].position, sf::Vector2f(point.x + mapSize.x, point.y)))
 						return it.first;
-		return unsigned short(-2);
+		return (unsigned short)(-2);
 	}
 
 
@@ -224,7 +224,7 @@ namespace fEnd
 	}
 
 
-	volatile std::atomic<bool> updatingColors = false;
+	volatile std::atomic<bool> updatingColors = {false};
 	void Map::waitForColorUpdate()
 	{
 		if (provincesNeedingColorUpdate.empty()) return;

@@ -85,7 +85,7 @@ namespace utl
 
 	const bool pointIsInsidePolygon(const sf::VertexArray& points, const unsigned int indexBegin, const unsigned int indexEnd, const sf::Vector2f& point)
 	{
-		sf::Vector2u min(unsigned short(-1), unsigned short(-1)), max(0, 0);
+		sf::Vector2u min((unsigned short)(-1), (unsigned short)(-1)), max(0, 0);
 		for (auto i(indexBegin); i != indexEnd; ++i)
 		{
 			if (points[i].position.x > max.x) max.x = points[i].position.x;
@@ -318,13 +318,13 @@ namespace utl
 			else
 			{
 				std::vector<sf::Vector2s> polygon;
-				for (A; A != C + 1; ++A)
+				for (; A != C + 1; ++A)
 				{
 					if (A == end) A = begin;
 					polygon.emplace_back(*A);
 				}
 				polygons.emplace_back(std::move(polygon));
-				for (C; C != B + 1; ++C)
+				for (; C != B + 1; ++C)
 				{
 					if (C == end) C = begin;
 					polygon.emplace_back(*C);

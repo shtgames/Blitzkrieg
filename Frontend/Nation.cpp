@@ -57,6 +57,7 @@ namespace fEnd
 			else if (it.lValue == "Oceania") currentContinent = Continent::Oceania;
 			else if (it.lValue == "NorthAmerica") currentContinent = Continent::NorthAmerica;
 			else if (it.lValue == "SouthAmerica") currentContinent = Continent::SouthAmerica;
+			else currentContinent = Continent::Europe;
 
 			for (auto it1 : it.rStatements)
 			{

@@ -8,20 +8,19 @@
 #include <GUI/AudioSystem.h>
 #include <GUI/Background.h>
 
-#include <iostream>
-#include <windows.h>
+#include <boost/thread.hpp>
 
 namespace fEnd
 {
 	constexpr auto version = "BkTYR: Version 2.3.4 (Alpha), 22 October 2016";
 
-	volatile Screen fEnd::currentScreen = Menu;
-	sf::Sprite fEnd::cursor;
-	Console fEnd::console;
+	volatile Screen currentScreen = Menu;
+	sf::Sprite cursor;
+	Console console;
 	std::unordered_map<std::string, std::shared_ptr<sf::Texture>> Resources::textures;
 	std::unordered_map<std::string, std::shared_ptr<sf::Font>> Resources::fonts;
 	std::mutex Resources::texturesLock, Resources::fontsLock;
-	const unsigned short fEnd::menuFramerateCap = 60, fEnd::ingameFramerateCap = 0;
+	const unsigned short menuFramerateCap = 60, ingameFramerateCap = 0;
 
 	const bool Resources::loadFont(const std::string& key, const std::string& path)
 	{
@@ -103,7 +102,7 @@ namespace fEnd
 
 		target.setFramerateLimit(menuFramerateCap);
 		
-		sf::Event event;
+		//sf::Event event;
 		while (loading)
 		{
 			/*while (target.pollEvent(event))
@@ -237,7 +236,8 @@ namespace fEnd
 		}
 
 		window.setActive(false);
-		std::thread loadingScreenThread([&]() { fEnd::drawLoadingScreen(window, loading); });
+
+		boost::thread loadingScreenThread([&]() { fEnd::drawLoadingScreen(window, loading); });
 
 		fEnd::Resources::load(window.getSize());
 		loadingScreenThread.join();

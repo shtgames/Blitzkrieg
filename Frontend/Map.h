@@ -19,6 +19,7 @@
 #include <chrono>
 #include <mutex>
 #include <queue>
+#include <boost/thread.hpp>
 
 #include "../Backend/Province.h"
 
@@ -95,7 +96,7 @@ namespace fEnd
 		static sf::Texture tile, terrain, sea, stripes;
 
 		static std::atomic<bool> m_terminate;
-		static std::unique_ptr<std::thread> updateThread;
+		static std::unique_ptr<boost::thread> updateThread;
 	};
 }
 

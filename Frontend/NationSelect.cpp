@@ -174,7 +174,7 @@ namespace fEnd
 					currentScreen = Game;
 					gameInterface.updatePlayer();
 					std::atomic<bool> running(true);
-					std::thread updateThread([&running]() { while (running) bEnd::TimeSystem::update(); });
+					boost::thread updateThread([&running]() { while (running) bEnd::TimeSystem::update(); });
 					sf::Event event;
 					while (currentScreen == Game)
 					{

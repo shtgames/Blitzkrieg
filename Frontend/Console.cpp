@@ -55,7 +55,7 @@ namespace fEnd
 				((gui::TextField&)at("input field")).setActive(isActive());
 			return true;
 		}
-		if (event.type == sf::Event::TextEntered && event.text.unicode == '`' || event.text.unicode == '~') return true;
+		if (event.type == sf::Event::TextEntered && (event.text.unicode == '`' || event.text.unicode == '~')) return true;
 		if (event.type == sf::Event::MouseButtonReleased && !allowingInput) return false;
 		return Window::input(event);
 	}

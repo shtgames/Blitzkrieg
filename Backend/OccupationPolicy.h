@@ -24,14 +24,14 @@ namespace bEnd
 		const float getICModifier()const { return ICModifier; }
 		const float getLeadershipModifier()const { return leadershipModifier; }
 		const float getPartisanActivityModifier()const { return partisanActivityModifier; }
-		const float getResourceModifier()const { return ResourceModifier; }
+		const float getResourceModifier()const { return resourceModifier; }
 
 		static const OccupationPolicy& get(const Policy policy) { return occupationPolicies.at(policy); };
 		
 	private:
 		void setPolicy(const Policy);
 
-		float manpowerModifier, ICModifier, leadershipModifier, partisanActivityModifier, ResourceModifier;
+		float manpowerModifier, ICModifier, leadershipModifier, partisanActivityModifier, resourceModifier = 0;
 
 		static const std::unordered_map<unsigned char, OccupationPolicy> occupationPolicies;
 

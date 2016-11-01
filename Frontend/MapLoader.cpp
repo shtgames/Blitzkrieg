@@ -171,7 +171,7 @@ namespace fEnd
 			cache.read((char*)&bytes, sizeof(bytes));
 
 			Map::provinces[provID].indexRange.first.first = Map::provinceFill.getVertexCount();
-			for (bytes; bytes > 0; bytes -= 4)
+			for (; bytes > 0; bytes -= 4)
 			{
 				sf::Vector2s vertex(0, 0);
 				cache.read((char*)&vertex.x, sizeof(vertex.x));
@@ -183,7 +183,7 @@ namespace fEnd
 			cache.read((char*)&(bytes = 0), sizeof(bytes));
 
 			Map::provinces.at(provID).indexRange.second.first = Map::provinceContours.getVertexCount();
-			for (bytes; bytes > 0; bytes -= 4)
+			for (; bytes > 0; bytes -= 4)
 			{
 				sf::Vector2s vertex(0, 0);
 				cache.read((char*)&vertex.x, sizeof(vertex.x));
@@ -281,14 +281,14 @@ namespace fEnd
 			console.print(std::to_string(count) + " of " + std::to_string(Map::provinces.size()));
 			for (const auto& it : Map::provinces)
 			{
-				if (it.first == unsigned short(-1)) continue;
+				if (it.first == (unsigned short)(-1)) continue;
 
 				++count;
 				console.eraseLastLine();
 				console.print(std::to_string(count) + "/" + std::to_string(Map::provinces.size()));
 
 				for (const auto& it1 : Map::provinces)
-					if (it.first == it1.first || it1.first == unsigned short(-1)) continue;
+					if (it.first == it1.first || it1.first == (unsigned short)(-1)) continue;
 					else if (it1.second.bounds.contains(it.second.bounds.left, it.second.bounds.top) &&
 						it1.second.bounds.contains(it.second.bounds.left + it.second.bounds.width, it.second.bounds.top + it.second.bounds.top + it.second.bounds.height))
 						for (size_t i(it.second.indexRange.first.first), end(it.second.indexRange.first.second); i < end; ++i)

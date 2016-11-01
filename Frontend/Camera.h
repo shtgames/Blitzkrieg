@@ -37,7 +37,7 @@ namespace fEnd
 		const sf::Vector2f& getSize()const;
 		const sf::Vector2f mapPixelToCoords(sf::Vector2f point)const;
 
-		mutable volatile std::atomic<bool> hasChanged = false;
+		mutable volatile std::atomic<bool> hasChanged = {false};
 
 		static const float lowerZoomLimitAsMapSizeFraction, upperZoomLimitAsMapSizeFraction;
 
@@ -52,7 +52,7 @@ namespace fEnd
 		sf::Vector2s scrollDirection = sf::Vector2s(0, 0), resolution = sf::Vector2s(1024, 768), mapSize;
 		mutable sf::Vector2f position = sf::Vector2f(0, 0);
 		float zoomFactor = 1.10f, scrollStep = 15;
-		std::atomic<float> totalZoom = 1.0f;
+		std::atomic<float> totalZoom = {1.0f};
 		mutable std::mutex viewLock;
 	};
 }

@@ -6,11 +6,11 @@ namespace fEnd
 
 	Camera::Camera(const Camera& copy)
 		: view(copy.view), timeOfLastScroll(copy.timeOfLastScroll), scrollDirection(copy.scrollDirection), resolution(copy.resolution),
-		position(copy.position), scrollStep(copy.scrollStep), zoomFactor(copy.zoomFactor) {}
+		position(copy.position), zoomFactor(copy.zoomFactor), scrollStep(copy.scrollStep) {}
 
 	Camera::Camera(Camera&& temp) 
 		: view(std::move(temp.view)), timeOfLastScroll(std::move(temp.timeOfLastScroll)), scrollDirection(temp.scrollDirection),
-		resolution(temp.resolution), position(temp.position), scrollStep(temp.scrollStep), zoomFactor(temp.zoomFactor) {}
+		resolution(temp.resolution), position(temp.position), zoomFactor(temp.zoomFactor), scrollStep(temp.scrollStep) {}
 
 	Camera::Camera(const sf::Vector2s& resolution)
 		: resolution(resolution)

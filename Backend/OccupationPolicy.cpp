@@ -17,7 +17,7 @@ namespace bEnd
 			ICModifier = 0.05f;
 			leadershipModifier = 0.3f;
 			partisanActivityModifier = 1.5f;
-			ResourceModifier = 0.25f;
+			resourceModifier = 0.25f;
 		}
 		else if (newPolicy == MilitaryGovernment)
 		{
@@ -25,7 +25,7 @@ namespace bEnd
 			ICModifier = 0.2f;
 			leadershipModifier = 0.2f;
 			partisanActivityModifier = 7.0f;
-			ResourceModifier = 0.5f;
+			resourceModifier = 0.5f;
 		}
 		else if (newPolicy == FullOccupation)
 		{
@@ -33,7 +33,7 @@ namespace bEnd
 			ICModifier = 0.4f;
 			leadershipModifier = 0.1f;
 			partisanActivityModifier = 11.0f;
-			ResourceModifier = 0.65f;
+			resourceModifier = 0.65f;
 		}
 		else if (newPolicy == TotalEconomicExploitation)
 		{
@@ -41,7 +41,7 @@ namespace bEnd
 			ICModifier = 0.6f;
 			leadershipModifier = 0.01f;
 			partisanActivityModifier = 19.0f;
-			ResourceModifier = 0.75f;
+			resourceModifier = 0.75f;
 		}
 	}
 

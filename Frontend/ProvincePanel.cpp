@@ -31,11 +31,12 @@ namespace fEnd
 	const auto updateFunction([](const std::string& key, const bool second) -> const float
 	{
 		if (Map::target)
-			return unsigned char(second ? bEnd::Province::get(*Map::target).getBuildingLevels(key).second : bEnd::Province::get(*Map::target).getBuildingLevels(key).first) / 10.0f;
+			return (unsigned char)(second ? bEnd::Province::get(*Map::target).getBuildingLevels(key).second :
+					bEnd::Province::get(*Map::target).getBuildingLevels(key).first) / 10.0f;
 		else return 0;
 	});
 
-	gui::HoverMessage default(gui::HoverMessage()
+	gui::HoverMessage defaultTooltip(gui::HoverMessage()
 		.setCharacterSize(13)
 		.setBackgroundFill(sf::Color(30, 30, 35, 240))
 		.setBorderThickness(2)
@@ -59,7 +60,7 @@ namespace fEnd
 							return (bEnd::Province::get(*Map::target).getBuildingLevels(building).second + bEnd::Province::get(*Map::target).getQueuedCount(building)) / 10.0f;
 						else return 0;
 					})
-				.setFillMessage(default.setText(gui::bind("") + [building]()
+				.setFillMessage(defaultTooltip.setText(gui::bind("") + [building]()
 					{
 						if (!Map::target) return gui::bind("");
 						const auto levels(bEnd::Province::get(*Map::target).getBuildingLevels(building));
@@ -81,7 +82,7 @@ namespace fEnd
 							bEnd::Province::get(*Map::target).getBuildingLevels(building).second + bEnd::Province::get(*Map::target).getQueuedCount(building) < 10 &&
 							!(bEnd::Unit::get(building).isCoastal() && !bEnd::Province::get(*Map::target).isCoastal());
 					} })
-				.setMessage(default.setText(gui::bind(building)));
+				.setMessage(defaultTooltip.setText(gui::bind(building)));
 		}
 
 		std::unique_ptr<gui::Interactive> copy()const override
@@ -139,7 +140,7 @@ namespace fEnd
 	ProvincePanel::ProvincePanel(const sf::Vector2u& resolution)
 		: Window()
 	{
-		default.setFont(Resources::font("arial"));
+		defaultTooltip.setFont(Resources::font("arial"));
 		setBackgroundTexture(Resources::texture("bg_province"), true);
 		const auto size(Resources::texture("bg_province").getSize());
 
@@ -147,17 +148,18 @@ namespace fEnd
 			const auto updateFunction([](const std::string& key, const bool second) -> const float
 			{
 				if (Map::target)
-					return unsigned char(second ? bEnd::Province::get(*Map::target).getBuildingLevels(key).second : bEnd::Province::get(*Map::target).getBuildingLevels(key).first) / 10.0f;
+					return (unsigned char)(second ? bEnd::Province::get(*Map::target).getBuildingLevels(key).second :
+							bEnd::Province::get(*Map::target).getBuildingLevels(key).first) / 10.0f;
 				else return 0;
 			});
 
 			sf::Vector2f translate(0, 0);
 
 			for (auto it(bEnd::Unit::begin()), end(bEnd::Unit::end()); it != end; ++it)
-				if (it->second.getType() != bEnd::Unit::Building) continue;
+				if (bEnd::Unit::get(*it).getType() != bEnd::Unit::Building) continue;
 				else
 				{
-					add(it->first, BuildingLevels(it->first).setPosition(39 + translate.x, size.y - 61 + translate.y));
+					add(*it, BuildingLevels(*it).setPosition(39 + translate.x, size.y - 61 + translate.y));
 
 					translate.y -= Resources::texture("building_levels").getSize().y + 8;
 					if (count() == bEnd::Unit::unitsOfType(bEnd::Unit::Building) / 2)
@@ -171,7 +173,7 @@ namespace fEnd
 		add("owner_flag", gui::Button(gui::Icon(Resources::texture("topbarflag_shadow"))).setPosition(10 + Resources::texture("topbarflag_shadow").getSize().y, 39)
 				.resetShader(textureTransitionShader).setShaderParameter("shadow", sf::Shader::CurrentTexture)
 				.setRotation(90)
-				.setMessage(default.setText(gui::bind("This province is owned by ") + []()
+				.setMessage(defaultTooltip.setText(gui::bind("This province is owned by ") + []()
 					{
 						if (!Map::target) return gui::bind("N/A");
 						return gui::bind(Nation::get(bEnd::Province::get(*Map::target).getOwner()).getName(), color) +

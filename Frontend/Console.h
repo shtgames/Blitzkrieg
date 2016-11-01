@@ -15,7 +15,7 @@ namespace fEnd
 		
 		mutable std::mutex m_outputLock;
 		std::vector<sf::String> m_history;
-		std::atomic<bool> initialised = false, allowingInput = false;
+		std::atomic<bool> initialised = {false}, allowingInput = {false};
 
 		static const sf::Texture createTexture();
 

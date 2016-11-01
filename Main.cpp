@@ -1,8 +1,6 @@
 #include "Frontend.hpp"
 
-#pragma comment(linker, "/SUBSYSTEM:windows /ENTRY:mainCRTStartup")
-
-void main()
+int main()
 {
-	fEnd::run();
+	return fEnd::run();
 }
